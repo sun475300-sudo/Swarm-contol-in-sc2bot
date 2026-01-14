@@ -1,8 +1,8 @@
-# ? API Keys ¼³Á¤ °¡ÀÌµå
+# ? API Keys ì„¤ì • ê°€ì´ë“œ
 
-## ºü¸¥ ½ÃÀÛ (3´Ü°è)
+## ë¹ ë¥¸ ì‹œìž‘ (3ë‹¨ê³„)
 
-### 1´Ü°è: ¿¹½Ã ÆÄÀÏ º¹»ç
+### 1ë‹¨ê³„: ì˜ˆì‹œ íŒŒì¼ ë³µì‚¬
 
 ```powershell
 # Windows
@@ -18,26 +18,26 @@ cp GEMINI_API_KEY.txt.example GEMINI_API_KEY.txt
 cp GOOGLE_API_KEY.txt.example GOOGLE_API_KEY.txt
 ```
 
-### 2´Ü°è: ½ÇÁ¦ Å° ÀÔ·Â
+### 2ë‹¨ê³„: ì‹¤ì œ í‚¤ ìž…ë ¥
 
-»ý¼ºÇÑ ÆÄÀÏÀ» ¿­°í `YOUR_API_KEY_HERE`¸¦ ½ÇÁ¦ API Å°·Î ±³Ã¼ÇÏ¼¼¿ä.
+ìƒì„±í•œ íŒŒì¼ì„ ì—´ê³  `YOUR_API_KEY_HERE`ë¥¼ ì‹¤ì œ API í‚¤ë¡œ êµì²´í•˜ì„¸ìš”.
 
 **GEMINI_API_KEY.txt**:
 ```
-AIzaSyAbc123def456ghi789jkl012mno345pqr678
+YOUR_API_KEY_HERE
 ```
 
-### 3´Ü°è: È®ÀÎ
+### 3ë‹¨ê³„: í™•ì¸
 
 ```bash
-# Git¿¡ ¿Ã¶ó°¡Áö ¾Ê´ÂÁö È®ÀÎ
+# Gitì— ì˜¬ë¼ê°€ì§€ ì•ŠëŠ”ì§€ í™•ì¸
 git status api_keys/
-# GEMINI_API_KEY.txt´Â ³ªÅ¸³ªÁö ¾Ê¾Æ¾ß ÇÕ´Ï´Ù
+# GEMINI_API_KEY.txtëŠ” ë‚˜íƒ€ë‚˜ì§€ ì•Šì•„ì•¼ í•©ë‹ˆë‹¤
 ```
 
-## ? ¿Ï·á!
+## ? ì™„ë£Œ!
 
-ÀÌÁ¦ ÄÚµå¿¡¼­ API Å°¸¦ »ç¿ëÇÒ ¼ö ÀÖ½À´Ï´Ù:
+ì´ì œ ì½”ë“œì—ì„œ API í‚¤ë¥¼ ì‚¬ìš©í•  ìˆ˜ ìžˆìŠµë‹ˆë‹¤:
 
 ```python
 from tools.load_api_key import get_gemini_api_key
@@ -45,7 +45,7 @@ from tools.load_api_key import get_gemini_api_key
 api_key = get_gemini_api_key()
 ```
 
-## ? ´õ ÀÚ¼¼ÇÑ Á¤º¸
+## ? ë” ìžì„¸í•œ ì •ë³´
 
-- **»ó¼¼ °¡ÀÌµå**: `api_keys/README.md`
-- **°ü¸® °¡ÀÌµå**: `docs/API_KEYS_MANAGEMENT.md`
+- **ìƒì„¸ ê°€ì´ë“œ**: `api_keys/README.md`
+- **ê´€ë¦¬ ê°€ì´ë“œ**: `docs/API_KEYS_MANAGEMENT.md`
