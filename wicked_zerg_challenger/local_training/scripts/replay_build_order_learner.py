@@ -392,9 +392,14 @@ class ReplayBuildOrderExtractor:
         """
         # IMPROVED: Use learning tracker to get replays that need training
         try:
-            from .replay_learning_manager import ReplayLearningTracker
-            from .learning_logger import LearningLogger
-            from .strategy_database import StrategyDatabase, StrategyType, MatchupType
+            import sys
+            from pathlib import Path
+            script_dir = Path(__file__).parent
+            if str(script_dir) not in sys.path:
+                sys.path.insert(0, str(script_dir))
+            from replay_learning_manager import ReplayLearningTracker
+            from learning_logger import LearningLogger
+            from strategy_database import StrategyDatabase, StrategyType, MatchupType
 
             # CRITICAL: Completed replays go to D:\replays\replays\completed
             completed_dir = Path("D:/replays/replays/completed")
