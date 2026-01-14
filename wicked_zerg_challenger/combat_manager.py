@@ -676,6 +676,14 @@ class CombatManager:
                 )
             )
             if spawning_pools and spawning_pools[0].is_ready:
+                # IMPROVED: Attack trigger lowered - force attack when 24+ zerglings OR supply 80+
+                # This addresses low win rate against VeryEasy by being more aggressive
+                if zergling_count >= 24 or b.supply_army >= 80:
+                    current_iteration = getattr(b, "iteration", 0)
+                    if current_iteration % 50 == 0:
+                        print(f"[FORCE ATTACK] [{int(b.time)}s] Trigger: {zergling_count} zerglings OR {b.supply_army} supply - forcing attack!")
+                    return True
+                
                 # IMPROVED: Attack when 12+ zerglings ready (reduced from 20)
                 # This creates "offensive virtuous cycle" by converting resources to units
                 if zergling_count >= 12 and b.time >= 180:  # At least 3 minutes passed
