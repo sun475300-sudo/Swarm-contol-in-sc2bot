@@ -57,7 +57,7 @@ class ProductionManager:
             UnitTypeId.SWARMHOSTMP,
         }
         self.high_tech_zergling_ratio: float = 0.7  # Force tech when zerglings exceed 70% of army
-        self.high_tech_gas_threshold: int = 200  # Minimum gas to trigger tech shift
+        self.high_tech_gas_threshold: int = 300  # IMPROVED: Lowered from 200 to 300 for more aggressive tech production
 
         self.construction_history: Dict[UnitTypeId, List[int]] = {}  # Building type -> [frames when built]
         self.building_owner: Dict[UnitTypeId, str] = {}  # Building type -> "PRODUCTION" or "ECONOMY"
@@ -256,6 +256,19 @@ class ProductionManager:
         """Force tech production when army is overly zergling-heavy and gas is floating."""
         b = self.bot
         intel = getattr(b, "intel", None)
+
+        # IMPROVED: Gas consumption boost - force tech production when gas >= 300
+        # This addresses the "gas floating" problem by increasing tech unit production by 20%
+        if b.vespene >= 300:
+            # Check if we have tech buildings
+            has_hydra_den = b.structures(UnitTypeId.HYDRALISKDEN).ready.exists
+            has_roach_warren = b.structures(UnitTypeId.ROACHWARREN).ready.exists
+            has_baneling_nest = b.structures(UnitTypeId.BANELINGNEST).ready.exists
+            if has_hydra_den or has_roach_warren or has_baneling_nest:
+                current_iteration = getattr(b, "iteration", 0)
+                if current_iteration % 100 == 0:
+                    print(f"[GAS FLUSH] [{int(b.time)}s] Forcing tech unit production (gas: {b.vespene} >= 300)")
+                return True
 
         # IMPROVED: Late-game tech activation (after 20 minutes)
         # If game time > 20 minutes and gas >= 100, force tech production regardless of zergling ratio
@@ -1760,6 +1773,45 @@ class ProductionManager:
         # Force production mode to prevent tech building construction
         if extreme_emergency:
             self.current_mode = "PRODUCTION"
+
+        # IMPROVED: Gas flush priority - when gas >= 300, prioritize tech units (20% increase)
+        gas_flush_mode = b.vespene >= 300
+        if gas_flush_mode:
+            # Force tech unit production when gas is floating
+            roach_warrens_ready = b.structures(UnitTypeId.ROACHWARREN).ready.exists
+            hydra_dens_ready = b.structures(UnitTypeId.HYDRALISKDEN).ready.exists
+            has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+            
+            # Prioritize tech units when gas is high
+            if hydra_dens_ready and has_lair and b.can_afford(UnitTypeId.HYDRALISK):
+                for larva in larvae:
+                    if not larva.is_ready:
+                        continue
+                    if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.HYDRALISK)
+                            units_produced += 1
+                            if b.iteration % 50 == 0:
+                                print(f"[GAS FLUSH] [{int(b.time)}s] Producing Hydralisk (gas: {b.vespene})")
+                        except Exception:
+                            continue
+                if units_produced > 0:
+                    return True
+            
+            if roach_warrens_ready and b.can_afford(UnitTypeId.ROACH):
+                for larva in larvae:
+                    if not larva.is_ready:
+                        continue
+                    if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.ROACH)
+                            units_produced += 1
+                            if b.iteration % 50 == 0:
+                                print(f"[GAS FLUSH] [{int(b.time)}s] Producing Roach (gas: {b.vespene})")
+                        except Exception:
+                            continue
+                if units_produced > 0:
+                    return True
 
         # Priority order: Most expensive units first
         # This maximizes resource consumption efficiency
