@@ -397,8 +397,9 @@ def run_training():
     # Override environment variable to force single game mode
     os.environ["INSTANCE_ID"] = "0"
     os.environ["NUM_INSTANCES"] = "1"
-    os.environ["SHOW_WINDOW"] = "false"
-    show_window = False
+    # IMPROVED: Show window for visual monitoring
+    show_window = os.environ.get("SHOW_WINDOW", "true").lower() == "true"
+    os.environ["SHOW_WINDOW"] = "true" if show_window else "false"
 
     sc2_path = get_sc2_path()
     if sc2_path:
@@ -1154,8 +1155,8 @@ if __name__ == "__main__":
     os.environ["INSTANCE_ID"] = "0"
     os.environ["NUM_INSTANCES"] = "1"
     os.environ["SINGLE_GAME_MODE"] = "true"
-    os.environ["SHOW_WINDOW"] = "false"
-    os.environ["HEADLESS_MODE"] = "true"
+    os.environ["SHOW_WINDOW"] = "true"
+    os.environ["HEADLESS_MODE"] = "false"
     os.environ["DISABLE_DASHBOARD"] = "true"
 
     try:
@@ -1168,11 +1169,11 @@ if __name__ == "__main__":
     try:
         print("\n" + "="*70)
         print("SINGLE GAME MODE ENABLED")
-        print("HEADLESS MODE ENABLED (No game window)")
+        print("VISUAL MODE ENABLED (Game window visible)")
         print("="*70)
         print("Only ONE game will run at a time.")
         print("Previous game must fully close before next game starts.")
-        print("Game window is hidden for maximum performance.")
+        print("Game window is visible for monitoring.")
         print("="*70 + "\n")
         run_training()
     except KeyboardInterrupt:
