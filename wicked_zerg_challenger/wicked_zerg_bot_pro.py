@@ -2828,7 +2828,7 @@ class WickedZergBotPro(BotAI):
                     # type: ignore[operator] keeps can_afford wrapper from type errors
                     if self.can_afford(UnitTypeId.ROACH) and self.supply_left >= 2:  # type: ignore[operator]
                         try:
-                            larva.train(UnitTypeId.ROACH)
+                            await larva.train(UnitTypeId.ROACH)
                             produced_count += 1
                         except Exception:
                             continue
@@ -2852,7 +2852,7 @@ class WickedZergBotPro(BotAI):
                     # type: ignore[operator] keeps can_afford wrapper from type errors
                     if self.can_afford(UnitTypeId.HYDRALISK) and self.supply_left >= 2:  # type: ignore[operator]
                         try:
-                            larva.train(UnitTypeId.HYDRALISK)
+                            await larva.train(UnitTypeId.HYDRALISK)
                             produced_count += 1
                         except Exception:
                             continue
@@ -3131,7 +3131,7 @@ class WickedZergBotPro(BotAI):
                     ):
                         if self.supply_left >= 2:
                             try:
-                                larvae.random.train(UnitTypeId.ROACH)
+                                await larvae.random.train(UnitTypeId.ROACH)
                                 if self.iteration % 100 == 0:
                                     print(
                                         f"[DEFENSIVE ARMY] [{int(self.time)}s] Building Roach for defense (Army: {army_count}/{min_army_count})"
@@ -3146,7 +3146,7 @@ class WickedZergBotPro(BotAI):
                     ):
                         if self.supply_left >= 2:
                             try:
-                                larvae.random.train(UnitTypeId.HYDRALISK)
+                                await larvae.random.train(UnitTypeId.HYDRALISK)
                                 if self.iteration % 100 == 0:
                                     print(
                                         f"[DEFENSIVE ARMY] [{int(self.time)}s] Building Hydralisk for defense (Army: {army_count}/{min_army_count})"
@@ -3161,7 +3161,7 @@ class WickedZergBotPro(BotAI):
                 ):
                     if self.supply_left >= 2:
                         try:
-                            larvae.random.train(UnitTypeId.ZERGLING)
+                            await larvae.random.train(UnitTypeId.ZERGLING)
                             if self.iteration % 100 == 0:
                                 print(
                                     f"[DEFENSIVE ARMY] [{int(self.time)}s] Building Zergling for defense (Army: {army_count}/{min_army_count})"
@@ -4338,7 +4338,7 @@ class WickedZergBotPro(BotAI):
                 if larvae_list:
                     for larva in larvae_list:
                         if larva.is_ready:
-                            larva.train(unit_to_produce)
+                            await larva.train(unit_to_produce)
                             break
             except Exception as e:
                 pass
@@ -4370,7 +4370,7 @@ class WickedZergBotPro(BotAI):
                     # type: ignore[operator] suppresses can_afford wrapper warnings
                     if self.can_afford(UnitTypeId.ZERGLING) and self.supply_left >= 2:  # type: ignore[operator]
                         try:
-                            larva.train(UnitTypeId.ZERGLING)
+                            await larva.train(UnitTypeId.ZERGLING)
                         except Exception:
                             continue
 
@@ -4393,7 +4393,7 @@ class WickedZergBotPro(BotAI):
             if self.can_afford(UnitTypeId.ZERGLING):
                 spawning_pools = self.units(UnitTypeId.SPAWNINGPOOL).ready
                 if spawning_pools:
-                    random.choice(larvae).train(UnitTypeId.ZERGLING)
+                    await random.choice(larvae).train(UnitTypeId.ZERGLING)
 
     async def _build_terran_counters(self):
         """
