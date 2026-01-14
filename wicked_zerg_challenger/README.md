@@ -58,6 +58,16 @@ The system models **real-world drone swarm control, autonomous decision making, 
 
 ---
 
+## 💡 Personal Motivation
+
+### From Military Service to Engineering
+
+* **Background:** During my service in the 53rd Infantry Division (Busan) in 2023, I served as a **communications and drone operator** in coastal defense operations.
+* **Insight:** During actual operations, I realized that it is impossible for a single operator to simultaneously control multiple drones with precision.
+* **Solution:** This experience led me to recognize the critical need for **swarm automation technology that minimizes human intervention**, and after returning to university, I began this project.
+
+---
+
 ## 💡 Key Features
 
 ### 1) Swarm Reinforcement Learning
@@ -100,6 +110,15 @@ The system models **real-world drone swarm control, autonomous decision making, 
 
 ---
 
+## 📈 Research Performance Metrics
+
+* **Training Cycles:** 30+ automated training generations
+* **Data Scale:** Analyzed 50+ professional replays from **Rogue (이병렬)**, extracting 10,000+ decision frames
+* **Win Rate Improvement:** ~350% increase over initial random agent (vs Built-in Elite AI)
+* **Stability:** Achieved 0% crash rate during 72-hour continuous operation (after exception handling implementation)
+
+---
+
 ## 🛠 Engineering Troubleshooting
 
 ### 1) ❗ Async Await Bug – "Production Stall"
@@ -123,23 +142,37 @@ The system models **real-world drone swarm control, autonomous decision making, 
 
 ---
 
-### 2) ❗ Race Condition – Duplicate Building Construction
+### 2) ❗ Resource Deadlock – Supply Block Crisis
 
 * **Problem**
 
-  * Multiple managers simultaneously decided that "Spawning Pool is missing"
-  * Each tried to build one, wasting resources and breaking the build order
+  * Supply (population) became blocked, but all available minerals were spent on unit production before an Overlord could be built
+  * The game effectively **stalled** with no units able to be produced
 
 * **Fix**
 
-  * Introduced a **frame-level Construction Reservation Flag**
-  * Centralized "under-construction" state into a **single source of truth**
-  * Forced all managers to check this flag before issuing build commands
+  * Implemented a **Priority Queue system** with emergency override
+  * When supply left < 5, Overlord production commands are **force-assigned to top priority**
+  * This "Emergency Override" logic ensures continuous unit production
+    → Eliminated supply block deadlocks
+
+---
+
+### 3) ❗ Race Condition – Duplicate Building Construction
+
+* **Problem**
+
+  * Spawning Pool construction command was issued, but during the worker's movement delay, the AI determined the building was missing and issued a duplicate construction command
+
+* **Fix**
+
+  * Designed a **Pending Structure Check** function that flags "under-construction" and "worker-moving" states separately
+  * This prevents duplicate commands by tracking construction state
     → Achieved **0% duplicate construction**
 
 ---
 
-### 3) ❗ Mineral Overflow – Production Flush Algorithm
+### 4) ❗ Mineral Overflow – Production Flush Algorithm
 
 * **Problem**
 

@@ -27,10 +27,19 @@
 
 **처방 (해결 방법):**
 
-1. **자동 청소기 제작:** `clean_duplicates.py` 스크립트를 작성하여 중복 파일을 안전하게 제거
+1. **자동 청소기 제작:** 중복 파일 제거를 위한 cleanup 스크립트 작성 (`tools/cleanup_and_organize.py`, `tools/code_diet_cleanup.py` 등)
 2. **경로 통합:** 모든 핵심 실행 파일(`integrated_pipeline.py`, `hybrid_learning.py` 등)을 **루트 폴더(`local_training/`)**로 이동
 3. **코드 수정:** `integrated_pipeline.py`가 더 이상 없는 파일(`quick_train.py`)을 찾지 않고, 올바른 파일(`hybrid_learning.py`)을 실행하도록 로직 수정
+   - **위치:** `tools/integrated_pipeline.py` (Line 207-223)
+   - **개선 내용:** `hybrid_learning.py` 파일 존재 여부 확인 및 여러 경로에서 검색하는 로직 추가
 4. **인코딩 해결:** 윈도우 환경에서 발생하는 한글 주석 오류(utf-8) 해결
+   - **작업 내용:** 75개 파일에 `# -*- coding: utf-8 -*-` 추가
+   - **결과:** CP949 (한글) 인코딩 문제 해결, UTF-8 통일
+
+**관련 문서:**
+- `설명서/ENCODING_CLEANUP_REPORT.md` - 인코딩 문제 해결 리포트
+- `tools/integrated_pipeline.py` - 경로 수정된 통합 파이프라인
+- `설명서/BUG_REPORT.md` - 버그 리포트 및 수정 사항
 
 **관련 문서:**
 - `CLEANUP_FINAL_REPORT.md`
