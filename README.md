@@ -388,9 +388,10 @@ Target industries include **ADD, LIG Nex1, Hanwha Systems, and autonomous roboti
 * **Author:** 장선우 (Jang S. W.)
 * **Major:** 목포대학교 드론응용학과 (드론기계공학전공) / Drone Application Engineering
 * **Email:** `sun475300@naver.com`
-* **Repository:** [[https://github.com/sun475300-sudo/Swarm-Control-in-sc2bot](https://github.com/sun475300-sudo/Swarm-contol-in-sc2bot.git)]([https://github.com/sun475300-sudo/Swarm-Control-in-sc2bot](https://github.com/sun475300-sudo/Swarm-contol-in-sc2bot.git))
+* **Repository:** [[https://github.com/sun475300-sudo/Swarm-Control-in-sc2bot](https://github.com/sun475300-sudo/Swarm-contol-in-sc2bot.git)]([https://github.com/sun475300-sudo/Swarm-Control-in-sc2bot]
+(https://github.com/sun475300-sudo/Swarm-contol-in-sc2bot.git))
 
 ```
 
-::contentReference[oaicite:0]{index=0}
+::
 ```
