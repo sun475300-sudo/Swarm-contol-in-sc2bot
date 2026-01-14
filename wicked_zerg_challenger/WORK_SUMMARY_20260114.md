@@ -16,6 +16,22 @@
 - **결과:** 이제 루트 폴더(`wicked_zerg_challenger/`)에 있는 파일이 유일한 원본입니다. 수정을 한 번만 하면 훈련, 대회, 앱 모두에 적용됩니다.
 - **연결 복구:** 파일을 지운 대신, 훈련 스크립트가 루트 폴더의 봇을 찾아가도록 `sys.path.append(...)` 코드를 추가하여 연결 다리를 놓았습니다.
 
+---
+
+### 1-1. 시스템 대수술 (Technical Refactoring)
+
+**"뇌가 두 개라서 미쳐 날뛰던 봇을 하나로 통합했습니다."**
+
+- **문제 진단:** `local_training` 폴더와 그 안의 `scripts` 폴더에 파일이 중복되어 발생하던 **"Split Brain(두뇌 분열)"** 현상
+- **증상:** 루트 폴더와 `scripts` 폴더에 같은 파일(`wicked_zerg_bot_pro.py` 등)이 있어, 수정 사항이 반영되지 않고 에러가 발생함
+
+**처방 (해결 방법):**
+
+1. **자동 청소기 제작:** `clean_duplicates.py` 스크립트를 작성하여 중복 파일을 안전하게 제거
+2. **경로 통합:** 모든 핵심 실행 파일(`integrated_pipeline.py`, `hybrid_learning.py` 등)을 **루트 폴더(`local_training/`)**로 이동
+3. **코드 수정:** `integrated_pipeline.py`가 더 이상 없는 파일(`quick_train.py`)을 찾지 않고, 올바른 파일(`hybrid_learning.py`)을 실행하도록 로직 수정
+4. **인코딩 해결:** 윈도우 환경에서 발생하는 한글 주석 오류(utf-8) 해결
+
 **관련 문서:**
 - `CLEANUP_FINAL_REPORT.md`
 - `IMPORT_PATH_VERIFICATION.md`
