@@ -784,10 +784,11 @@ def main():
         print("\n[INFO] Auto commit enabled - committing changes...")
         try:
             import subprocess
-            script_path = Path(__file__).parent.parent / "tools" / "auto_commit_after_training.py"
-            if script_path.exists():
-                result = subprocess.run(
-                    [sys.executable, str(script_path)],
+                    script_path = Path(__file__).parent.parent / "tools" / "auto_commit_after_training.py"
+                    if script_path.exists():
+                        import sys
+                        result = subprocess.run(
+                            [sys.executable, str(script_path)],
                     cwd=str(Path(__file__).parent.parent),
                     capture_output=True,
                     text=True,
