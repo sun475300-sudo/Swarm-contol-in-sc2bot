@@ -1,6 +1,7 @@
 package com.wickedzerg.mobilegcs.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,9 +27,11 @@ class BotConfigFragment : Fragment() {
     private lateinit var noActiveConfigText: TextView
     private lateinit var configsRecyclerView: RecyclerView
     private lateinit var fabAddConfig: FloatingActionButton
+    private lateinit var statusText: TextView
     
     private val manusApiClient = ManusApiClient()
     private val configAdapter = BotConfigAdapter(emptyList())
+    private var isServerConnected = false
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,6 +53,7 @@ class BotConfigFragment : Fragment() {
         noActiveConfigText = view.findViewById(R.id.noActiveConfigText)
         configsRecyclerView = view.findViewById(R.id.configsRecyclerView)
         fabAddConfig = view.findViewById(R.id.fabAddConfig)
+        statusText = view.findViewById(R.id.statusText)
         
         // Setup RecyclerView
         configsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -80,8 +84,27 @@ class BotConfigFragment : Fragment() {
                     // 모든 설정
                     val allConfigs = manusApiClient.getAllBotConfigs()
                     configAdapter.updateConfigs(allConfigs)
+                    
+                    // 서버 연결 성공
+                    if (!isServerConnected) {
+                        isServerConnected = true
+                        statusText.visibility = View.GONE
+                    }
+                } catch (e: java.net.ConnectException) {
+                    // 서버 연결 실패
+                    Log.e("BotConfigFragment", "서버 연결 실패: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버에 연결할 수 없습니다")
+                } catch (e: java.net.SocketTimeoutException) {
+                    // 타임아웃
+                    Log.e("BotConfigFragment", "서버 응답 타임아웃: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버 응답 시간 초과")
                 } catch (e: Exception) {
-                    // 에러 무시
+                    // 기타 오류
+                    Log.e("BotConfigFragment", "데이터 수신 오류: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버 연결 오류: ${e.message ?: "알 수 없는 오류"}")
                 }
                 delay(5000) // 5초마다 업데이트
             }
@@ -93,14 +116,24 @@ class BotConfigFragment : Fragment() {
         noActiveConfigText.visibility = View.GONE
         
         activeConfigTitle.text = "현재 활성설정"
-        activeConfigName.text = config.name
-        activeConfigDescription.text = config.description
-        activeConfigTraits.text = "특성: ${config.traits.joinToString(", ")}"
+        activeConfigName.text = config.bot_name
+        activeConfigDescription.text = "Type: ${config.bot_type}, Race: ${config.race}"
+        activeConfigTraits.text = "Status: ${if (config.is_active) "Active" else "Inactive"}"
     }
     
     private fun hideActiveConfig() {
         activeConfigContainer.visibility = View.GONE
         noActiveConfigText.visibility = View.VISIBLE
+    }
+    
+    private fun showServerDisconnected(message: String) {
+        statusText.text = "Server Disconnected: $message"
+        statusText.setTextColor(requireContext().getColor(R.color.red))
+        statusText.visibility = View.VISIBLE
+        
+        // 데이터 초기화
+        hideActiveConfig()
+        configAdapter.updateConfigs(emptyList())
     }
     
     private fun showCreateConfigDialog() {
@@ -124,8 +157,8 @@ class BotConfigFragment : Fragment() {
         
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val config = configs[position]
-            holder.text1.text = config.name
-            holder.text2.text = "${config.strategy} - ${config.traits.joinToString(", ")}"
+            holder.text1.text = config.bot_name
+            holder.text2.text = "${config.bot_type} - ${config.race}"
         }
         
         override fun getItemCount() = configs.size

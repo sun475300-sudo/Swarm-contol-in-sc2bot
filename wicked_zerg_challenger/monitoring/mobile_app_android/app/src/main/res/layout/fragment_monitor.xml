@@ -11,18 +11,16 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="실시간 모니터링"
+            android:text="Real-time Monitor"
             android:textColor="#00ff00"
             android:textSize="24sp"
             android:textStyle="bold"
             android:gravity="center"
             android:padding="16dp" />
 
-        <!-- Status Indicator -->
         <TextView
             android:id="@+id/statusText"
             android:layout_width="match_parent"
@@ -33,7 +31,6 @@
             android:gravity="center"
             android:padding="8dp" />
 
-        <!-- No Game Message -->
         <androidx.cardview.widget.CardView
             android:id="@+id/noGameMessage"
             android:layout_width="match_parent"
@@ -54,14 +51,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="현재 진행중인 게임이 없습니다"
+                    android:text="No game is currently running"
                     android:textColor="#ffffff"
                     android:textSize="18sp"
                     android:gravity="center" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Game State Container -->
         <LinearLayout
             android:id="@+id/gameStateContainer"
             android:layout_width="match_parent"
@@ -69,7 +65,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Resources Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -122,7 +117,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Units Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -1,6 +1,7 @@
 package com.wickedzerg.mobilegcs.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,9 +23,11 @@ class TrainingFragment : Fragment() {
     private lateinit var averageWinRateText: TextView
     private lateinit var totalGamesText: TextView
     private lateinit var recentEpisodesRecyclerView: RecyclerView
+    private lateinit var statusText: TextView
     
     private val manusApiClient = ManusApiClient()
     private val episodeAdapter = TrainingEpisodeAdapter(emptyList())
+    private var isServerConnected = false
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +46,7 @@ class TrainingFragment : Fragment() {
         averageWinRateText = view.findViewById(R.id.averageWinRateText)
         totalGamesText = view.findViewById(R.id.totalGamesText)
         recentEpisodesRecyclerView = view.findViewById(R.id.recentEpisodesRecyclerView)
+        statusText = view.findViewById(R.id.statusText)
         
         // Setup RecyclerView
         recentEpisodesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -56,24 +60,56 @@ class TrainingFragment : Fragment() {
         lifecycleScope.launch {
             while (true) {
                 try {
-                    // 학습 통계
+                    // ?? ??
                     val stats = manusApiClient.getTrainingStats()
                     stats?.let {
-                        totalEpisodesText.text = "총 에피소드: ${it.totalEpisodes}"
-                        averageRewardText.text = "평균 보상: ${String.format("%.2f", it.averageReward)}"
-                        averageWinRateText.text = "평균 승률: ${String.format("%.1f", it.averageWinRate * 100)}%"
-                        totalGamesText.text = "총 게임수: ${it.totalGames}"
+                        totalEpisodesText.text = "Total Episodes: ${it.total_episodes}"
+                        averageRewardText.text = "Average Reward: ${String.format("%.2f", it.average_reward)}"
+                        averageWinRateText.text = "Average Win Rate: ${String.format("%.1f", it.win_rate * 100)}%"
+                        totalGamesText.text = "Total Games: -" // TrainingStats? total_games? ??
                     }
                     
-                    // 최근 에피소드
+                    // ?? ????
                     val recentEpisodes = manusApiClient.getRecentEpisodes(20)
                     episodeAdapter.updateEpisodes(recentEpisodes)
+                    
+                    // ?? ?? ??
+                    if (!isServerConnected) {
+                        isServerConnected = true
+                        statusText.visibility = View.GONE
+                    }
+                } catch (e: java.net.ConnectException) {
+                    // ?? ?? ??
+                    Log.e("TrainingFragment", "?? ?? ??: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("??? ??? ? ????")
+                } catch (e: java.net.SocketTimeoutException) {
+                    // ????
+                    Log.e("TrainingFragment", "?? ?? ????: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("?? ?? ?? ??")
                 } catch (e: Exception) {
-                    // 에러 무시
+                    // ?? ??
+                    Log.e("TrainingFragment", "??? ?? ??: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("?? ?? ??: ${e.message ?: "? ? ?? ??"}")
                 }
-                delay(5000) // 5초마다 업데이트
+                delay(5000) // 5??? ????
             }
         }
+    }
+    
+    private fun showServerDisconnected(message: String) {
+        statusText.text = "Server Disconnected: $message"
+        statusText.setTextColor(requireContext().getColor(R.color.red))
+        statusText.visibility = View.VISIBLE
+        
+        // ??? ???
+        totalEpisodesText.text = "Total Episodes: -"
+        averageRewardText.text = "Average Reward: -"
+        averageWinRateText.text = "Average Win Rate: -"
+        totalGamesText.text = "Total Games: -"
+        episodeAdapter.updateEpisodes(emptyList())
     }
     
     // RecyclerView Adapter

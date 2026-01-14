@@ -1,6 +1,7 @@
 package com.wickedzerg.mobilegcs.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,9 +23,11 @@ class BattlesFragment : Fragment() {
     private lateinit var lossesText: TextView
     private lateinit var winRateText: TextView
     private lateinit var recentGamesRecyclerView: RecyclerView
+    private lateinit var statusText: TextView
     
     private val manusApiClient = ManusApiClient()
     private val gameRecordAdapter = GameRecordAdapter(emptyList())
+    private var isServerConnected = false
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +46,7 @@ class BattlesFragment : Fragment() {
         lossesText = view.findViewById(R.id.lossesText)
         winRateText = view.findViewById(R.id.winRateText)
         recentGamesRecyclerView = view.findViewById(R.id.recentGamesRecyclerView)
+        statusText = view.findViewById(R.id.statusText)
         
         // Setup RecyclerView
         recentGamesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -59,21 +63,54 @@ class BattlesFragment : Fragment() {
                     // 전투 통계
                     val stats = manusApiClient.getBattleStats()
                     stats?.let {
-                        totalGamesText.text = "총 게임수: ${it.totalGames}"
-                        winsText.text = "승리: ${it.wins}"
-                        lossesText.text = "패배: ${it.losses}"
-                        winRateText.text = "승률: ${String.format("%.1f", it.winRate * 100)}%"
+                        val totalGames = it.wins + it.losses
+                        totalGamesText.text = "Total Games: $totalGames"
+                        winsText.text = "Wins: ${it.wins}"
+                        lossesText.text = "Losses: ${it.losses}"
+                        winRateText.text = "Win Rate: ${String.format("%.1f", it.win_rate * 100)}%"
                     }
                     
                     // 최근 20게임
                     val recentGames = manusApiClient.getRecentGames(20)
                     gameRecordAdapter.updateGames(recentGames)
+                    
+                    // 서버 연결 성공
+                    if (!isServerConnected) {
+                        isServerConnected = true
+                        statusText.visibility = View.GONE
+                    }
+                } catch (e: java.net.ConnectException) {
+                    // 서버 연결 실패
+                    Log.e("BattlesFragment", "서버 연결 실패: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버에 연결할 수 없습니다")
+                } catch (e: java.net.SocketTimeoutException) {
+                    // 타임아웃
+                    Log.e("BattlesFragment", "서버 응답 타임아웃: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버 응답 시간 초과")
                 } catch (e: Exception) {
-                    // 에러 무시
+                    // 기타 오류
+                    Log.e("BattlesFragment", "데이터 수신 오류: ${e.message}", e)
+                    isServerConnected = false
+                    showServerDisconnected("서버 연결 오류: ${e.message ?: "알 수 없는 오류"}")
                 }
                 delay(5000) // 5초마다 업데이트
             }
         }
+    }
+    
+    private fun showServerDisconnected(message: String) {
+        statusText.text = "Server Disconnected: $message"
+        statusText.setTextColor(requireContext().getColor(R.color.red))
+        statusText.visibility = View.VISIBLE
+        
+        // 데이터 초기화
+        totalGamesText.text = "Total Games: -"
+        winsText.text = "Wins: -"
+        lossesText.text = "Losses: -"
+        winRateText.text = "Win Rate: -"
+        gameRecordAdapter.updateGames(emptyList())
     }
     
     // RecyclerView Adapter

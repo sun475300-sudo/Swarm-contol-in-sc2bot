@@ -60,18 +60,31 @@ class MonitorFragment : Fragment() {
                     if (gameState != null) {
                         // 게임 상태 표시
                         showGameState(gameState)
-                        statusText.text = "Connected"
+                        statusText.text = "서버 연결됨 - 게임 진행 중"
                         statusText.setTextColor(requireContext().getColor(R.color.green))
                     } else {
                         // 게임 없음 메시지 표시
                         showNoGameMessage()
-                        statusText.text = "Connected (No Game)"
+                        statusText.text = "서버 연결됨 - 게임 없음"
                         statusText.setTextColor(requireContext().getColor(R.color.green))
                     }
+                } catch (e: java.net.ConnectException) {
+                    // 서버 연결 실패
+                    Log.e(TAG, "서버 연결 실패: ${e.message}", e)
+                    showNoGameMessage()
+                    statusText.text = "서버 연결 끊김 - 서버에 연결할 수 없습니다"
+                    statusText.setTextColor(requireContext().getColor(R.color.red))
+                } catch (e: java.net.SocketTimeoutException) {
+                    // 타임아웃
+                    Log.e(TAG, "서버 응답 타임아웃: ${e.message}", e)
+                    showNoGameMessage()
+                    statusText.text = "서버 연결 끊김 - 응답 시간 초과"
+                    statusText.setTextColor(requireContext().getColor(R.color.red))
                 } catch (e: Exception) {
+                    // 기타 오류
                     Log.e(TAG, "데이터 수신 오류: ${e.message}", e)
                     showNoGameMessage()
-                    statusText.text = "Disconnected: ${e.message}"
+                    statusText.text = "서버 연결 끊김 - ${e.message ?: "알 수 없는 오류"}"
                     statusText.setTextColor(requireContext().getColor(R.color.red))
                 }
                 delay(1000) // Update every 1 second
