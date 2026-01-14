@@ -210,3 +210,50 @@ class CurriculumManager:
             "promotion_threshold": self.promotion_threshold,
             "demotion_threshold": self.demotion_threshold,
         }
+    
+    def update_priority(self, building_name: str, priority: str = "Urgent") -> None:
+        """
+        Build-Order Gap Analyzer에서 호출: 건물 건설 우선순위 업데이트
+        
+        Args:
+            building_name: 건물 이름 (예: "SpawningPool", "Extractor")
+            priority: 우선순위 ("Urgent", "High", "Normal", "Low")
+        """
+        # 우선순위 저장 (다음 게임에서 사용)
+        if not hasattr(self, 'building_priorities'):
+            self.building_priorities = {}
+        
+        self.building_priorities[building_name] = priority
+        
+        # 우선순위 파일에 저장
+        try:
+            priority_file = self.data_dir / "building_priorities.json"
+            with open(priority_file, 'w', encoding='utf-8') as f:
+                json.dump(self.building_priorities, f, indent=2, ensure_ascii=False)
+            print(f"[CURRICULUM] Updated priority for {building_name}: {priority}")
+        except Exception as e:
+            print(f"[WARNING] Failed to save building priority: {e}")
+    
+    def get_priority(self, building_name: str) -> str:
+        """
+        건물의 현재 우선순위 조회
+        
+        Args:
+            building_name: 건물 이름
+        
+        Returns:
+            우선순위 ("Urgent", "High", "Normal", "Low")
+        """
+        if not hasattr(self, 'building_priorities'):
+            # 파일에서 로드 시도
+            try:
+                priority_file = self.data_dir / "building_priorities.json"
+                if priority_file.exists():
+                    with open(priority_file, 'r', encoding='utf-8') as f:
+                        self.building_priorities = json.load(f)
+                else:
+                    self.building_priorities = {}
+            except Exception:
+                self.building_priorities = {}
+        
+        return self.building_priorities.get(building_name, "Normal")

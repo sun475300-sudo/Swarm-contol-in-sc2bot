@@ -5327,6 +5327,57 @@ class WickedZergBotPro(BotAI):
                         f"Defeat recorded - will use aggressive build next time",
                         "WARNING",
                     )
+                    
+                    # 🧠 Build-Order Gap Analyzer: Analyze performance gap vs pro gamers
+                    try:
+                        from local_training.strategy_audit import analyze_bot_performance
+                        gap_analysis = analyze_bot_performance(self, "defeat")
+                        if gap_analysis and gap_analysis.critical_issues:
+                            self.write_log(
+                                f"Gap Analysis: {len(gap_analysis.critical_issues)} critical issues found",
+                                "INFO"
+                            )
+                            # Send to Gemini Self-Healing for automated fixes
+                            if self.self_healing and self.self_healing.is_available():
+                                from local_training.strategy_audit import StrategyAudit
+                                auditor = StrategyAudit()
+                                feedback = auditor.generate_gemini_feedback(gap_analysis)
+                                # Store feedback for Gemini analysis
+                                self.write_log(f"Gap Analysis Feedback:\n{feedback}", "INFO")
+                                
+                                # 실제로 Gemini에게 분석 요청
+                                try:
+                                    # 관련 소스 파일 읽기
+                                    source_files = {}
+                                    try:
+                                        economy_file = Path("wicked_zerg_challenger/economy_manager.py")
+                                        if economy_file.exists():
+                                            with open(economy_file, 'r', encoding='utf-8') as f:
+                                                source_files[str(economy_file)] = f.read()[:5000]  # 최대 5000자
+                                        
+                                        production_file = Path("wicked_zerg_challenger/production_manager.py")
+                                        if production_file.exists():
+                                            with open(production_file, 'r', encoding='utf-8') as f:
+                                                source_files[str(production_file)] = f.read()[:5000]  # 최대 5000자
+                                    except Exception as file_error:
+                                        print(f"[WARNING] Failed to read source files: {file_error}")
+                                    
+                                    # Gemini 분석 요청
+                                    patch_suggestion = self.self_healing.analyze_gap_feedback(
+                                        feedback,
+                                        source_files=source_files if source_files else None
+                                    )
+                                    
+                                    if patch_suggestion:
+                                        self.write_log(
+                                            f"Gemini suggested patch: {patch_suggestion.description}",
+                                            "INFO"
+                                        )
+                                        # 자동 패치 적용은 enable_auto_patch 설정에 따라 결정됨
+                                except Exception as gemini_error:
+                                    print(f"[WARNING] Gemini gap analysis failed: {gemini_error}")
+                    except Exception as gap_error:
+                        print(f"[WARNING] Gap analysis failed: {gap_error}")
 
                     # Log race-specific weakness
                     if opponent_race_str and self.strategy_analyzer is not None:
