@@ -1,65 +1,65 @@
-# ? API Keys °ü¸® Æú´õ
+# ? API Keys ê´€ë¦¬ í´ë”
 
-**?? Áß¿ä: ÀÌ Æú´õÀÇ ¸ğµç ÆÄÀÏÀº Git¿¡ ¿Ã¶ó°¡Áö ¾Ê½À´Ï´Ù!**
+**?? ì¤‘ìš”: ì´ í´ë”ì˜ ëª¨ë“  íŒŒì¼ì€ Gitì— ì˜¬ë¼ê°€ì§€ ì•ŠìŠµë‹ˆë‹¤!**
 
-## ? »ç¿ë ¹æ¹ı
+## ? ì‚¬ìš© ë°©ë²•
 
-### 1. API Å° ÆÄÀÏ »ı¼º
+### 1. API í‚¤ íŒŒì¼ ìƒì„±
 
-ÀÌ Æú´õ¿¡ °¢ API Å°º°·Î ÅØ½ºÆ® ÆÄÀÏÀ» »ı¼ºÇÏ¼¼¿ä:
+ì´ í´ë”ì— ê° API í‚¤ë³„ë¡œ í…ìŠ¤íŠ¸ íŒŒì¼ì„ ìƒì„±í•˜ì„¸ìš”:
 
-- `GEMINI_API_KEY.txt` - Google Gemini API Å°
-- `GOOGLE_API_KEY.txt` - Google API Å° (Gemini Self-Healing¿ë)
-- `GCP_PROJECT_ID.txt` - Google Cloud Platform ÇÁ·ÎÁ§Æ® ID
-- `GCP_CREDENTIALS.json` - GCP ¼­ºñ½º °èÁ¤ Å° (JSON ÆÄÀÏ)
+- `GEMINI_API_KEY.txt` - Google Gemini API í‚¤
+- `GOOGLE_API_KEY.txt` - Google API í‚¤ (Gemini Self-Healingìš©)
+- `GCP_PROJECT_ID.txt` - Google Cloud Platform í”„ë¡œì íŠ¸ ID
+- `GCP_CREDENTIALS.json` - GCP ì„œë¹„ìŠ¤ ê³„ì • í‚¤ (JSON íŒŒì¼)
 
-### 2. ÆÄÀÏ Çü½Ä
+### 2. íŒŒì¼ í˜•ì‹
 
-°¢ ÆÄÀÏ¿¡´Â **API Å°¸¸** ÀúÀåÇÏ¼¼¿ä (ÁÙ¹Ù²Ş ¾øÀÌ):
+ê° íŒŒì¼ì—ëŠ” **API í‚¤ë§Œ** ì €ì¥í•˜ì„¸ìš” (ì¤„ë°”ê¿ˆ ì—†ì´):
 
 ```
-AIzaSyAbc123def456ghi789jkl012mno345pqr678
+
 ```
 
-¶Ç´Â ¸¶Å©´Ù¿î Çü½ÄÀ¸·Î:
+ë˜ëŠ” ë§ˆí¬ë‹¤ìš´ í˜•ì‹ìœ¼ë¡œ:
 
 ```markdown
 # Gemini API Key
-AIzaSyAbc123def456ghi789jkl012mno345pqr678
+
 ```
 
-### 3. ÄÚµå¿¡¼­ »ç¿ëÇÏ±â
+### 3. ì½”ë“œì—ì„œ ì‚¬ìš©í•˜ê¸°
 
-Python ÄÚµå¿¡¼­ API Å°¸¦ ÀĞ´Â ¿¹½Ã:
+Python ì½”ë“œì—ì„œ API í‚¤ë¥¼ ì½ëŠ” ì˜ˆì‹œ:
 
 ```python
 import os
 from pathlib import Path
 
 def load_api_key(key_name: str) -> str:
-    """API Å° ÆÄÀÏ¿¡¼­ Å°¸¦ ÀĞ¾î¿É´Ï´Ù."""
+    """API í‚¤ íŒŒì¼ì—ì„œ í‚¤ë¥¼ ì½ì–´ì˜µë‹ˆë‹¤."""
     api_keys_dir = Path(__file__).parent.parent / "api_keys"
     key_file = api_keys_dir / f"{key_name}.txt"
     
     if key_file.exists():
         with open(key_file, 'r', encoding='utf-8') as f:
-            # Ã¹ ¹øÂ° ÁÙ¸¸ ÀĞ±â (ÁÖ¼® Á¦¿Ü)
+            # ì²« ë²ˆì§¸ ì¤„ë§Œ ì½ê¸° (ì£¼ì„ ì œì™¸)
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#'):
                     return line
     
-    # È¯°æ º¯¼ö¿¡¼­µµ ½Ãµµ
+    # í™˜ê²½ ë³€ìˆ˜ì—ì„œë„ ì‹œë„
     return os.environ.get(key_name, "")
 
-# »ç¿ë ¿¹½Ã
+# ì‚¬ìš© ì˜ˆì‹œ
 gemini_key = load_api_key("GEMINI_API_KEY")
 google_key = load_api_key("GOOGLE_API_KEY")
 ```
 
-### 4. È¯°æ º¯¼ö·Î ¼³Á¤ (¼±ÅÃ»çÇ×)
+### 4. í™˜ê²½ ë³€ìˆ˜ë¡œ ì„¤ì • (ì„ íƒì‚¬í•­)
 
-¶Ç´Â È¯°æ º¯¼ö·Î ¼³Á¤ÇÒ ¼öµµ ÀÖ½À´Ï´Ù:
+ë˜ëŠ” í™˜ê²½ ë³€ìˆ˜ë¡œ ì„¤ì •í•  ìˆ˜ë„ ìˆìŠµë‹ˆë‹¤:
 
 **Windows (PowerShell)**:
 ```powershell
@@ -76,71 +76,71 @@ set /p GOOGLE_API_KEY=<api_keys\GOOGLE_API_KEY.txt
 export GOOGLE_API_KEY=$(cat api_keys/GOOGLE_API_KEY.txt)
 ```
 
-## ? ÇöÀç ÇÊ¿äÇÑ API Å° ¸ñ·Ï
+## ? í˜„ì¬ í•„ìš”í•œ API í‚¤ ëª©ë¡
 
-### ÇÊ¼ö Å°
+### í•„ìˆ˜ í‚¤
 
-- [ ] `GEMINI_API_KEY.txt` - Gemini AI »ç¿ë
-- [ ] `GOOGLE_API_KEY.txt` - Google API »ç¿ë (Gemini Self-Healing)
+- [ ] `GEMINI_API_KEY.txt` - Gemini AI ì‚¬ìš©
+- [ ] `GOOGLE_API_KEY.txt` - Google API ì‚¬ìš© (Gemini Self-Healing)
 
-### ¼±ÅÃÀû Å°
+### ì„ íƒì  í‚¤
 
-- [ ] `GCP_PROJECT_ID.txt` - Google Cloud Platform »ç¿ë ½Ã
-- [ ] `GCP_CREDENTIALS.json` - Vertex AI »ç¿ë ½Ã
+- [ ] `GCP_PROJECT_ID.txt` - Google Cloud Platform ì‚¬ìš© ì‹œ
+- [ ] `GCP_CREDENTIALS.json` - Vertex AI ì‚¬ìš© ì‹œ
 
-## ? º¸¾È ÁÖÀÇ»çÇ×
+## ? ë³´ì•ˆ ì£¼ì˜ì‚¬í•­
 
-1. **Àı´ë Git¿¡ Ä¿¹ÔÇÏÁö ¸¶¼¼¿ä!**
-   - `.gitignore`¿¡ `api_keys/` Æú´õ°¡ ÀÌ¹Ì Ãß°¡µÇ¾î ÀÖ½À´Ï´Ù
-   - ½Ç¼ö·Î Ä¿¹ÔÇß´Ù¸é Áï½Ã Å°¸¦ Àç»ı¼ºÇÏ¼¼¿ä
+1. **ì ˆëŒ€ Gitì— ì»¤ë°‹í•˜ì§€ ë§ˆì„¸ìš”!**
+   - `.gitignore`ì— `api_keys/` í´ë”ê°€ ì´ë¯¸ ì¶”ê°€ë˜ì–´ ìˆìŠµë‹ˆë‹¤
+   - ì‹¤ìˆ˜ë¡œ ì»¤ë°‹í–ˆë‹¤ë©´ ì¦‰ì‹œ í‚¤ë¥¼ ì¬ìƒì„±í•˜ì„¸ìš”
 
-2. **ÆÄÀÏ ±ÇÇÑ ¼³Á¤** (Linux/Mac):
+2. **íŒŒì¼ ê¶Œí•œ ì„¤ì •** (Linux/Mac):
    ```bash
    chmod 600 api_keys/*.txt
    ```
 
-3. **¹é¾÷ ½Ã ÁÖÀÇ**:
-   - API Å° ÆÄÀÏÀº ¾ÏÈ£È­µÈ ¹é¾÷¿¡¸¸ Æ÷ÇÔÇÏ¼¼¿ä
-   - Å¬¶ó¿ìµå ¹é¾÷ ½Ã ¾ÏÈ£È­ È®ÀÎ
+3. **ë°±ì—… ì‹œ ì£¼ì˜**:
+   - API í‚¤ íŒŒì¼ì€ ì•”í˜¸í™”ëœ ë°±ì—…ì—ë§Œ í¬í•¨í•˜ì„¸ìš”
+   - í´ë¼ìš°ë“œ ë°±ì—… ì‹œ ì•”í˜¸í™” í™•ì¸
 
-4. **Å° °øÀ¯ ±İÁö**:
-   - API Å°´Â °³ÀÎ¿ëÀ¸·Î¸¸ »ç¿ëÇÏ¼¼¿ä
-   - ÆÀ °øÀ¯°¡ ÇÊ¿äÇÏ¸é È¯°æ º¯¼ö³ª º¸¾È ÀúÀå¼Ò »ç¿ë
+4. **í‚¤ ê³µìœ  ê¸ˆì§€**:
+   - API í‚¤ëŠ” ê°œì¸ìš©ìœ¼ë¡œë§Œ ì‚¬ìš©í•˜ì„¸ìš”
+   - íŒ€ ê³µìœ ê°€ í•„ìš”í•˜ë©´ í™˜ê²½ ë³€ìˆ˜ë‚˜ ë³´ì•ˆ ì €ì¥ì†Œ ì‚¬ìš©
 
-## ? API Å° ¹ß±Ş ¸µÅ©
+## ? API í‚¤ ë°œê¸‰ ë§í¬
 
 - **Gemini API**: https://makersuite.google.com/app/apikey
 - **Google Cloud**: https://console.cloud.google.com/apis/credentials
 - **Vertex AI**: https://console.cloud.google.com/vertex-ai
 
-## ? È®ÀÎ ¹æ¹ı
+## ? í™•ì¸ ë°©ë²•
 
-Git¿¡ ¿Ã¶ó°¡Áö ¾Ê¾Ò´ÂÁö È®ÀÎ:
+Gitì— ì˜¬ë¼ê°€ì§€ ì•Šì•˜ëŠ”ì§€ í™•ì¸:
 
 ```bash
 git status
-# api_keys/ Æú´õ°¡ ³ªÅ¸³ªÁö ¾Ê¾Æ¾ß ÇÕ´Ï´Ù
+# api_keys/ í´ë”ê°€ ë‚˜íƒ€ë‚˜ì§€ ì•Šì•„ì•¼ í•©ë‹ˆë‹¤
 ```
 
-## ? ¹®Á¦ ÇØ°á
+## ? ë¬¸ì œ í•´ê²°
 
-### Å°°¡ ÀÛµ¿ÇÏÁö ¾ÊÀ» ¶§
+### í‚¤ê°€ ì‘ë™í•˜ì§€ ì•Šì„ ë•Œ
 
-1. ÆÄÀÏ ÀÎÄÚµù È®ÀÎ (UTF-8)
-2. °ø¹é/ÁÙ¹Ù²Ş Á¦°Å È®ÀÎ
-3. Å°°¡ ¸¸·áµÇÁö ¾Ê¾Ò´ÂÁö È®ÀÎ
-4. È¯°æ º¯¼ö ¼³Á¤ È®ÀÎ
+1. íŒŒì¼ ì¸ì½”ë”© í™•ì¸ (UTF-8)
+2. ê³µë°±/ì¤„ë°”ê¿ˆ ì œê±° í™•ì¸
+3. í‚¤ê°€ ë§Œë£Œë˜ì§€ ì•Šì•˜ëŠ”ì§€ í™•ì¸
+4. í™˜ê²½ ë³€ìˆ˜ ì„¤ì • í™•ì¸
 
-### Git¿¡ ½Ç¼ö·Î Ä¿¹ÔÇßÀ» ¶§
+### Gitì— ì‹¤ìˆ˜ë¡œ ì»¤ë°‹í–ˆì„ ë•Œ
 
-1. Áï½Ã Å° Àç»ı¼º
-2. Git È÷½ºÅä¸®¿¡¼­ Á¦°Å:
+1. ì¦‰ì‹œ í‚¤ ì¬ìƒì„±
+2. Git íˆìŠ¤í† ë¦¬ì—ì„œ ì œê±°:
    ```bash
    git rm --cached api_keys/*
    git commit -m "Remove API keys from tracking"
    ```
-3. `.gitignore` È®ÀÎ
+3. `.gitignore` í™•ì¸
 
 ---
 
-**¸¶Áö¸· ¾÷µ¥ÀÌÆ®**: 2026-01-14
+**ë§ˆì§€ë§‰ ì—…ë°ì´íŠ¸**: 2026-01-14
