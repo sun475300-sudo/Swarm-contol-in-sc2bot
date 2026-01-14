@@ -248,9 +248,10 @@ class ReplayBuildOrderExtractor:
             
             for event in all_events_to_check:
                 try:
-                    # Check if this is a UnitBornEvent for Zerg player
+                    # Check if this is a UnitBornEvent or UnitInitEvent for Zerg player
                     is_zerg_event = False
-                    if hasattr(event, '__class__') and 'UnitBorn' in str(event.__class__):
+                    event_class_str = str(event.__class__)
+                    if 'UnitBorn' in event_class_str or 'UnitInit' in event_class_str:
                         if zerg_pid is not None and hasattr(event, 'control_pid'):
                             is_zerg_event = event.control_pid == zerg_pid
                         elif hasattr(event, 'player') and event.player == zerg_player:
@@ -269,10 +270,14 @@ class ReplayBuildOrderExtractor:
                             # CRITICAL: Only process buildings (skip units like BeaconArmy, etc.)
                             if hasattr(unit, 'is_building'):
                                 is_building = unit.is_building
-                            elif hasattr(unit, 'name'):
+                            elif hasattr(unit, 'name') and unit_name:
                                 # Fallback: check if name suggests it's a building
                                 building_keywords = ['Hatchery', 'Pool', 'Warren', 'Den', 'Extractor', 'Lair', 'Hive', 'Crawler', 'Spire', 'Nydus', 'Infestation']
                                 is_building = any(kw in unit_name for kw in building_keywords)
+                            # CRITICAL: For Extractor, also check if it's in our mapping (UnitInitEvent may not have is_building)
+                            if not is_building and unit_name and unit_name in unit_to_parameter:
+                                # If it's in our mapping, it's definitely a building we care about
+                                is_building = True
                         elif hasattr(event, 'unit_type_name'):
                             unit_name = event.unit_type_name
                             # Assume it's a building if it's in our mapping
