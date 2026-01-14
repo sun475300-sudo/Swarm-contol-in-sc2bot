@@ -129,8 +129,8 @@ class TrainingFragment : Fragment() {
         
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val episode = episodes[position]
-            holder.text1.text = "Episode ${episode.episode}"
-            holder.text2.text = "Reward: ${String.format("%.2f", episode.reward)}, Win Rate: ${String.format("%.1f", episode.winRate * 100)}%"
+            holder.text1.text = "Episode ${episode.episode_number}"
+            holder.text2.text = "Reward: ${String.format("%.2f", episode.reward)}, Result: ${episode.result}, Duration: ${episode.duration_seconds}s"
         }
         
         override fun getItemCount() = episodes.size
