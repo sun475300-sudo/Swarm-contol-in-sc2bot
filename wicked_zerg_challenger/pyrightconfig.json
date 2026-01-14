@@ -1,0 +1,25 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.git",
+    "AI_Arena_Deploy",
+    "aiarena_submission",
+    "backups/**"
+  ],
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "reportPrivateUsage": false,
+  "reportOptionalMemberAccess": false,
+  "reportOptionalSubscript": false,
+  "reportAttributeAccessIssue": false,
+  "reportOptionalCall": false,
+  "reportOptionalOperand": false,
+  "reportUnboundVariable": false,
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "off"
+}
+

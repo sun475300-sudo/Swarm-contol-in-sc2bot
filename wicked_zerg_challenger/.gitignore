@@ -1,0 +1,151 @@
+# ===================================
+# Wicked Zerg Challenger - Git Ignore
+# ===================================
+
+# Python
+# -------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+# -------------------
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & Editors
+# --------------
+.vscode/
+.idea/
+.cursor/
+.cursorignore
+.cursorrules
+*.swp
+*.swo
+*~
+.ruff_cache/
+
+# OS Files
+# --------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & Monitoring
+# -----------------
+*.log
+logs/
+monitor_log.txt
+dashboard.log
+self_healing_logs/
+training_debug.log
+game_log.txt
+log.txt
+
+# Models & Checkpoints
+# --------------------
+models/
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.pb
+*.onnx
+*.tflite
+
+# Replays & Game Data
+# --------------------
+*.SC2Replay
+replays/
+
+# Stats & Telemetry
+# -----------------
+stats/
+telemetry_*.csv
+telemetry_*.json
+training_stats.json
+bug_report.json
+structures_state.json
+metrics_session_*.json
+performance_report.txt
+performance_summary.json
+map_performance.json
+evolution_report.json
+evolve_v1_report.json
+self_reflection_report.json
+kpi_data.csv
+
+# Build Artifacts
+# ---------------
+*.zip
+dist/
+build/
+*.egg-info/
+build_output.log
+app/.gradle/
+app/build/
+mobile_app/.gradle/
+mobile_app/build/
+mobile_app/app/build/
+.gradle/
+*.keystore
+keystore.properties
+mobile_app/keystore.properties
+mobile_app/signing/**
+!android.keystore
+
+# Temporary Files
+# ---------------
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# Data Files (Runtime)
+# --------------------
+data/
+!data/.gitkeep
+
+# Debug Files
+# -----------
+debug_report_*.png
+*.png
+*.jpg
+*.jpeg
+
+# Backups
+# -------
+backups/
+backup_cleaned_*/
+old_backup/
+
+# Project Specific
+# ----------------
+wicked_zerg_challenger/
+
+# Credentials & Secrets
+# ---------------------
+*.json
+!pyrightconfig.json
+!requirements.json
+gcp-key.json
+*-key.json
+.env
+secrets/
+*.key
+*.pem
+
+# Auto-generated HTML
+# -------------------
+dashboard.html
+

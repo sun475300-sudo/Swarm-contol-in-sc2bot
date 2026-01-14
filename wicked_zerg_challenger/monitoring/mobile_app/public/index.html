@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wicked Zerg Monitor</title>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 20px;
+        }
+        h1 { border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
+        .card { 
+            border: 1px solid #00ff00; 
+            padding: 15px; 
+            margin: 15px 0;
+            background: #16213e;
+            border-radius: 5px;
+        }
+        .stat { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wicked Zerg Monitor</h1>
+    <div class="card">
+        <h3>System Status</h3>
+        <div class="stat">
+            <span>Server:</span>
+            <span id="status">ONLINE</span>
+        </div>
+        <div class="stat">
+            <span>Time:</span>
+            <span id="time">--:--:--</span>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Live Log</h3>
+        <div id="logs">
+            <p>Dashboard loaded</p>
+        </div>
+    </div>
+    <script>
+        setInterval(() => {
+            document.getElementById('time').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+</html>

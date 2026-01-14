@@ -1,0 +1,3 @@
+﻿This is a placeholder for icon-192.png (192x192 pixels)
+Replace this file with an actual PNG image showing the SC2 Zerg logo or bot icon.
+Recommended: Purple/pink color scheme matching the dashboard theme.

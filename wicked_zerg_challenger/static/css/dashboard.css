@@ -1,0 +1,604 @@
+/* Wicked Zerg AI Dashboard Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+    color: #e0e0e0;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Navbar */
+.navbar {
+    background: rgba(15, 52, 96, 0.95);
+    border-bottom: 2px solid #00d4ff;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+.navbar-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-status {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #00ff88;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+.time {
+    color: #00d4ff;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #00d4ff;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    color: #00d4ff;
+}
+
+.refresh-indicator {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+
+/* Cards */
+.card {
+    background: rgba(22, 33, 62, 0.8);
+    border: 2px solid #00d4ff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    border-color: #00ff88;
+    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.15);
+    transform: translateY(-2px);
+}
+
+.card h3 {
+    color: #00d4ff;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+/* Game Monitoring */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-item .label {
+    color: #888;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.stat-item .value {
+    color: #00ff88;
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.stat-item .value.threat {
+    color: #ff6b6b;
+}
+
+/* Resources */
+.resource-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.resource-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.resource-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.resource-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid #00d4ff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    transition: width 0.3s ease;
+}
+
+.resource-item .value {
+    color: #00ff88;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* Units */
+.unit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.unit-card {
+    background: rgba(0, 212, 255, 0.05);
+    border: 2px solid #00d4ff;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.unit-card:hover {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: #00ff88;
+}
+
+.unit-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.unit-name {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.unit-count {
+    color: #00ff88;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Combat Analysis */
+.stat-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+}
+
+.big-number {
+    font-size: 2rem;
+    color: #00ff88;
+    font-weight: bold;
+}
+
+.small-number {
+    font-size: 1.5rem;
+    color: #00d4ff;
+    font-weight: bold;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.kpi-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+}
+
+.kpi-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.kpi-value {
+    color: #00ff88;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Controls */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.control-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: #e0e0e0;
+}
+
+.control-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #00ff88;
+}
+
+.control-select {
+    padding: 0.8rem;
+    background: rgba(15, 52, 96, 0.5);
+    border: 2px solid #00d4ff;
+    border-radius: 5px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.control-select:hover {
+    border-color: #00ff88;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+.control-select:focus {
+    outline: none;
+    border-color: #00ff88;
+}
+
+/* Buttons */
+.control-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    padding: 1rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #00ff88, #00cc6f);
+    color: #000;
+}
+
+.btn-success:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ffbb00, #ff9900);
+    color: #000;
+}
+
+.btn-warning:hover {
+    box-shadow: 0 0 20px rgba(255, 187, 0, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff6b6b, #ff4444);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    color: #000;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    background: rgba(0, 212, 255, 0.2);
+    border: 1px solid #00d4ff;
+    border-radius: 3px;
+    color: #00d4ff;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+    background: #00d4ff;
+    color: #000;
+}
+
+/* Progress */
+.progress-container {
+    padding: 1rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.progress-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.progress-value {
+    color: #00d4ff;
+    font-weight: bold;
+}
+
+.progress-bar-large {
+    width: 100%;
+    height: 25px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 2px solid #00d4ff;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    transition: width 0.5s ease;
+}
+
+.progress-percent {
+    text-align: right;
+    color: #00ff88;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.performance-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.perf-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+}
+
+.perf-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.perf-value {
+    color: #00ff88;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Logs */
+.log-container {
+    background: rgba(15, 52, 96, 0.5);
+    border: 1px solid #00d4ff;
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.log-entry {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+    font-size: 0.9rem;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    color: #00d4ff;
+    font-weight: bold;
+    min-width: 80px;
+    font-family: 'Courier New', monospace;
+}
+
+.log-text {
+    color: #e0e0e0;
+}
+
+/* Footer */
+.footer {
+    background: rgba(15, 52, 96, 0.95);
+    border-top: 2px solid #00d4ff;
+    padding: 2rem;
+    text-align: center;
+    color: #888;
+    margin-top: 3rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .unit-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-container {
+        grid-template-columns: 1fr;
+    }
+
+    .control-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .performance-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .logo {
+        font-size: 1.3rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 212, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #00d4ff;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #00ff88;
+}
+
+/* Dynamic Bar Widths (set by JavaScript) */
+#mineral-bar,
+#vespene-bar,
+#episode-bar {
+    width: 0%;
+    transition: width 0.3s ease;
+}
