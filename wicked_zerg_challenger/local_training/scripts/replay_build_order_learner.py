@@ -14,7 +14,7 @@ if str(script_dir) not in sys.path:
     sys.path.insert(0, str(script_dir))
 
 try:
-    import sc2reader  # type: ignore[import-untyped]
+    import sc2reader  # type: ignore[import-untyped]  # pyright: ignore[reportMissingImports]  # pylance: ignore
     SC2READER_AVAILABLE = True
 except ImportError:
     SC2READER_AVAILABLE = False
