@@ -438,7 +438,7 @@ def display_dashboard(processes):
 
         gpu_temp = get_gpu_temperature()
 
-        temp_str = f" | GPU Temp: {int(gpu_temp)}б║ц├C" if gpu_temp else ""
+        temp_str = f" | GPU Temp: {int(gpu_temp)}ц┌б║ц┐б├C" if gpu_temp else ""
 
         total_line = (
             f"TOTAL STATS: {total_wins}W / {total_losses}L (Win Rate: {win_rate:.1f}%){temp_str}"
@@ -536,7 +536,7 @@ def start_parallel_training():
     """
 
     # ============================================================================
-    # 0. AUTO-START MONITORING (╥ндц + ©Ь╟щ)
+    # 0. AUTO-START MONITORING (б╥ц▌ц└ц┐ + б©ц╦б╟ц²)
     # ============================================================================
     print("\n" + "="*70)
     print("? Starting monitoring systems...")

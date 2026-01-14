@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-ÀÌº´·Ä(Rogue) ¼±¼ö Àü¼ú ±¸Çö ¸Å´ÏÀú
+Ã€ÃŒÂºÂ´Â·Ã„(Rogue) Â¼Â±Â¼Ã¶ Ã€Ã¼Â¼Ãº Â±Â¸Ã‡Ã¶ Â¸Ã…Â´ÃÃ€Ãº
 
-ÇÙ½É Àü¼ú:
-1. ¸Íµ¶Ãæ µå¶ø (Baneling Drop): Àû º´·ÂÀÌ ÀüÁøÇÏ´Â Å¸ÀÌ¹Ö¿¡ µå¶ø
-2. ½Ã¾ß ¹Û ¿ìÈ¸ ±âµ¿: ÀûÀÇ ½Ã¾ß ¹üÀ§¸¦ ÇÇÇØ µå¶ø ÁöÁ¡±îÁö ÀÌµ¿
-3. ¶ó¹Ù ¼¼ÀÌºù: ±³Àü Á÷Àü ¶ó¹Ù¸¦ ¸ğ¾ÆµÎ¾ú´Ù°¡ µå¶ø ÈÄ Æø¹ßÀû »ı»ê
-4. ÈÄ¹İ ¿î¿µ: Á¡¸· °¨Áö ±â¹İ ÀÇ»ç°áÁ¤
+Ã‡Ã™Â½Ã‰ Ã€Ã¼Â¼Ãº:
+1. Â¸ÃÂµÂ¶ÃƒÃ¦ ÂµÃ¥Â¶Ã¸ (Baneling Drop): Ã€Ã» ÂºÂ´Â·Ã‚Ã€ÃŒ Ã€Ã¼ÃÃ¸Ã‡ÃÂ´Ã‚ Ã…Â¸Ã€ÃŒÂ¹Ã–Â¿Â¡ ÂµÃ¥Â¶Ã¸
+2. Â½ÃƒÂ¾ÃŸ Â¹Ã› Â¿Ã¬ÃˆÂ¸ Â±Ã¢ÂµÂ¿: Ã€Ã»Ã€Ã‡ Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§Â¸Â¦ Ã‡Ã‡Ã‡Ã˜ ÂµÃ¥Â¶Ã¸ ÃÃ¶ÃÂ¡Â±Ã®ÃÃ¶ Ã€ÃŒÂµÂ¿
+3. Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹: Â±Â³Ã€Ã¼ ÃÃ·Ã€Ã¼ Â¶Ã³Â¹Ã™Â¸Â¦ Â¸Ã°Â¾Ã†ÂµÃÂ¾ÃºÂ´Ã™Â°Â¡ ÂµÃ¥Â¶Ã¸ ÃˆÃ„ Ã†Ã¸Â¹ÃŸÃ€Ã» Â»Ã½Â»Ãª
+4. ÃˆÃ„Â¹Ã Â¿Ã®Â¿Âµ: ÃÂ¡Â¸Â· Â°Â¨ÃÃ¶ Â±Ã¢Â¹Ã Ã€Ã‡Â»Ã§Â°Ã¡ÃÂ¤
 """
 
 from typing import TYPE_CHECKING, List, Optional, Tuple
@@ -23,65 +23,65 @@ from sc2.unit import Unit  # type: ignore
 
 class RogueTacticsManager:
     """
-    ÀÌº´·Ä(Rogue) ¼±¼ö Àü¼ú ±¸Çö ¸Å´ÏÀú
+    Ã€ÃŒÂºÂ´Â·Ã„(Rogue) Â¼Â±Â¼Ã¶ Ã€Ã¼Â¼Ãº Â±Â¸Ã‡Ã¶ Â¸Ã…Â´ÃÃ€Ãº
     
-    ÁÖ¿ä ±â´É:
-    - ¸Íµ¶Ãæ µå¶ø Å¸ÀÌ¹Ö °¨Áö ¹× ½ÇÇà
-    - ½Ã¾ß ¹Û ¿ìÈ¸ ±âµ¿ °æ·Î Å½»ö
-    - ¶ó¹Ù ¼¼ÀÌºù ÆĞÅÏ °ü¸®
-    - Á¡¸· ±â¹İ Àû º´·Â °¨Áö
+    ÃÃ–Â¿Ã¤ Â±Ã¢Â´Ã‰:
+    - Â¸ÃÂµÂ¶ÃƒÃ¦ ÂµÃ¥Â¶Ã¸ Ã…Â¸Ã€ÃŒÂ¹Ã– Â°Â¨ÃÃ¶ Â¹Ã— Â½Ã‡Ã‡Ã 
+    - Â½ÃƒÂ¾ÃŸ Â¹Ã› Â¿Ã¬ÃˆÂ¸ Â±Ã¢ÂµÂ¿ Â°Ã¦Â·Ã Ã…Â½Â»Ã¶
+    - Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Ã†ÃÃ…Ã Â°Ã¼Â¸Â®
+    - ÃÂ¡Â¸Â· Â±Ã¢Â¹Ã Ã€Ã» ÂºÂ´Â·Ã‚ Â°Â¨ÃÃ¶
     """
 
     def __init__(self, bot: "WickedZergBotPro"):
         self.bot = bot
         
-        # µå¶ø »óÅÂ
-        self.drop_squad: List[Unit] = []  # µå¶ø¿ë ´ë±ºÁÖ + ¸Íµ¶Ãæ
+        # ÂµÃ¥Â¶Ã¸ Â»Ã³Ã…Ã‚
+        self.drop_squad: List[Unit] = []  # ÂµÃ¥Â¶Ã¸Â¿Ã« Â´Ã«Â±ÂºÃÃ– + Â¸ÃÂµÂ¶ÃƒÃ¦
         self.drop_target: Optional[Point2] = None
         self.drop_in_progress: bool = False
         self.last_drop_time: float = 0.0
-        self.drop_cooldown: float = 30.0  # µå¶ø Äğ´Ù¿î (30ÃÊ)
+        self.drop_cooldown: float = 30.0  # ÂµÃ¥Â¶Ã¸ Ã„Ã°Â´Ã™Â¿Ã® (30ÃƒÃŠ)
         
-        # ¶ó¹Ù ¼¼ÀÌºù »óÅÂ
+        # Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â»Ã³Ã…Ã‚
         self.larva_saving_mode: bool = False
         self.saved_larva_count: int = 0
         self.larva_save_start_time: float = 0.0
-        self.larva_save_duration: float = 10.0  # ¶ó¹Ù ¼¼ÀÌºù Áö¼Ó ½Ã°£ (10ÃÊ)
+        self.larva_save_duration: float = 10.0  # Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ ÃÃ¶Â¼Ã“ Â½ÃƒÂ°Â£ (10ÃƒÃŠ)
         
-        # Àû º´·Â °¨Áö (Á¡¸· ±â¹İ)
+        # Ã€Ã» ÂºÂ´Â·Ã‚ Â°Â¨ÃÃ¶ (ÃÂ¡Â¸Â· Â±Ã¢Â¹Ã)
         self.enemy_on_creep: bool = False
         self.enemy_advancing: bool = False
         self.last_enemy_on_creep_time: float = 0.0
         
-        # ´ë±ºÁÖ ¼Ó¾÷ »óÅÂ
+        # Â´Ã«Â±ÂºÃÃ– Â¼Ã“Â¾Ã· Â»Ã³Ã…Ã‚
         self.overlord_speed_researched: bool = False
         self.overlord_speed_research_time: float = 0.0
         
-        # ½Ã¾ß ¹üÀ§ °è»ê¿ë
-        self.vision_range: float = 11.0  # ´ë±ºÁÖ ½Ã¾ß ¹üÀ§
-        self.enemy_vision_range: float = 9.0  # Àû À¯´Ö Æò±Õ ½Ã¾ß ¹üÀ§
+        # Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§ Â°Ã¨Â»ÃªÂ¿Ã«
+        self.vision_range: float = 11.0  # Â´Ã«Â±ÂºÃÃ– Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§
+        self.enemy_vision_range: float = 9.0  # Ã€Ã» Ã€Â¯Â´Ã– Ã†Ã²Â±Ã• Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§
 
     async def update(self):
-        """¸Å ÇÁ·¹ÀÓ ¾÷µ¥ÀÌÆ®"""
+        """Â¸Ã… Ã‡ÃÂ·Â¹Ã€Ã“ Â¾Ã·ÂµÂ¥Ã€ÃŒÃ†Â®"""
         b = self.bot
         
-        # ´ë±ºÁÖ ¼Ó¾÷ »óÅÂ È®ÀÎ
+        # Â´Ã«Â±ÂºÃÃ– Â¼Ã“Â¾Ã· Â»Ã³Ã…Ã‚ ÃˆÂ®Ã€Ã
         self._check_overlord_speed_upgrade()
         
-        # Àû º´·ÂÀÌ Á¡¸·¿¡ ´ê¾Ò´ÂÁö °¨Áö
+        # Ã€Ã» ÂºÂ´Â·Ã‚Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Â´ÃªÂ¾Ã’Â´Ã‚ÃÃ¶ Â°Â¨ÃÃ¶
         self._detect_enemy_on_creep()
         
-        # µå¶ø ½ÇÇà
+        # ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã‡Ã 
         await self._execute_baneling_drop()
         
-        # ¶ó¹Ù ¼¼ÀÌºù °ü¸®
+        # Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â°Ã¼Â¸Â®
         await self._manage_larva_saving()
         
-        # µå¶ø À¯´Ö °ü¸®
+        # ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– Â°Ã¼Â¸Â®
         await self._manage_drop_units()
 
     def _check_overlord_speed_upgrade(self):
-        """´ë±ºÁÖ ¼Ó¾÷ »óÅÂ È®ÀÎ"""
+        """Â´Ã«Â±ÂºÃÃ– Â¼Ã“Â¾Ã· Â»Ã³Ã…Ã‚ ÃˆÂ®Ã€Ã"""
         b = self.bot
         
         if UpgradeId.OVERLORDSPEED in b.state.upgrades:
@@ -94,13 +94,13 @@ class RogueTacticsManager:
 
     def _detect_enemy_on_creep(self):
         """
-        Àû º´·ÂÀÌ Á¡¸·¿¡ ´ê¾Ò´ÂÁö °¨Áö
+        Ã€Ã» ÂºÂ´Â·Ã‚Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Â´ÃªÂ¾Ã’Â´Ã‚ÃÃ¶ Â°Â¨ÃÃ¶
         
-        Rogue Àü¼ú: Àû º´·ÂÀÌ ³» ±âÁö ¾Õ¸¶´ç Á¡¸· ³¡¿¡ µµ´ŞÇßÀ» ¶§ µå¶ø À¯´Ö Ãâ¹ß
+        Rogue Ã€Ã¼Â¼Ãº: Ã€Ã» ÂºÂ´Â·Ã‚Ã€ÃŒ Â³Â» Â±Ã¢ÃÃ¶ Â¾Ã•Â¸Â¶Â´Ã§ ÃÂ¡Â¸Â· Â³Â¡Â¿Â¡ ÂµÂµÂ´ÃÃ‡ÃŸÃ€Â» Â¶Â§ ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– ÃƒÃ¢Â¹ÃŸ
         """
         b = self.bot
         
-        # Á¡¸·ÀÌ ÀÖ´Â Áö¿ª È®ÀÎ
+        # ÃÂ¡Â¸Â·Ã€ÃŒ Ã€Ã–Â´Ã‚ ÃÃ¶Â¿Âª ÃˆÂ®Ã€Ã
         if not b.townhalls.exists:
             self.enemy_on_creep = False
             self.enemy_advancing = False
@@ -110,7 +110,7 @@ class RogueTacticsManager:
         if not main_hatch:
             return
         
-        # Á¡¸· ¹İ°æ ³» Àû À¯´Ö È®ÀÎ (Á¡¸·Àº ´ë·« 15-20 À¯´Ö ¹İ°æ)
+        # ÃÂ¡Â¸Â· Â¹ÃÂ°Ã¦ Â³Â» Ã€Ã» Ã€Â¯Â´Ã– ÃˆÂ®Ã€Ã (ÃÂ¡Â¸Â·Ã€Âº Â´Ã«Â·Â« 15-20 Ã€Â¯Â´Ã– Â¹ÃÂ°Ã¦)
         creep_radius = 20.0
         enemy_units = b.enemy_units.closer_than(creep_radius, main_hatch.position)
         
@@ -118,115 +118,115 @@ class RogueTacticsManager:
             self.enemy_on_creep = True
             self.last_enemy_on_creep_time = b.time
             
-            # ÀûÀÌ ÀüÁø ÁßÀÎÁö È®ÀÎ (ÀÌÀü ÇÁ·¹ÀÓ ´ëºñ À§Ä¡ º¯È­)
+            # Ã€Ã»Ã€ÃŒ Ã€Ã¼ÃÃ¸ ÃÃŸÃ€ÃÃÃ¶ ÃˆÂ®Ã€Ã (Ã€ÃŒÃ€Ã¼ Ã‡ÃÂ·Â¹Ã€Ã“ Â´Ã«ÂºÃ± Ã€Â§Ã„Â¡ ÂºÂ¯ÃˆÂ­)
             if hasattr(self, "_last_enemy_positions"):
                 advancing_count = 0
                 for enemy in enemy_units:
                     if enemy.tag in self._last_enemy_positions:
                         last_pos = self._last_enemy_positions[enemy.tag]
                         current_pos = enemy.position
-                        # ÀûÀÌ ¿ì¸® ±âÁö ¹æÇâÀ¸·Î ÀÌµ¿ ÁßÀÎÁö È®ÀÎ
+                        # Ã€Ã»Ã€ÃŒ Â¿Ã¬Â¸Â® Â±Ã¢ÃÃ¶ Â¹Ã¦Ã‡Ã¢Ã€Â¸Â·Ã Ã€ÃŒÂµÂ¿ ÃÃŸÃ€ÃÃÃ¶ ÃˆÂ®Ã€Ã
                         to_base = main_hatch.position - last_pos
                         movement = current_pos - last_pos
-                        if to_base.dot(movement) > 0:  # ³»ÀûÀÌ ¾ç¼ö¸é °°Àº ¹æÇâ
+                        if to_base.dot(movement) > 0:  # Â³Â»Ã€Ã»Ã€ÃŒ Â¾Ã§Â¼Ã¶Â¸Ã© Â°Â°Ã€Âº Â¹Ã¦Ã‡Ã¢
                             advancing_count += 1
                 
-                self.enemy_advancing = advancing_count >= 3  # 3±â ÀÌ»ó ÀüÁø Áß
+                self.enemy_advancing = advancing_count >= 3  # 3Â±Ã¢ Ã€ÃŒÂ»Ã³ Ã€Ã¼ÃÃ¸ ÃÃŸ
             else:
                 self.enemy_advancing = True
             
-            # Àû À§Ä¡ ÀúÀå
+            # Ã€Ã» Ã€Â§Ã„Â¡ Ã€ÃºÃ€Ã¥
             self._last_enemy_positions = {enemy.tag: enemy.position for enemy in enemy_units}
         else:
             self.enemy_on_creep = False
-            # 5ÃÊ ÀÌ»ó ÀûÀÌ Á¡¸·¿¡ ¾øÀ¸¸é ÀüÁø »óÅÂ ÇØÁ¦
+            # 5ÃƒÃŠ Ã€ÃŒÂ»Ã³ Ã€Ã»Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Â¾Ã¸Ã€Â¸Â¸Ã© Ã€Ã¼ÃÃ¸ Â»Ã³Ã…Ã‚ Ã‡Ã˜ÃÂ¦
             if b.time - self.last_enemy_on_creep_time > 5.0:
                 self.enemy_advancing = False
 
     async def _execute_baneling_drop(self):
         """
-        ¸Íµ¶Ãæ µå¶ø ½ÇÇà
+        Â¸ÃÂµÂ¶ÃƒÃ¦ ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã‡Ã 
         
-        Rogue Àü¼ú:
-        1. Àû º´·ÂÀÌ ÀüÁøÇÏ´Â Å¸ÀÌ¹Ö °¨Áö
-        2. ´ë±ºÁÖ ¼Ó¾÷ ¿Ï·á È®ÀÎ
-        3. ¸Íµ¶Ãæ ÁØºñ È®ÀÎ
-        4. ½Ã¾ß ¹Û ¿ìÈ¸ ±âµ¿À¸·Î µå¶ø ÁöÁ¡ ÀÌµ¿
-        5. Àû º»Áø/È®Àå ±âÁö¿¡ µå¶ø
+        Rogue Ã€Ã¼Â¼Ãº:
+        1. Ã€Ã» ÂºÂ´Â·Ã‚Ã€ÃŒ Ã€Ã¼ÃÃ¸Ã‡ÃÂ´Ã‚ Ã…Â¸Ã€ÃŒÂ¹Ã– Â°Â¨ÃÃ¶
+        2. Â´Ã«Â±ÂºÃÃ– Â¼Ã“Â¾Ã· Â¿ÃÂ·Ã¡ ÃˆÂ®Ã€Ã
+        3. Â¸ÃÂµÂ¶ÃƒÃ¦ ÃÃ˜ÂºÃ± ÃˆÂ®Ã€Ã
+        4. Â½ÃƒÂ¾ÃŸ Â¹Ã› Â¿Ã¬ÃˆÂ¸ Â±Ã¢ÂµÂ¿Ã€Â¸Â·Ã ÂµÃ¥Â¶Ã¸ ÃÃ¶ÃÂ¡ Ã€ÃŒÂµÂ¿
+        5. Ã€Ã» ÂºÂ»ÃÃ¸/ÃˆÂ®Ã€Ã¥ Â±Ã¢ÃÃ¶Â¿Â¡ ÂµÃ¥Â¶Ã¸
         
-        ÁÖÀÇ: µå¶ø ÁøÇà ÁßÀÌ¸é °è¼Ó ½ÇÇà, ¾Æ´Ï¸é »õ µå¶ø ½ÃÀÛ
+        ÃÃ–Ã€Ã‡: ÂµÃ¥Â¶Ã¸ ÃÃ¸Ã‡Ã  ÃÃŸÃ€ÃŒÂ¸Ã© Â°Ã¨Â¼Ã“ Â½Ã‡Ã‡Ã , Â¾Ã†Â´ÃÂ¸Ã© Â»Ãµ ÂµÃ¥Â¶Ã¸ Â½ÃƒÃ€Ã›
         """
         b = self.bot
         
-        # µå¶ø ÁøÇà ÁßÀÌ¸é °è¼Ó ½ÇÇà
+        # ÂµÃ¥Â¶Ã¸ ÃÃ¸Ã‡Ã  ÃÃŸÃ€ÃŒÂ¸Ã© Â°Ã¨Â¼Ã“ Â½Ã‡Ã‡Ã 
         if self.drop_in_progress:
-            # µå¶ø À¯´Ö »óÅÂ È®ÀÎ
+            # ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– Â»Ã³Ã…Ã‚ ÃˆÂ®Ã€Ã
             overlords = b.units(UnitTypeId.OVERLORD)
             drop_overlord = None
             for overlord in overlords:
-                if overlord.passengers:  # À¯´ÖÀ» ÅÂ¿î ´ë±ºÁÖ
+                if overlord.passengers:  # Ã€Â¯Â´Ã–Ã€Â» Ã…Ã‚Â¿Ã® Â´Ã«Â±ÂºÃÃ–
                     drop_overlord = overlord
                     break
             
             if drop_overlord and self.drop_target:
-                # µå¶ø ½ÃÄö½º °è¼Ó ½ÇÇà
+                # ÂµÃ¥Â¶Ã¸ Â½ÃƒÃ„Ã¶Â½Âº Â°Ã¨Â¼Ã“ Â½Ã‡Ã‡Ã 
                 banelings = list(b.units(UnitTypeId.BANELING).ready)
                 path = self._calculate_stealth_path(drop_overlord.position, self.drop_target) or [self.drop_target]
                 await self._execute_drop_sequence(drop_overlord, banelings, path, self.drop_target)
             else:
-                # µå¶ø À¯´ÖÀÌ ¾øÀ¸¸é µå¶ø Áß´Ü
+                # ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã–Ã€ÃŒ Â¾Ã¸Ã€Â¸Â¸Ã© ÂµÃ¥Â¶Ã¸ ÃÃŸÂ´Ãœ
                 self.drop_in_progress = False
             return
         
-        # »õ µå¶ø ½ÃÀÛ Á¶°Ç È®ÀÎ
+        # Â»Ãµ ÂµÃ¥Â¶Ã¸ Â½ÃƒÃ€Ã› ÃÂ¶Â°Ã‡ ÃˆÂ®Ã€Ã
         if not self._can_execute_drop():
             return
         
-        # µå¶ø À¯´Ö ÁØºñ
+        # ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– ÃÃ˜ÂºÃ±
         drop_overlord, banelings = await self._prepare_drop_units()
         if not drop_overlord or not banelings:
             return
         
-        # µå¶ø Å¸°Ù °áÁ¤
+        # ÂµÃ¥Â¶Ã¸ Ã…Â¸Â°Ã™ Â°Ã¡ÃÂ¤
         drop_target = self._find_drop_target()
         if not drop_target:
             return
         
-        # ½Ã¾ß ¹Û ¿ìÈ¸ °æ·Î °è»ê
+        # Â½ÃƒÂ¾ÃŸ Â¹Ã› Â¿Ã¬ÃˆÂ¸ Â°Ã¦Â·Ã Â°Ã¨Â»Ãª
         path = self._calculate_stealth_path(drop_overlord.position, drop_target)
         if not path:
-            # ¿ìÈ¸ °æ·Î°¡ ¾øÀ¸¸é Á÷Á¢ ÀÌµ¿ (À§ÇèÇÏÁö¸¸ ½Ãµµ)
+            # Â¿Ã¬ÃˆÂ¸ Â°Ã¦Â·ÃÂ°Â¡ Â¾Ã¸Ã€Â¸Â¸Ã© ÃÃ·ÃÂ¢ Ã€ÃŒÂµÂ¿ (Ã€Â§Ã‡Ã¨Ã‡ÃÃÃ¶Â¸Â¸ Â½ÃƒÂµÂµ)
             path = [drop_target]
         
-        # µå¶ø ½ÇÇà ½ÃÀÛ
+        # ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã‡Ã  Â½ÃƒÃ€Ã›
         await self._execute_drop_sequence(drop_overlord, banelings, path, drop_target)
 
     def _can_execute_drop(self) -> bool:
-        """µå¶ø ½ÇÇà °¡´É ¿©ºÎ È®ÀÎ"""
+        """ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã‡Ã  Â°Â¡Â´Ã‰ Â¿Â©ÂºÃ ÃˆÂ®Ã€Ã"""
         b = self.bot
         
-        # 1. ´ë±ºÁÖ ¼Ó¾÷ ¿Ï·á È®ÀÎ
+        # 1. Â´Ã«Â±ÂºÃÃ– Â¼Ã“Â¾Ã· Â¿ÃÂ·Ã¡ ÃˆÂ®Ã€Ã
         if not self.overlord_speed_researched:
             return False
         
-        # 2. Äğ´Ù¿î È®ÀÎ
+        # 2. Ã„Ã°Â´Ã™Â¿Ã® ÃˆÂ®Ã€Ã
         if b.time - self.last_drop_time < self.drop_cooldown:
             return False
         
-        # 3. ÀÌ¹Ì µå¶ø ÁøÇà ÁßÀÌ¸é ½ºÅµ
+        # 3. Ã€ÃŒÂ¹ÃŒ ÂµÃ¥Â¶Ã¸ ÃÃ¸Ã‡Ã  ÃÃŸÃ€ÃŒÂ¸Ã© Â½ÂºÃ…Âµ
         if self.drop_in_progress:
             return False
         
-        # 4. ÀûÀÌ Á¡¸·¿¡ ÀÖ°í ÀüÁø ÁßÀÎÁö È®ÀÎ (Rogue Àü¼ú ÇÙ½É)
+        # 4. Ã€Ã»Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Ã€Ã–Â°Ã­ Ã€Ã¼ÃÃ¸ ÃÃŸÃ€ÃÃÃ¶ ÃˆÂ®Ã€Ã (Rogue Ã€Ã¼Â¼Ãº Ã‡Ã™Â½Ã‰)
         if not (self.enemy_on_creep and self.enemy_advancing):
             return False
         
-        # 5. ¸Íµ¶ÃæÀÌ ÁØºñµÇ¾î ÀÖ´ÂÁö È®ÀÎ
+        # 5. Â¸ÃÂµÂ¶ÃƒÃ¦Ã€ÃŒ ÃÃ˜ÂºÃ±ÂµÃ‡Â¾Ã® Ã€Ã–Â´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
         banelings = b.units(UnitTypeId.BANELING).ready
-        if not banelings.exists or banelings.amount < 4:  # ÃÖ¼Ò 4±â ÇÊ¿ä
+        if not banelings.exists or banelings.amount < 4:  # ÃƒÃ–Â¼Ã’ 4Â±Ã¢ Ã‡ÃŠÂ¿Ã¤
             return False
         
-        # 6. µå¶ø¿ë ´ë±ºÁÖ È®ÀÎ
+        # 6. ÂµÃ¥Â¶Ã¸Â¿Ã« Â´Ã«Â±ÂºÃÃ– ÃˆÂ®Ã€Ã
         overlords = b.units(UnitTypeId.OVERLORD).ready
         if not overlords.exists:
             return False
@@ -234,125 +234,125 @@ class RogueTacticsManager:
         return True
 
     async def _prepare_drop_units(self) -> Tuple[Optional[Unit], List[Unit]]:
-        """µå¶ø À¯´Ö ÁØºñ"""
+        """ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– ÃÃ˜ÂºÃ±"""
         b = self.bot
         
-        # ¸Íµ¶Ãæ ¼±ÅÃ (ÃÖ´ë 8±â)
+        # Â¸ÃÂµÂ¶ÃƒÃ¦ Â¼Â±Ã…Ãƒ (ÃƒÃ–Â´Ã« 8Â±Ã¢)
         banelings = list(b.units(UnitTypeId.BANELING).ready)[:8]
         if len(banelings) < 4:
             return None, []
         
-        # µå¶ø¿ë ´ë±ºÁÖ ¼±ÅÃ (°¡Àå °¡±î¿î ´ë±ºÁÖ)
+        # ÂµÃ¥Â¶Ã¸Â¿Ã« Â´Ã«Â±ÂºÃÃ– Â¼Â±Ã…Ãƒ (Â°Â¡Ã€Ã¥ Â°Â¡Â±Ã®Â¿Ã® Â´Ã«Â±ÂºÃÃ–)
         overlords = b.units(UnitTypeId.OVERLORD).ready
         if not overlords.exists:
             return None, []
         
-        # ÀÌ¹Ì À¯´ÖÀ» ÅÂ¿î ´ë±ºÁÖ°¡ ÀÖÀ¸¸é ¿ì¼± »ç¿ë
+        # Ã€ÃŒÂ¹ÃŒ Ã€Â¯Â´Ã–Ã€Â» Ã…Ã‚Â¿Ã® Â´Ã«Â±ÂºÃÃ–Â°Â¡ Ã€Ã–Ã€Â¸Â¸Ã© Â¿Ã¬Â¼Â± Â»Ã§Â¿Ã«
         for overlord in overlords:
             if overlord.passengers:
                 return overlord, banelings
         
-        # ºó ´ë±ºÁÖ ¼±ÅÃ
+        # ÂºÃ³ Â´Ã«Â±ÂºÃÃ– Â¼Â±Ã…Ãƒ
         drop_overlord = overlords.closest_to(b.townhalls.first.position)
         return drop_overlord, banelings
 
     def _find_drop_target(self) -> Optional[Point2]:
         """
-        µå¶ø Å¸°Ù °áÁ¤
+        ÂµÃ¥Â¶Ã¸ Ã…Â¸Â°Ã™ Â°Ã¡ÃÂ¤
         
-        ¿ì¼±¼øÀ§:
-        1. Àû º»Áø ÀÏ²Û ÁıÁß Áö¿ª
-        2. Àû È®Àå ±âÁö ÀÏ²Û
-        3. Àû ÁÖ¿ä °Ç¹° (°ø¼º ÀüÂ÷ ¶óÀÎ µî)
+        Â¿Ã¬Â¼Â±Â¼Ã¸Ã€Â§:
+        1. Ã€Ã» ÂºÂ»ÃÃ¸ Ã€ÃÂ²Ã› ÃÃ½ÃÃŸ ÃÃ¶Â¿Âª
+        2. Ã€Ã» ÃˆÂ®Ã€Ã¥ Â±Ã¢ÃÃ¶ Ã€ÃÂ²Ã›
+        3. Ã€Ã» ÃÃ–Â¿Ã¤ Â°Ã‡Â¹Â° (Â°Ã¸Â¼Âº Ã€Ã¼Ã‚Ã· Â¶Ã³Ã€Ã ÂµÃ®)
         """
         b = self.bot
         
-        # Àû º»Áø À§Ä¡ È®ÀÎ
+        # Ã€Ã» ÂºÂ»ÃÃ¸ Ã€Â§Ã„Â¡ ÃˆÂ®Ã€Ã
         if b.enemy_start_locations:
             enemy_main = b.enemy_start_locations[0]
             
-            # Àû ÀÏ²Û À§Ä¡ È®ÀÎ
+            # Ã€Ã» Ã€ÃÂ²Ã› Ã€Â§Ã„Â¡ ÃˆÂ®Ã€Ã
             enemy_workers = b.enemy_units.filter(
                 lambda u: u.type_id in [UnitTypeId.SCV, UnitTypeId.PROBE, UnitTypeId.DRONE]
             )
             
             if enemy_workers.exists:
-                # ÀÏ²ÛÀÌ °¡Àå ¸¹Àº Áö¿ª Ã£±â
+                # Ã€ÃÂ²Ã›Ã€ÃŒ Â°Â¡Ã€Ã¥ Â¸Â¹Ã€Âº ÃÃ¶Â¿Âª ÃƒÂ£Â±Ã¢
                 worker_positions = [w.position for w in enemy_workers]
                 if worker_positions:
-                    # ÀÏ²ÛµéÀÇ Áß½ÉÁ¡ °è»ê
+                    # Ã€ÃÂ²Ã›ÂµÃ©Ã€Ã‡ ÃÃŸÂ½Ã‰ÃÂ¡ Â°Ã¨Â»Ãª
                     center_x = sum(p.x for p in worker_positions) / len(worker_positions)
                     center_y = sum(p.y for p in worker_positions) / len(worker_positions)
                     return Point2((center_x, center_y))
             
-            # ÀÏ²ÛÀÌ º¸ÀÌÁö ¾ÊÀ¸¸é º»Áø Áß½É
+            # Ã€ÃÂ²Ã›Ã€ÃŒ ÂºÂ¸Ã€ÃŒÃÃ¶ Â¾ÃŠÃ€Â¸Â¸Ã© ÂºÂ»ÃÃ¸ ÃÃŸÂ½Ã‰
             return enemy_main
         
-        # Àû º»ÁøÀ» ¸ğ¸£¸é ¸Ê Áß½É
+        # Ã€Ã» ÂºÂ»ÃÃ¸Ã€Â» Â¸Ã°Â¸Â£Â¸Ã© Â¸ÃŠ ÃÃŸÂ½Ã‰
         return b.game_info.map_center
 
     def _calculate_stealth_path(
         self, start: Point2, target: Point2
     ) -> Optional[List[Point2]]:
         """
-        ½Ã¾ß ¹Û ¿ìÈ¸ ±âµ¿ °æ·Î °è»ê
+        Â½ÃƒÂ¾ÃŸ Â¹Ã› Â¿Ã¬ÃˆÂ¸ Â±Ã¢ÂµÂ¿ Â°Ã¦Â·Ã Â°Ã¨Â»Ãª
         
-        Rogue Àü¼ú: ÀûÀÇ ½Ã¾ß ¹üÀ§¸¦ ÇÇÇØ ¸Ê °¡ÀåÀÚ¸®¸¦ ÀÌ¿ëÇÏ¿© ÀÌµ¿
+        Rogue Ã€Ã¼Â¼Ãº: Ã€Ã»Ã€Ã‡ Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§Â¸Â¦ Ã‡Ã‡Ã‡Ã˜ Â¸ÃŠ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â®Â¸Â¦ Ã€ÃŒÂ¿Ã«Ã‡ÃÂ¿Â© Ã€ÃŒÂµÂ¿
         
-        ¾Ë°í¸®Áò:
-        1. Àû À¯´ÖÀÇ ½Ã¾ß ¹üÀ§ È®ÀÎ
-        2. Á÷Á¢ °æ·Î»ó¿¡ Àû ½Ã¾ß°¡ ÀÖÀ¸¸é ¿ìÈ¸ °æ·Î °è»ê
-        3. ¸Ê °¡ÀåÀÚ¸®¸¦ µû¶ó ÀÌµ¿ÇÏ¿© Àû ½Ã¾ß È¸ÇÇ
+        Â¾Ã‹Â°Ã­Â¸Â®ÃÃ²:
+        1. Ã€Ã» Ã€Â¯Â´Ã–Ã€Ã‡ Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§ ÃˆÂ®Ã€Ã
+        2. ÃÃ·ÃÂ¢ Â°Ã¦Â·ÃÂ»Ã³Â¿Â¡ Ã€Ã» Â½ÃƒÂ¾ÃŸÂ°Â¡ Ã€Ã–Ã€Â¸Â¸Ã© Â¿Ã¬ÃˆÂ¸ Â°Ã¦Â·Ã Â°Ã¨Â»Ãª
+        3. Â¸ÃŠ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â®Â¸Â¦ ÂµÃ»Â¶Ã³ Ã€ÃŒÂµÂ¿Ã‡ÃÂ¿Â© Ã€Ã» Â½ÃƒÂ¾ÃŸ ÃˆÂ¸Ã‡Ã‡
         """
         b = self.bot
         
-        # 1. ¸Ê °æ°è È®ÀÎ
+        # 1. Â¸ÃŠ Â°Ã¦Â°Ã¨ ÃˆÂ®Ã€Ã
         map_width = b.game_info.map_size.width
         map_height = b.game_info.map_size.height
         
-        # 2. Àû À¯´ÖÀÇ ½Ã¾ß ¹üÀ§ È®ÀÎ
+        # 2. Ã€Ã» Ã€Â¯Â´Ã–Ã€Ã‡ Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§ ÃˆÂ®Ã€Ã
         enemy_units = b.enemy_units
         if not enemy_units.exists:
-            # ÀûÀÌ º¸ÀÌÁö ¾ÊÀ¸¸é Á÷Á¢ °æ·Î
+            # Ã€Ã»Ã€ÃŒ ÂºÂ¸Ã€ÃŒÃÃ¶ Â¾ÃŠÃ€Â¸Â¸Ã© ÃÃ·ÃÂ¢ Â°Ã¦Â·Ã
             return [target]
         
-        # 3. Á÷Á¢ °æ·Î»ó¿¡ Àû ½Ã¾ß°¡ ÀÖ´ÂÁö È®ÀÎ
+        # 3. ÃÃ·ÃÂ¢ Â°Ã¦Â·ÃÂ»Ã³Â¿Â¡ Ã€Ã» Â½ÃƒÂ¾ÃŸÂ°Â¡ Ã€Ã–Â´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
         direct_path_blocked = False
         for enemy in enemy_units:
-            # Àû°ú Á÷Á¢ °æ·ÎÀÇ ÃÖ´Ü °Å¸® °è»ê
+            # Ã€Ã»Â°Ãº ÃÃ·ÃÂ¢ Â°Ã¦Â·ÃÃ€Ã‡ ÃƒÃ–Â´Ãœ Â°Ã…Â¸Â® Â°Ã¨Â»Ãª
             enemy_pos = enemy.position
-            # °£´ÜÇÑ °Å¸® Ã¼Å©: Àû ½Ã¾ß ¹üÀ§ ³»¿¡ °æ·Î°¡ ÀÖ´ÂÁö
+            # Â°Â£Â´ÃœÃ‡Ã‘ Â°Ã…Â¸Â® ÃƒÂ¼Ã…Â©: Ã€Ã» Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§ Â³Â»Â¿Â¡ Â°Ã¦Â·ÃÂ°Â¡ Ã€Ã–Â´Ã‚ÃÃ¶
             to_target = target - start
             to_enemy = enemy_pos - start
             
-            # ³»ÀûÀ» »ç¿ëÇÏ¿© °æ·Î°¡ Àû ½Ã¾ß ¹üÀ§ ³»¿¡ ÀÖ´ÂÁö È®ÀÎ
+            # Â³Â»Ã€Ã»Ã€Â» Â»Ã§Â¿Ã«Ã‡ÃÂ¿Â© Â°Ã¦Â·ÃÂ°Â¡ Ã€Ã» Â½ÃƒÂ¾ÃŸ Â¹Ã¼Ã€Â§ Â³Â»Â¿Â¡ Ã€Ã–Â´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
             if to_target.length > 0:
                 projection = (to_enemy.dot(to_target) / to_target.length) / to_target.length
-                if 0 < projection < 1:  # °æ·Î»ó¿¡ ÀÖÀ½
+                if 0 < projection < 1:  # Â°Ã¦Â·ÃÂ»Ã³Â¿Â¡ Ã€Ã–Ã€Â½
                     closest_point = start + to_target * projection
                     if closest_point.distance_to(enemy_pos) < self.enemy_vision_range:
                         direct_path_blocked = True
                         break
         
-        # Á÷Á¢ °æ·Î°¡ ¸·ÇôÀÖÁö ¾ÊÀ¸¸é Á÷Á¢ °æ·Î »ç¿ë
+        # ÃÃ·ÃÂ¢ Â°Ã¦Â·ÃÂ°Â¡ Â¸Â·Ã‡Ã´Ã€Ã–ÃÃ¶ Â¾ÃŠÃ€Â¸Â¸Ã© ÃÃ·ÃÂ¢ Â°Ã¦Â·Ã Â»Ã§Â¿Ã«
         if not direct_path_blocked:
             return [target]
         
-        # 4. ¿ìÈ¸ °æ·Î °è»ê: ¸Ê °¡ÀåÀÚ¸®¸¦ µû¶ó ÀÌµ¿
+        # 4. Â¿Ã¬ÃˆÂ¸ Â°Ã¦Â·Ã Â°Ã¨Â»Ãª: Â¸ÃŠ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â®Â¸Â¦ ÂµÃ»Â¶Ã³ Ã€ÃŒÂµÂ¿
         waypoints = []
         
-        # ½ÃÀÛÁ¡¿¡¼­ ¸Ê °¡ÀåÀÚ¸®·Î
-        # ¿ŞÂÊ/¿À¸¥ÂÊ °¡ÀåÀÚ¸® Áß Å¸°Ù¿¡ ´õ °¡±î¿î ÂÊ ¼±ÅÃ
+        # Â½ÃƒÃ€Ã›ÃÂ¡Â¿Â¡Â¼Â­ Â¸ÃŠ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â®Â·Ã
+        # Â¿ÃÃ‚ÃŠ/Â¿Ã€Â¸Â¥Ã‚ÃŠ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â® ÃÃŸ Ã…Â¸Â°Ã™Â¿Â¡ Â´Ãµ Â°Â¡Â±Ã®Â¿Ã® Ã‚ÃŠ Â¼Â±Ã…Ãƒ
         left_edge = Point2((0, start.y))
         right_edge = Point2((map_width, start.y))
         
-        # Å¸°Ù ¹æÇâÀÇ °¡ÀåÀÚ¸® ¼±ÅÃ
+        # Ã…Â¸Â°Ã™ Â¹Ã¦Ã‡Ã¢Ã€Ã‡ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â® Â¼Â±Ã…Ãƒ
         if abs(start.x - left_edge.x) < abs(start.x - right_edge.x):
             waypoints.append(left_edge)
         else:
             waypoints.append(right_edge)
         
-        # Å¸°Ù ¹æÇâÀÇ °¡ÀåÀÚ¸®¸¦ µû¶ó ÀÌµ¿
+        # Ã…Â¸Â°Ã™ Â¹Ã¦Ã‡Ã¢Ã€Ã‡ Â°Â¡Ã€Ã¥Ã€ÃšÂ¸Â®Â¸Â¦ ÂµÃ»Â¶Ã³ Ã€ÃŒÂµÂ¿
         waypoints.append(Point2((waypoints[0].x, target.y)))
         waypoints.append(target)
         
@@ -366,15 +366,15 @@ class RogueTacticsManager:
         target: Point2,
     ):
         """
-        µå¶ø ½ÃÄö½º ½ÇÇà
+        ÂµÃ¥Â¶Ã¸ Â½ÃƒÃ„Ã¶Â½Âº Â½Ã‡Ã‡Ã 
         
-        Rogue Àü¼ú: ¸Íµ¶ÃæÀ» ´ë±ºÁÖ¿¡ ÅÂ¿ö Àû º»Áø/È®Àå ±âÁö¿¡ µå¶ø
+        Rogue Ã€Ã¼Â¼Ãº: Â¸ÃÂµÂ¶ÃƒÃ¦Ã€Â» Â´Ã«Â±ÂºÃÃ–Â¿Â¡ Ã…Ã‚Â¿Ã¶ Ã€Ã» ÂºÂ»ÃÃ¸/ÃˆÂ®Ã€Ã¥ Â±Ã¢ÃÃ¶Â¿Â¡ ÂµÃ¥Â¶Ã¸
         
-        ÁÖÀÇ: ÀÌ ¸Ş¼­µå´Â ¸Å ÇÁ·¹ÀÓ È£ÃâµÇ¸ç, µå¶ø »óÅÂ¿¡ µû¶ó ´Ü°èº°·Î ½ÇÇàµË´Ï´Ù.
+        ÃÃ–Ã€Ã‡: Ã€ÃŒ Â¸ÃÂ¼Â­ÂµÃ¥Â´Ã‚ Â¸Ã… Ã‡ÃÂ·Â¹Ã€Ã“ ÃˆÂ£ÃƒÃ¢ÂµÃ‡Â¸Ã§, ÂµÃ¥Â¶Ã¸ Â»Ã³Ã…Ã‚Â¿Â¡ ÂµÃ»Â¶Ã³ Â´ÃœÂ°Ã¨ÂºÂ°Â·Ã Â½Ã‡Ã‡Ã ÂµÃ‹Â´ÃÂ´Ã™.
         """
         b = self.bot
         
-        # µå¶ø »óÅÂ ÃÊ±âÈ­ (Ã¹ ½ÇÇà ½Ã)
+        # ÂµÃ¥Â¶Ã¸ Â»Ã³Ã…Ã‚ ÃƒÃŠÂ±Ã¢ÃˆÂ­ (ÃƒÂ¹ Â½Ã‡Ã‡Ã  Â½Ãƒ)
         if not self.drop_in_progress:
             self.drop_in_progress = True
             self.drop_target = target
@@ -382,94 +382,94 @@ class RogueTacticsManager:
             print(f"[ROGUE DROP] [{int(b.time)}s] Drop sequence started - Target: {target}")
         
         try:
-            # 1. ¸Íµ¶ÃæÀ» ´ë±ºÁÖ¿¡ ÅÂ¿ì±â (¾ÆÁ÷ ÅÂ¿ìÁö ¾Ê¾ÒÀ¸¸é)
+            # 1. Â¸ÃÂµÂ¶ÃƒÃ¦Ã€Â» Â´Ã«Â±ÂºÃÃ–Â¿Â¡ Ã…Ã‚Â¿Ã¬Â±Ã¢ (Â¾Ã†ÃÃ· Ã…Ã‚Â¿Ã¬ÃÃ¶ Â¾ÃŠÂ¾Ã’Ã€Â¸Â¸Ã©)
             if not overlord.passengers or len(overlord.passengers) < len(banelings):
-                for baneling in banelings[:8]:  # ÃÖ´ë 8±â
+                for baneling in banelings[:8]:  # ÃƒÃ–Â´Ã« 8Â±Ã¢
                     if baneling.is_ready and overlord.cargo_space_left > 0:
-                        # python-sc2: load ¸í·É »ç¿ë
+                        # python-sc2: load Â¸Ã­Â·Ã‰ Â»Ã§Â¿Ã«
                         try:
-                            # LOAD ability´Â À¯´Ö Å¸ÀÔ¿¡ µû¶ó ÀÚµ¿ ¼±ÅÃµÊ
+                            # LOAD abilityÂ´Ã‚ Ã€Â¯Â´Ã– Ã…Â¸Ã€Ã”Â¿Â¡ ÂµÃ»Â¶Ã³ Ã€ÃšÂµÂ¿ Â¼Â±Ã…ÃƒÂµÃŠ
                             await b.do(overlord(AbilityId.LOAD, baneling))
                         except Exception:
-                            # ´ëÃ¼ ¹æ¹ı ½Ãµµ
+                            # Â´Ã«ÃƒÂ¼ Â¹Ã¦Â¹Ã½ Â½ÃƒÂµÂµ
                             try:
                                 if hasattr(overlord, "load"):
                                     overlord.load(baneling)
                             except Exception:
                                 pass
-                return  # ´ÙÀ½ ÇÁ·¹ÀÓ¿¡ °è¼Ó
+                return  # Â´Ã™Ã€Â½ Ã‡ÃÂ·Â¹Ã€Ã“Â¿Â¡ Â°Ã¨Â¼Ã“
             
-            # 2. °æ·Î¸¦ µû¶ó ÀÌµ¿
+            # 2. Â°Ã¦Â·ÃÂ¸Â¦ ÂµÃ»Â¶Ã³ Ã€ÃŒÂµÂ¿
             if path and len(path) > 0:
-                # ÇöÀç waypoint È®ÀÎ
+                # Ã‡Ã¶Ã€Ã§ waypoint ÃˆÂ®Ã€Ã
                 current_waypoint_idx = getattr(self, "_current_waypoint_idx", 0)
                 if current_waypoint_idx < len(path):
                     next_waypoint = path[current_waypoint_idx]
                     
-                    # waypoint¿¡ µµ´ŞÇß´ÂÁö È®ÀÎ
+                    # waypointÂ¿Â¡ ÂµÂµÂ´ÃÃ‡ÃŸÂ´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
                     if overlord.distance_to(next_waypoint) < 3.0:
-                        # ´ÙÀ½ waypoint·Î ÀÌµ¿
+                        # Â´Ã™Ã€Â½ waypointÂ·Ã Ã€ÃŒÂµÂ¿
                         current_waypoint_idx += 1
                         self._current_waypoint_idx = current_waypoint_idx
                     
-                    # ´ÙÀ½ waypoint·Î ÀÌµ¿ ¸í·É
+                    # Â´Ã™Ã€Â½ waypointÂ·Ã Ã€ÃŒÂµÂ¿ Â¸Ã­Â·Ã‰
                     if current_waypoint_idx < len(path):
                         overlord.move(path[current_waypoint_idx])
                     else:
-                        # ¸ğµç waypoint¸¦ Áö³ªÃÆÀ¸¸é Å¸°ÙÀ¸·Î Á÷Á¢ ÀÌµ¿
+                        # Â¸Ã°ÂµÃ§ waypointÂ¸Â¦ ÃÃ¶Â³ÂªÃƒÃ†Ã€Â¸Â¸Ã© Ã…Â¸Â°Ã™Ã€Â¸Â·Ã ÃÃ·ÃÂ¢ Ã€ÃŒÂµÂ¿
                         overlord.move(target)
                 else:
-                    # °æ·Î°¡ ¾øÀ¸¸é Å¸°ÙÀ¸·Î Á÷Á¢ ÀÌµ¿
+                    # Â°Ã¦Â·ÃÂ°Â¡ Â¾Ã¸Ã€Â¸Â¸Ã© Ã…Â¸Â°Ã™Ã€Â¸Â·Ã ÃÃ·ÃÂ¢ Ã€ÃŒÂµÂ¿
                     overlord.move(target)
             
-            # 3. Å¸°Ù ÁöÁ¡¿¡ µµ´ŞÇß´ÂÁö È®ÀÎÇÏ°í µå¶ø
-            if overlord.distance_to(target) < 8.0:  # 8 À¯´Ö ÀÌ³»¸é µå¶ø °¡´É
-                # µå¶ø ½ÇÇà
+            # 3. Ã…Â¸Â°Ã™ ÃÃ¶ÃÂ¡Â¿Â¡ ÂµÂµÂ´ÃÃ‡ÃŸÂ´Ã‚ÃÃ¶ ÃˆÂ®Ã€ÃÃ‡ÃÂ°Ã­ ÂµÃ¥Â¶Ã¸
+            if overlord.distance_to(target) < 8.0:  # 8 Ã€Â¯Â´Ã– Ã€ÃŒÂ³Â»Â¸Ã© ÂµÃ¥Â¶Ã¸ Â°Â¡Â´Ã‰
+                # ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã‡Ã 
                 try:
-                    # python-sc2: unload_all ¸í·É »ç¿ë (À§Ä¡ ÁöÁ¤)
-                    # UNLOADALL_AT ¶Ç´Â UNLOADALL »ç¿ë
+                    # python-sc2: unload_all Â¸Ã­Â·Ã‰ Â»Ã§Â¿Ã« (Ã€Â§Ã„Â¡ ÃÃ¶ÃÂ¤)
+                    # UNLOADALL_AT Â¶Ã‡Â´Ã‚ UNLOADALL Â»Ã§Â¿Ã«
                     try:
                         await b.do(overlord(AbilityId.UNLOADALL_AT, target))
                     except (AttributeError, KeyError):
-                        # ´ëÃ¼ ¹æ¹ı: UNLOADALL »ç¿ë
+                        # Â´Ã«ÃƒÂ¼ Â¹Ã¦Â¹Ã½: UNLOADALL Â»Ã§Â¿Ã«
                         try:
                             await b.do(overlord(AbilityId.UNLOADALL, target))
                         except (AttributeError, KeyError):
-                            # ÃÖÁ¾ ´ëÃ¼: Á÷Á¢ ¸Ş¼­µå È£Ãâ
+                            # ÃƒÃ–ÃÂ¾ Â´Ã«ÃƒÂ¼: ÃÃ·ÃÂ¢ Â¸ÃÂ¼Â­ÂµÃ¥ ÃˆÂ£ÃƒÃ¢
                             if hasattr(overlord, "unload_all"):
                                 overlord.unload_all(target)
                 except Exception as unload_error:
-                    # µå¶ø ½ÇÆĞ ½Ã ·Î±×¸¸ Ãâ·Â (´ÙÀ½ ÇÁ·¹ÀÓ¿¡ Àç½Ãµµ)
+                    # ÂµÃ¥Â¶Ã¸ Â½Ã‡Ã†Ã Â½Ãƒ Â·ÃÂ±Ã—Â¸Â¸ ÃƒÃ¢Â·Ã‚ (Â´Ã™Ã€Â½ Ã‡ÃÂ·Â¹Ã€Ã“Â¿Â¡ Ã€Ã§Â½ÃƒÂµÂµ)
                     if b.iteration % 50 == 0:
                         print(f"[ROGUE DROP] Unload attempt failed: {unload_error}")
                 
                 print(f"[ROGUE DROP] [{int(b.time)}s] Baneling drop executed at {target}")
                 self.last_drop_time = b.time
                 
-                # ¶ó¹Ù ¼¼ÀÌºù ÇØÁ¦ (µå¶ø ÈÄ Æø¹ßÀû »ı»ê)
+                # Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Ã‡Ã˜ÃÂ¦ (ÂµÃ¥Â¶Ã¸ ÃˆÃ„ Ã†Ã¸Â¹ÃŸÃ€Ã» Â»Ã½Â»Ãª)
                 self.larva_saving_mode = False
                 
-                # µå¶ø ¿Ï·á
+                # ÂµÃ¥Â¶Ã¸ Â¿ÃÂ·Ã¡
                 self.drop_in_progress = False
-                self._current_waypoint_idx = 0  # waypoint ÀÎµ¦½º ÃÊ±âÈ­
+                self._current_waypoint_idx = 0  # waypoint Ã€ÃÂµÂ¦Â½Âº ÃƒÃŠÂ±Ã¢ÃˆÂ­
                 
         except Exception as e:
             print(f"[ROGUE DROP ERROR] Drop execution failed: {e}")
             import traceback
             traceback.print_exc()
-            # ¿¡·¯ ¹ß»ı ½Ã µå¶ø Áß´Ü
+            # Â¿Â¡Â·Â¯ Â¹ÃŸÂ»Ã½ Â½Ãƒ ÂµÃ¥Â¶Ã¸ ÃÃŸÂ´Ãœ
             self.drop_in_progress = False
 
     async def _manage_larva_saving(self):
         """
-        ¶ó¹Ù ¼¼ÀÌºù °ü¸®
+        Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â°Ã¼Â¸Â®
         
-        Rogue Àü¼ú: ±³Àü Á÷Àü ¶ó¹Ù¸¦ ¼Ò¸ğÇÏÁö ¾Ê°í ¸ğ¾ÆµÎ¾ú´Ù°¡,
-        µå¶øÀ¸·Î Àû ÀÏ²ÛÀÌ³ª ÁÖ¿ä º´·ÂÀ» ¼Ô¾Æ³½ Á÷ÈÄ ÇÑ²¨¹ø¿¡ Æø¹ßÀûÀ¸·Î º´·ÂÀ» Âï¾î³¿
+        Rogue Ã€Ã¼Â¼Ãº: Â±Â³Ã€Ã¼ ÃÃ·Ã€Ã¼ Â¶Ã³Â¹Ã™Â¸Â¦ Â¼Ã’Â¸Ã°Ã‡ÃÃÃ¶ Â¾ÃŠÂ°Ã­ Â¸Ã°Â¾Ã†ÂµÃÂ¾ÃºÂ´Ã™Â°Â¡,
+        ÂµÃ¥Â¶Ã¸Ã€Â¸Â·Ã Ã€Ã» Ã€ÃÂ²Ã›Ã€ÃŒÂ³Âª ÃÃ–Â¿Ã¤ ÂºÂ´Â·Ã‚Ã€Â» Â¼Ã”Â¾Ã†Â³Â½ ÃÃ·ÃˆÃ„ Ã‡Ã‘Â²Â¨Â¹Ã¸Â¿Â¡ Ã†Ã¸Â¹ÃŸÃ€Ã»Ã€Â¸Â·Ã ÂºÂ´Â·Ã‚Ã€Â» Ã‚Ã¯Â¾Ã®Â³Â¿
         """
         b = self.bot
         
-        # ÀûÀÌ Á¡¸·¿¡ ÀÖ°í ÀüÁø ÁßÀÌ¸é ¶ó¹Ù ¼¼ÀÌºù ½ÃÀÛ
+        # Ã€Ã»Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Ã€Ã–Â°Ã­ Ã€Ã¼ÃÃ¸ ÃÃŸÃ€ÃŒÂ¸Ã© Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â½ÃƒÃ€Ã›
         if self.enemy_on_creep and self.enemy_advancing and not self.larva_saving_mode:
             self.larva_saving_mode = True
             self.larva_save_start_time = b.time
@@ -477,49 +477,49 @@ class RogueTacticsManager:
             self.saved_larva_count = larvae.amount if larvae.exists else 0
             print(f"[ROGUE LARVA SAVE] [{int(b.time)}s] Larva saving started ({self.saved_larva_count} larvae)")
         
-        # ¶ó¹Ù ¼¼ÀÌºù ¸ğµå ÇØÁ¦ Á¶°Ç
+        # Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â¸Ã°ÂµÃ¥ Ã‡Ã˜ÃÂ¦ ÃÂ¶Â°Ã‡
         if self.larva_saving_mode:
-            # 1. µå¶ø ¿Ï·á ÈÄ
+            # 1. ÂµÃ¥Â¶Ã¸ Â¿ÃÂ·Ã¡ ÃˆÃ„
             if b.time - self.last_drop_time < 2.0 and self.last_drop_time > 0:
                 self.larva_saving_mode = False
                 print(f"[ROGUE LARVA SAVE] [{int(b.time)}s] Larva saving ended - Drop completed, explosive production enabled")
             
-            # 2. ½Ã°£ ÃÊ°ú (10ÃÊ)
+            # 2. Â½ÃƒÂ°Â£ ÃƒÃŠÂ°Ãº (10ÃƒÃŠ)
             elif b.time - self.larva_save_start_time > self.larva_save_duration:
                 self.larva_saving_mode = False
                 print(f"[ROGUE LARVA SAVE] [{int(b.time)}s] Larva saving ended - Timeout")
             
-            # 3. ÀûÀÌ Á¡¸·¿¡¼­ ¹ş¾î³²
+            # 3. Ã€Ã»Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡Â¼Â­ Â¹Ã¾Â¾Ã®Â³Â²
             elif not self.enemy_on_creep and b.time - self.last_enemy_on_creep_time > 3.0:
                 self.larva_saving_mode = False
                 print(f"[ROGUE LARVA SAVE] [{int(b.time)}s] Larva saving ended - Enemy retreated")
 
     async def _manage_drop_units(self):
         """
-        µå¶ø À¯´Ö °ü¸® (´ë±ºÁÖ + ¸Íµ¶Ãæ)
+        ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– Â°Ã¼Â¸Â® (Â´Ã«Â±ÂºÃÃ– + Â¸ÃÂµÂ¶ÃƒÃ¦)
         
-        µå¶ø ÁøÇà ÁßÀÎ ´ë±ºÁÖÀÇ »óÅÂ¸¦ È®ÀÎÇÏ°í °ü¸®
-        (ÇöÀç´Â _execute_drop_sequence¿¡¼­ Ã³¸®ÇÏ¹Ç·Î ¿©±â¼­´Â Ãß°¡ °ü¸®¸¸ ¼öÇà)
+        ÂµÃ¥Â¶Ã¸ ÃÃ¸Ã‡Ã  ÃÃŸÃ€Ã Â´Ã«Â±ÂºÃÃ–Ã€Ã‡ Â»Ã³Ã…Ã‚Â¸Â¦ ÃˆÂ®Ã€ÃÃ‡ÃÂ°Ã­ Â°Ã¼Â¸Â®
+        (Ã‡Ã¶Ã€Ã§Â´Ã‚ _execute_drop_sequenceÂ¿Â¡Â¼Â­ ÃƒÂ³Â¸Â®Ã‡ÃÂ¹Ã‡Â·Ã Â¿Â©Â±Ã¢Â¼Â­Â´Ã‚ ÃƒÃŸÂ°Â¡ Â°Ã¼Â¸Â®Â¸Â¸ Â¼Ã¶Ã‡Ã )
         """
         b = self.bot
         
-        # µå¶ø ÁøÇà ÁßÀÌ ¾Æ´Ï¸é ½ºÅµ
+        # ÂµÃ¥Â¶Ã¸ ÃÃ¸Ã‡Ã  ÃÃŸÃ€ÃŒ Â¾Ã†Â´ÃÂ¸Ã© Â½ÂºÃ…Âµ
         if not self.drop_in_progress:
             return
         
-        # µå¶ø À¯´Ö »óÅÂ È®ÀÎ (Ãß°¡ ·ÎÁ÷ ÇÊ¿ä ½Ã ±¸Çö)
-        # ÇöÀç´Â _execute_drop_sequence¿¡¼­ ¸ğµç µå¶ø ·ÎÁ÷À» Ã³¸®
+        # ÂµÃ¥Â¶Ã¸ Ã€Â¯Â´Ã– Â»Ã³Ã…Ã‚ ÃˆÂ®Ã€Ã (ÃƒÃŸÂ°Â¡ Â·ÃÃÃ· Ã‡ÃŠÂ¿Ã¤ Â½Ãƒ Â±Â¸Ã‡Ã¶)
+        # Ã‡Ã¶Ã€Ã§Â´Ã‚ _execute_drop_sequenceÂ¿Â¡Â¼Â­ Â¸Ã°ÂµÃ§ ÂµÃ¥Â¶Ã¸ Â·ÃÃÃ·Ã€Â» ÃƒÂ³Â¸Â®
 
     def should_save_larva(self) -> bool:
-        """¶ó¹Ù ¼¼ÀÌºù ¸ğµå ¿©ºÎ ¹İÈ¯"""
+        """Â¶Ã³Â¹Ã™ Â¼Â¼Ã€ÃŒÂºÃ¹ Â¸Ã°ÂµÃ¥ Â¿Â©ÂºÃ Â¹ÃÃˆÂ¯"""
         return self.larva_saving_mode
 
     def get_enemy_on_creep_status(self) -> Tuple[bool, bool]:
-        """ÀûÀÌ Á¡¸·¿¡ ÀÖ´ÂÁö, ÀüÁø ÁßÀÎÁö ¹İÈ¯"""
+        """Ã€Ã»Ã€ÃŒ ÃÂ¡Â¸Â·Â¿Â¡ Ã€Ã–Â´Ã‚ÃÃ¶, Ã€Ã¼ÃÃ¸ ÃÃŸÃ€ÃÃÃ¶ Â¹ÃÃˆÂ¯"""
         return self.enemy_on_creep, self.enemy_advancing
 
     def get_drop_readiness(self) -> bool:
-        """µå¶ø ÁØºñ »óÅÂ ¹İÈ¯"""
+        """ÂµÃ¥Â¶Ã¸ ÃÃ˜ÂºÃ± Â»Ã³Ã…Ã‚ Â¹ÃÃˆÂ¯"""
         return (
             self.overlord_speed_researched
             and not self.drop_in_progress

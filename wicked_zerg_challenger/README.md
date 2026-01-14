@@ -98,7 +98,7 @@ The system models **real-world drone swarm control, autonomous decision making, 
 
 ### 3) Mobile Ground Control Station (GCS)
 
-* Native Android app developed from scratch
+* Mobile-optimized web dashboard (responsive web UI)
 * Real-time telemetry:
 
   * mineral & gas usage
@@ -220,7 +220,7 @@ To enhance the README's impact, the following screenshots are recommended:
 * **AI / ML:** PyTorch, RL Policy Network, replay data mining
 * **Simulation:** StarCraft II API
 * **MLOps / DevOps:** Auto-training pipeline, Vertex AI (Gemini) self-healing
-* **GCS:** Flask-based dashboard, native Android mobile app
+* **GCS:** Flask-based dashboard, mobile-optimized web interface
 * **Algorithms:** Potential-field swarm navigation, async job scheduling
 
 ---

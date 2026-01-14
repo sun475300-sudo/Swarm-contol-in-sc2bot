@@ -65,7 +65,13 @@ from combat_tactics import CombatTactics
 from config import Config, EnemyRace, GamePhase
 from economy_manager import EconomyManager
 from intel_manager import IntelManager
-from micro_controller import MicroController
+
+# MicroController - optional import
+try:
+    from micro_controller import MicroController
+except ImportError:
+    MicroController = None  # type: ignore[assignment]
+
 from rogue_tactics_manager import RogueTacticsManager
 
 # 🎯 New modules - Code slimdown

@@ -86,14 +86,14 @@ class ProductionResilience:
                         zergling_produced = 0
                         larvae_list = list(larvae) if larvae.exists else []
                         
-                        # IMPROVED: ´õ Àû±ØÀûÀ¸·Î ¸ğµç ¶ó¹Ù »ç¿ë
+                        # IMPROVED: Â´Ãµ Ã€Ã»Â±Ã˜Ã€Ã»Ã€Â¸Â·Ã Â¸Ã°ÂµÃ§ Â¶Ã³Â¹Ã™ Â»Ã§Â¿Ã«
                         for larva in larvae_list:
                             if not hasattr(larva, 'is_ready') or not larva.is_ready:
                                 continue
                             
-                            # IMPROVED: ÀÎ±¸¼ö Ã¼Å©¸¦ ¸ÕÀúÇÏ¿© ´ë±ºÁÖ »ı»ê ÇÊ¿ä ½Ã ¾Ë¸²
+                            # IMPROVED: Ã€ÃÂ±Â¸Â¼Ã¶ ÃƒÂ¼Ã…Â©Â¸Â¦ Â¸Ã•Ã€ÃºÃ‡ÃÂ¿Â© Â´Ã«Â±ÂºÃÃ– Â»Ã½Â»Ãª Ã‡ÃŠÂ¿Ã¤ Â½Ãƒ Â¾Ã‹Â¸Â²
                             if b.supply_left < 1:
-                                # ÀÎ±¸¼ö ºÎÁ· - ´ë±ºÁÖ »ı»ê ÇÊ¿ä
+                                # Ã€ÃÂ±Â¸Â¼Ã¶ ÂºÃÃÂ· - Â´Ã«Â±ÂºÃÃ– Â»Ã½Â»Ãª Ã‡ÃŠÂ¿Ã¤
                                 if b.can_afford(UnitTypeId.OVERLORD) and larvae_list:
                                     try:
                                         await larvae_list[0].train(UnitTypeId.OVERLORD)
@@ -101,7 +101,7 @@ class ProductionResilience:
                                         return
                                     except Exception:
                                         pass
-                                break  # ÀÎ±¸¼ö ºÎÁ·ÇÏ¸é Áß´Ü
+                                break  # Ã€ÃÂ±Â¸Â¼Ã¶ ÂºÃÃÂ·Ã‡ÃÂ¸Ã© ÃÃŸÂ´Ãœ
                             
                             if b.can_afford(UnitTypeId.ZERGLING):
                                 try:
@@ -110,9 +110,9 @@ class ProductionResilience:
                                 except Exception as e:
                                     if b.iteration % 50 == 0:
                                         print(f"[ERROR] Failed to force Zergling: {e}")
-                                    break  # ÇÑ ¸¶¸® ½ÇÆĞÇÏ¸é Áß´Ü
+                                    break  # Ã‡Ã‘ Â¸Â¶Â¸Â® Â½Ã‡Ã†ÃÃ‡ÃÂ¸Ã© ÃÃŸÂ´Ãœ
                             else:
-                                # ÀÚ¿ø ºÎÁ·ÇÏ¸é Áß´Ü
+                                # Ã€ÃšÂ¿Ã¸ ÂºÃÃÂ·Ã‡ÃÂ¸Ã© ÃÃŸÂ´Ãœ
                                 break
                         
                         if zergling_produced > 0:

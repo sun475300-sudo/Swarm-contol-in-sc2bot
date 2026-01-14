@@ -17,12 +17,12 @@ class CodeDietCleanup:
 
     def __init__(self, repo_path="."):
         self.repo_path = Path(repo_path).resolve()
-        self.backup_dir = Path(r"D:\¹é¾÷¿ë\cleanup_backup")
+        self.backup_dir = Path(r"D:\Â¹Ã©Â¾Ã·Â¿Ã«\cleanup_backup")
         self.report = []
         
-        # CRITICAL: Exclude ¾Æ·¹³ª_¹èÆ÷ folder from cleanup
+        # CRITICAL: Exclude Â¾Ã†Â·Â¹Â³Âª_Â¹Ã¨Ã†Ã· folder from cleanup
         self.exclude_dirs = {
-            "¾Æ·¹³ª_¹èÆ÷",
+            "Â¾Ã†Â·Â¹Â³Âª_Â¹Ã¨Ã†Ã·",
             ".git",
             ".venv",
             "__pycache__",
@@ -77,7 +77,7 @@ class CodeDietCleanup:
             if pattern == "__pycache__":
                 # Special handling for directories
                 for root, dirs, files in os.walk(self.repo_path):
-                    # Exclude ¾Æ·¹³ª_¹èÆ÷ and other excluded directories
+                    # Exclude Â¾Ã†Â·Â¹Â³Âª_Â¹Ã¨Ã†Ã· and other excluded directories
                     dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
                     if "__pycache__" in dirs:
                         pycache_path = Path(root) / "__pycache__"
@@ -139,7 +139,7 @@ class CodeDietCleanup:
 
         for file_path in files:
             try:
-                # CRITICAL: Exclude ¾Æ·¹³ª_¹èÆ÷ folder
+                # CRITICAL: Exclude Â¾Ã†Â·Â¹Â³Âª_Â¹Ã¨Ã†Ã· folder
                 if self.should_exclude(file_path):
                     continue
                 
@@ -178,7 +178,7 @@ class CodeDietCleanup:
 
         for file_path in files:
             try:
-                # CRITICAL: Exclude ¾Æ·¹³ª_¹èÆ÷ folder
+                # CRITICAL: Exclude Â¾Ã†Â·Â¹Â³Âª_Â¹Ã¨Ã†Ã· folder
                 if self.should_exclude(file_path):
                     continue
                 
@@ -299,7 +299,7 @@ class CodeDietCleanup:
         if duplicates:
             self.log("\n??  Potential duplicate files found:")
             for file1, file2 in duplicates:
-                self.log(f"  - {file1} ¡ê?  {file2}")
+                self.log(f"  - {file1} Â¡Ãª?  {file2}")
             self.log("\n? Review these files manually for deduplication")
         else:
             self.log("? No obvious duplicate files found")

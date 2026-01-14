@@ -108,7 +108,7 @@ graph TD
 
 ### 3) 모바일 GCS (Ground Control Station)
 
-* Android 앱을 직접 개발하여 **실시간 관제 화면** 구현
+* 모바일 최적화 웹 대시보드 (반응형 웹 UI)로 **실시간 관제 화면** 구현
 * 다음 정보를 스마트폰에서 바로 확인 가능:
 
   * 미네랄 / 가스 상태
@@ -209,7 +209,7 @@ README의 설득력을 높이기 위해 아래 이미지를 함께 첨부하는 
 * **AI & ML:** PyTorch, RL Policy Network, Replay Mining
 * **Simulation:** StarCraft II API
 * **MLOps / DevOps:** Auto-Training Pipeline, Vertex AI(Gemini) Self-Healing
-* **GCS:** Flask Dashboard, Android 모바일 앱
+* **GCS:** Flask Dashboard, 모바일 최적화 웹 인터페이스
 * **Algorithm:** Potential Field 기반 군집 경로 탐색, 비동기 작업 스케줄링
 
 ---

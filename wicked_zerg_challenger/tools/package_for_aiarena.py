@@ -1,371 +1,371 @@
-# -*- coding: utf-8 -*-
-"""
-================================================================================
-                AI Arena Á¦Ãâ¿ë ÆĞÅ°Â¡ ÀÚµ¿È­ (package_for_aiarena.py)
-================================================================================
-
-·ÎÄÃ¿¡¼­ ÈÆ·ÃµÈ ¸ğµ¨°ú ¼Ò½ºÄÚµå¸¦ AI Arena Á¦Ãâ¿ë ÆĞÅ°Áö·Î ÀÚµ¿ »ı¼ºÇÕ´Ï´Ù.
-
-±â´É:
-    1. ÈÆ·ÃµÈ ¸ğµ¨ °¡ÁßÄ¡(.pt) Æ÷ÇÔ
-    2. ÇÊ¼ö ¼Ò½ºÄÚµå ÀÚµ¿ ¼öÁı
-    3. arena_deploy/ Æú´õ·Î ÀÚµ¿ º¹»ç
-    4. Ã¼Å©¼¶ °ËÁõ (¸ğµ¨ ¼Õ»ó ¹æÁö)
-
-»ç¿ë¹ı:
-    python package_for_aiarena.py
-
-Ãâ·Â:
-    - arena_deploy/bot_package/ (Á¦Ãâ¿ë ¿ÏÀü ÆĞÅ°Áö)
-    - arena_deploy/verification_report.txt (°ËÁõ º¸°í¼­)
-
-================================================================================
-"""
-
-import json
-import shutil
-import hashlib
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Optional
-
-
-class PackageBuilder:
-    """AI Arena Á¦Ãâ¿ë ÆĞÅ°Áö ºô´õ"""
-
-    # ÇÊ¼ö ¼Ò½ºÄÚµå ÆÄÀÏ (·ÎÁ÷, ¸Å´ÏÀú, ½Å°æ¸Á)
-    ESSENTIAL_SOURCES: List[str] = [
-        "run.py",                           # ? AI Arena ÁøÀÔÁ¡
-        "main_integrated.py",               # ? ·ÎÄÃ ÈÆ·Ã ÁøÀÔÁ¡
-        "wicked_zerg_bot_pro.py",          # ? ¸ŞÀÎ º¿ Å¬·¡½º
-        # Core Managers
-        "combat_manager.py",
-        "production_manager.py",
-        "economy_manager.py",
-        "intel_manager.py",
-        "micro_controller.py",
-        "scouting_system.py",
-        "queen_manager.py",
-        "personality_manager.py",
-        # Support
-        "config.py",
-        "sc2_integration_config.py",
-        "curriculum_manager.py",
-        "map_manager.py",
-        # Learning
-        "zerg_net.py",
-        "hybrid_learning.py",
-        "self_evolution.py",
-        # Utilities
-        "unit_factory.py",
-        "combat_tactics.py",
-        "production_resilience.py",
-        "telemetry_logger.py",
-        "arena_update.py",
-    ]
-
-    # ÇÊ¼ö ¸ğµ¨ ÆÄÀÏ (ÈÆ·Ã °¡ÁßÄ¡)
-    ESSENTIAL_MODELS: List[str] = [
-        "models/zerg_net_model.pt",          # ? ½Å°æ¸Á ¸ğµ¨ (°¡Àå Áß¿ä!)
-    ]
-
-    # ÇÊ¼ö µ¥ÀÌÅÍ ÆÄÀÏ
-    ESSENTIAL_DATA: List[str] = [
-        "data/",                            # ? Ä¿¸®Å§·³ ÈÆ·Ã Åë°è
-    ]
-
-    # AI Arena ¹èÆ÷ Æú´õ
-    DEPLOY_DIR = Path("arena_deploy")
-    PACKAGE_DIR = DEPLOY_DIR / "bot_package"
-    BACKUP_DIR = DEPLOY_DIR / "backups"
-
-    def __init__(self, project_root: Optional[Path] = None):
-        """
-        Args:
-            project_root: ÇÁ·ÎÁ§Æ® ·çÆ® °æ·Î (±âº»°ª: ÇöÀç ÆÄÀÏ µğ·ºÅä¸®)
-        """
-        self.project_root = project_root or Path(__file__).parent.absolute()
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.report: List[str] = []
-
-    def log(self, message: str, level: str = "INFO"):
-        """·Î±× ¸Ş½ÃÁö Ãâ·Â ¹× ÀúÀå"""
-        formatted = f"[{level}] {message}"
-        print(formatted)
-        self.report.append(formatted)
-
-    def verify_file_exists(self, file_path: Path) -> bool:
-        """ÆÄÀÏ Á¸Àç ¿©ºÎ È®ÀÎ"""
-        if file_path.exists():
-            self.log(f"? Found: {file_path.name}", "OK")
-            return True
-        else:
-            self.log(f"??  Missing: {file_path.name}", "WARNING")
-            return False
-
-    def calculate_checksum(self, file_path: Path) -> str:
-        """ÆÄÀÏ Ã¼Å©¼¶ °è»ê (¹«°á¼º °ËÁõ)"""
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-
-    def copy_sources(self) -> bool:
-        """ÇÊ¼ö ¼Ò½ºÄÚµå ÆÄÀÏ º¹»ç"""
-        self.log("\n? Step 1: Copying source code files...")
-        success_count = 0
-
-        for source_file in self.ESSENTIAL_SOURCES:
-            src = self.project_root / source_file
-            dst = self.PACKAGE_DIR / source_file
-
-            if self.verify_file_exists(src):
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dst)
-                success_count += 1
-            else:
-                self.log(f"??  Skipped: {source_file} (not found)", "WARNING")
-
-        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_SOURCES)} source files")
-        return success_count > 0
-
-    def copy_models(self) -> bool:
-        """ÈÆ·ÃµÈ ¸ğµ¨ °¡ÁßÄ¡ º¹»ç (°¡Àå Áß¿ä!)"""
-        self.log("\n? Step 2: Copying trained model weights...")
-        success_count = 0
-
-        for model_file in self.ESSENTIAL_MODELS:
-            src = self.project_root / model_file
-            dst = self.PACKAGE_DIR / model_file
-
-            if self.verify_file_exists(src):
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, dst)
-                
-                # Ã¼Å©¼¶ °ËÁõ
-                src_checksum = self.calculate_checksum(src)
-                dst_checksum = self.calculate_checksum(dst)
-                
-                if src_checksum == dst_checksum:
-                    self.log(f"? Model verified: {model_file} (SHA256: {src_checksum[:16]}...)", "OK")
-                    success_count += 1
-                else:
-                    self.log(f"? Checksum mismatch: {model_file}", "ERROR")
-            else:
-                self.log(
-                    f"??  WARNING: Model not found: {model_file}\n"
-                    f"   This model file is CRITICAL for AI Arena submission!\n"
-                    f"   Without it, the bot will run with untrained weights.",
-                    "CRITICAL"
-                )
-
-        if success_count == 0:
-            self.log(
-                "\n? CRITICAL: No model weights found!\n"
-                "   You MUST train the model first: python main_integrated.py\n"
-                "   Expected location: models/zerg_net_model.pt",
-                "ERROR"
-            )
-        
-        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_MODELS)} model files")
-        return success_count > 0
-
-    def copy_data(self) -> bool:
-        """µ¥ÀÌÅÍ ÆÄÀÏ º¹»ç (Ä¿¸®Å§·³ Åë°è µî)"""
-        self.log("\n? Step 3: Copying data files...")
-        success_count = 0
-
-        for data_item in self.ESSENTIAL_DATA:
-            src = self.project_root / data_item
-            dst = self.PACKAGE_DIR / data_item
-
-            if src.is_dir():
-                if src.exists():
-                    if dst.exists():
-                        shutil.rmtree(dst)
-                    shutil.copytree(src, dst)
-                    self.log(f"? Copied directory: {data_item}", "OK")
-                    success_count += 1
-                else:
-                    self.log(f"??  Missing directory: {data_item}", "WARNING")
-            else:
-                if self.verify_file_exists(src):
-                    dst.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(src, dst)
-                    success_count += 1
-
-        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_DATA)} data directories")
-        return success_count > 0
-
-    def create_manifest(self) -> None:
-        """ÆĞÅ°Áö ¸Å´ÏÆä½ºÆ® ÆÄÀÏ »ı¼º (°ËÁõ¿ë)"""
-        self.log("\n? Step 4: Creating package manifest...")
-
-        manifest: Dict[str, object] = {
-            "package_version": "1.0",
-            "creation_timestamp": self.timestamp,
-            "bot_name": "Wicked Zerg Challenger",
-            "files": {
-                "sources": self.ESSENTIAL_SOURCES,
-                "models": self.ESSENTIAL_MODELS,
-                "data": self.ESSENTIAL_DATA,
-            },
-            "model_checksums": {},
-            "package_structure": {
-                "bot_package/": "AI Arena Á¦Ãâ ÆĞÅ°Áö (½ÇÇà °¡´É)",
-                "backups/": "ÀÌÀü ÆĞÅ°Áö ¹é¾÷",
-                "verification_report.txt": "°ËÁõ º¸°í¼­",
-            }
-        }
-
-        # ¸ğµ¨ Ã¼Å©¼¶ ±â·Ï
-        checksums = manifest.get("model_checksums")
-        if isinstance(checksums, dict):
-            for model_file in self.ESSENTIAL_MODELS:
-                model_path = self.PACKAGE_DIR / model_file
-                if model_path.exists():
-                    checksum = self.calculate_checksum(model_path)
-                    checksums[model_file] = checksum
-
-        manifest_file = self.DEPLOY_DIR / "package_manifest.json"
-        with open(manifest_file, "w", encoding="utf-8") as f:
-            json.dump(manifest, f, indent=2, ensure_ascii=False)
-
-        self.log(f"? Manifest created: {manifest_file.name}")
-
-    def create_readme(self):
-        """AI Arena Á¦Ãâ¿ë README »ı¼º"""
-        self.log("\n? Step 5: Creating AI Arena README...")
-
-        readme_content = f"""# Wicked Zerg Challenger - AI Arena Edition
-
-## ÆĞÅ°Áö Á¤º¸
-- »ı¼º ½Ã°¢: {self.timestamp}
-- º¿ ÀÌ¸§: Wicked Zerg Challenger
-- Å¸ÀÔ: StarCraft II Zerg Bot
-
-## Æ÷ÇÔ ÆÄÀÏ
-? **¼Ò½ºÄÚµå**: {len(self.ESSENTIAL_SOURCES)}°³ ÆÄÀÏ
-? **¸ğµ¨ °¡ÁßÄ¡**: {len(self.ESSENTIAL_MODELS)}°³ ÆÄÀÏ (½Å°æ¸Á ¸ğµ¨ Æ÷ÇÔ)
-? **µ¥ÀÌÅÍ**: Ä¿¸®Å§·³ ÈÆ·Ã Åë°è
-
-## Áß¿ä Á¤º¸
-
-### ¸ğµ¨ °¡ÁßÄ¡ (ÈÆ·Ã °á°ú)
-ÀÌ ÆĞÅ°Áö¿¡´Â ·ÎÄÃ¿¡¼­ ¼öÃµ ¹øÀÇ ÀÚ±â°­È­ÇĞ½À(RL)À¸·Î ÈÆ·ÃµÈ ½Å°æ¸Á ¸ğµ¨ÀÌ Æ÷ÇÔµÇ¾î ÀÖ½À´Ï´Ù.
-- ÆÄÀÏ: `models/zerg_net_model.pt`
-- Å©±â: È®ÀÎ ÇÊ¿ä
-- »óÅÂ: ? Æ÷ÇÔµÊ
-
-### Á¦Ãâ ¹æ¹ı
-1. `bot_package/` Æú´õ ÀüÃ¼¸¦ AI Arena À¥»çÀÌÆ®¿¡ ¾÷·Îµå
-2. `run.py`°¡ ÀÚµ¿À¸·Î ÁøÀÔÁ¡À¸·Î ¼³Á¤µÊ
-3. AI Arena ¼­¹ö°¡ `python run.py` ½ÇÇà
-
-### ÁÖÀÇ»çÇ×
-?? ÀÌ ÆĞÅ°Áö´Â **Windows ·ÎÄÃ È¯°æ¿¡¼­ »ı¼º**µÇ¾ú½À´Ï´Ù.
-AI Arena Á¦Ãâ Àü¿¡ ´ÙÀ½À» È®ÀÎÇÏ¼¼¿ä:
-- run.pyÀÇ SC2 °æ·Î°¡ Linux/¸ÖÆ¼ÇÃ·§Æû È¯°æ¿¡ È£È¯µÇ´ÂÁö È®ÀÎ
-- Àı´ë °æ·Î ´ë½Å »ó´ë °æ·Î »ç¿ë È®ÀÎ
-- ÆÄÀÌ½ã ÀÇÁ¸¼ºÀÌ requirements.txt¿¡ ¸í½ÃµÇ¾î ÀÖ´ÂÁö È®ÀÎ
-
-### ÈÆ·Ã Åë°è
-- Ä¿¸®Å§·³ ³­ÀÌµµ: VeryEasy ¡æ CheatInsane
-- ÈÆ·Ã ¸ğµå: ÀÚ±â°­È­ÇĞ½À(REINFORCE) + ÁöµµÇĞ½À(Supervised)
-- ÃÖÀûÈ­: ´ÙÁß ÀÎ½ºÅÏ½º º´·Ä ÈÆ·Ã
-
----
-Generated by package_for_aiarena.py
-"""
-
-        readme_file = self.DEPLOY_DIR / "README_AI_ARENA.md"
-        with open(readme_file, "w", encoding="utf-8") as f:
-            f.write(readme_content)
-
-        self.log(f"? README created: {readme_file.name}")
-
-    def backup_previous_package(self):
-        """ÀÌÀü ÆĞÅ°Áö ¹é¾÷"""
-        if self.PACKAGE_DIR.exists():
-            self.log("\n? Backing up previous package...")
-            self.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-            
-            backup_name = f"bot_package_backup_{self.timestamp}"
-            backup_path = self.BACKUP_DIR / backup_name
-            
-            shutil.move(str(self.PACKAGE_DIR), str(backup_path))
-            self.log(f"? Backup created: {backup_name}")
-
-    def build(self) -> bool:
-        """ÀüÃ¼ ÆĞÅ°Â¡ ÇÁ·Î¼¼½º ½ÇÇà"""
-        self.log("=" * 80)
-        self.log("? Wicked Zerg Challenger - AI Arena Packager")
-        self.log("=" * 80)
-
-        try:
-            # ¹èÆ÷ µğ·ºÅä¸® ÃÊ±âÈ­
-            self.DEPLOY_DIR.mkdir(exist_ok=True)
-            
-            # ÀÌÀü ÆĞÅ°Áö ¹é¾÷
-            if self.PACKAGE_DIR.exists():
-                self.backup_previous_package()
-            
-            self.PACKAGE_DIR.mkdir(parents=True, exist_ok=True)
-
-            # Step 1: ¼Ò½ºÄÚµå º¹»ç
-            sources_ok = self.copy_sources()
-
-            # Step 2: ¸ğµ¨ °¡ÁßÄ¡ º¹»ç (°¡Àå Áß¿ä!)
-            models_ok = self.copy_models()
-
-            # Step 3: µ¥ÀÌÅÍ º¹»ç
-            data_ok = self.copy_data()
-
-            # Step 4: ¸Å´ÏÆä½ºÆ® »ı¼º
-            self.create_manifest()
-
-            # Step 5: README »ı¼º
-            self.create_readme()
-
-            # ÃÖÁ¾ º¸°í¼­ »ı¼º
-            self.save_report()
-
-            # ÃÖÁ¾ °á°ú
-            self.log("\n" + "=" * 80)
-            if models_ok:
-                self.log("? SUCCESS: Package created successfully with trained model!", "SUCCESS")
-                self.log(f"   ? Location: {self.PACKAGE_DIR.absolute()}", "SUCCESS")
-                self.log(f"   Ready for AI Arena submission! ?", "SUCCESS")
-            else:
-                self.log("??  WARNING: Package created but model weights may be missing!", "WARNING")
-                self.log("   ? This package may not work properly on AI Arena!", "WARNING")
-            
-            self.log("=" * 80)
-
-            return sources_ok and models_ok and data_ok
-
-        except Exception as e:
-            self.log(f"? ERROR: {e}", "ERROR")
-            import traceback
-            traceback.print_exc()
-            return False
-
-    def save_report(self):
-        """°ËÁõ º¸°í¼­ ÀúÀå"""
-        report_file = self.DEPLOY_DIR / "verification_report.txt"
-        with open(report_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(self.report))
-        self.log(f"\n? Verification report saved: {report_file.name}")
-
-
-def main():
-    """¸ŞÀÎ ÁøÀÔÁ¡"""
-    builder = PackageBuilder()
-    success = builder.build()
-    return 0 if success else 1
-
-
-if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+# -*- coding: utf-8 -*-
+"""
+================================================================================
+                AI Arena ÃÂ¦ÃƒÃ¢Â¿Ã« Ã†ÃÃ…Â°Ã‚Â¡ Ã€ÃšÂµÂ¿ÃˆÂ­ (package_for_aiarena.py)
+================================================================================
+
+Â·ÃÃ„ÃƒÂ¿Â¡Â¼Â­ ÃˆÃ†Â·ÃƒÂµÃˆ Â¸Ã°ÂµÂ¨Â°Ãº Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥Â¸Â¦ AI Arena ÃÂ¦ÃƒÃ¢Â¿Ã« Ã†ÃÃ…Â°ÃÃ¶Â·Ã Ã€ÃšÂµÂ¿ Â»Ã½Â¼ÂºÃ‡Ã•Â´ÃÂ´Ã™.
+
+Â±Ã¢Â´Ã‰:
+    1. ÃˆÃ†Â·ÃƒÂµÃˆ Â¸Ã°ÂµÂ¨ Â°Â¡ÃÃŸÃ„Â¡(.pt) Ã†Ã·Ã‡Ã”
+    2. Ã‡ÃŠÂ¼Ã¶ Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥ Ã€ÃšÂµÂ¿ Â¼Ã¶ÃÃ½
+    3. arena_deploy/ Ã†ÃºÂ´ÃµÂ·Ã Ã€ÃšÂµÂ¿ ÂºÂ¹Â»Ã§
+    4. ÃƒÂ¼Ã…Â©Â¼Â¶ Â°Ã‹ÃÃµ (Â¸Ã°ÂµÂ¨ Â¼Ã•Â»Ã³ Â¹Ã¦ÃÃ¶)
+
+Â»Ã§Â¿Ã«Â¹Ã½:
+    python package_for_aiarena.py
+
+ÃƒÃ¢Â·Ã‚:
+    - arena_deploy/bot_package/ (ÃÂ¦ÃƒÃ¢Â¿Ã« Â¿ÃÃ€Ã¼ Ã†ÃÃ…Â°ÃÃ¶)
+    - arena_deploy/verification_report.txt (Â°Ã‹ÃÃµ ÂºÂ¸Â°Ã­Â¼Â­)
+
+================================================================================
+"""
+
+import json
+import shutil
+import hashlib
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional
+
+
+class PackageBuilder:
+    """AI Arena ÃÂ¦ÃƒÃ¢Â¿Ã« Ã†ÃÃ…Â°ÃÃ¶ ÂºÃ´Â´Ãµ"""
+
+    # Ã‡ÃŠÂ¼Ã¶ Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥ Ã†Ã„Ã€Ã (Â·ÃÃÃ·, Â¸Ã…Â´ÃÃ€Ãº, Â½Ã…Â°Ã¦Â¸Ã)
+    ESSENTIAL_SOURCES: List[str] = [
+        "run.py",                           # ? AI Arena ÃÃ¸Ã€Ã”ÃÂ¡
+        "main_integrated.py",               # ? Â·ÃÃ„Ãƒ ÃˆÃ†Â·Ãƒ ÃÃ¸Ã€Ã”ÃÂ¡
+        "wicked_zerg_bot_pro.py",          # ? Â¸ÃÃ€Ã ÂºÂ¿ Ã…Â¬Â·Â¡Â½Âº
+        # Core Managers
+        "combat_manager.py",
+        "production_manager.py",
+        "economy_manager.py",
+        "intel_manager.py",
+        "micro_controller.py",
+        "scouting_system.py",
+        "queen_manager.py",
+        "personality_manager.py",
+        # Support
+        "config.py",
+        "sc2_integration_config.py",
+        "curriculum_manager.py",
+        "map_manager.py",
+        # Learning
+        "zerg_net.py",
+        "hybrid_learning.py",
+        "self_evolution.py",
+        # Utilities
+        "unit_factory.py",
+        "combat_tactics.py",
+        "production_resilience.py",
+        "telemetry_logger.py",
+        "arena_update.py",
+    ]
+
+    # Ã‡ÃŠÂ¼Ã¶ Â¸Ã°ÂµÂ¨ Ã†Ã„Ã€Ã (ÃˆÃ†Â·Ãƒ Â°Â¡ÃÃŸÃ„Â¡)
+    ESSENTIAL_MODELS: List[str] = [
+        "models/zerg_net_model.pt",          # ? Â½Ã…Â°Ã¦Â¸Ã Â¸Ã°ÂµÂ¨ (Â°Â¡Ã€Ã¥ ÃÃŸÂ¿Ã¤!)
+    ]
+
+    # Ã‡ÃŠÂ¼Ã¶ ÂµÂ¥Ã€ÃŒÃ…Ã Ã†Ã„Ã€Ã
+    ESSENTIAL_DATA: List[str] = [
+        "data/",                            # ? Ã„Â¿Â¸Â®Ã…Â§Â·Â³ ÃˆÃ†Â·Ãƒ Ã…Ã«Â°Ã¨
+    ]
+
+    # AI Arena Â¹Ã¨Ã†Ã· Ã†ÃºÂ´Ãµ
+    DEPLOY_DIR = Path("arena_deploy")
+    PACKAGE_DIR = DEPLOY_DIR / "bot_package"
+    BACKUP_DIR = DEPLOY_DIR / "backups"
+
+    def __init__(self, project_root: Optional[Path] = None):
+        """
+        Args:
+            project_root: Ã‡ÃÂ·ÃÃÂ§Ã†Â® Â·Ã§Ã†Â® Â°Ã¦Â·Ã (Â±Ã¢ÂºÂ»Â°Âª: Ã‡Ã¶Ã€Ã§ Ã†Ã„Ã€Ã ÂµÃ°Â·ÂºÃ…Ã¤Â¸Â®)
+        """
+        self.project_root = project_root or Path(__file__).parent.absolute()
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.report: List[str] = []
+
+    def log(self, message: str, level: str = "INFO"):
+        """Â·ÃÂ±Ã— Â¸ÃÂ½ÃƒÃÃ¶ ÃƒÃ¢Â·Ã‚ Â¹Ã— Ã€ÃºÃ€Ã¥"""
+        formatted = f"[{level}] {message}"
+        print(formatted)
+        self.report.append(formatted)
+
+    def verify_file_exists(self, file_path: Path) -> bool:
+        """Ã†Ã„Ã€Ã ÃÂ¸Ã€Ã§ Â¿Â©ÂºÃ ÃˆÂ®Ã€Ã"""
+        if file_path.exists():
+            self.log(f"? Found: {file_path.name}", "OK")
+            return True
+        else:
+            self.log(f"??  Missing: {file_path.name}", "WARNING")
+            return False
+
+    def calculate_checksum(self, file_path: Path) -> str:
+        """Ã†Ã„Ã€Ã ÃƒÂ¼Ã…Â©Â¼Â¶ Â°Ã¨Â»Ãª (Â¹Â«Â°Ã¡Â¼Âº Â°Ã‹ÃÃµ)"""
+        sha256_hash = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
+
+    def copy_sources(self) -> bool:
+        """Ã‡ÃŠÂ¼Ã¶ Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥ Ã†Ã„Ã€Ã ÂºÂ¹Â»Ã§"""
+        self.log("\n? Step 1: Copying source code files...")
+        success_count = 0
+
+        for source_file in self.ESSENTIAL_SOURCES:
+            src = self.project_root / source_file
+            dst = self.PACKAGE_DIR / source_file
+
+            if self.verify_file_exists(src):
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+                success_count += 1
+            else:
+                self.log(f"??  Skipped: {source_file} (not found)", "WARNING")
+
+        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_SOURCES)} source files")
+        return success_count > 0
+
+    def copy_models(self) -> bool:
+        """ÃˆÃ†Â·ÃƒÂµÃˆ Â¸Ã°ÂµÂ¨ Â°Â¡ÃÃŸÃ„Â¡ ÂºÂ¹Â»Ã§ (Â°Â¡Ã€Ã¥ ÃÃŸÂ¿Ã¤!)"""
+        self.log("\n? Step 2: Copying trained model weights...")
+        success_count = 0
+
+        for model_file in self.ESSENTIAL_MODELS:
+            src = self.project_root / model_file
+            dst = self.PACKAGE_DIR / model_file
+
+            if self.verify_file_exists(src):
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+                
+                # ÃƒÂ¼Ã…Â©Â¼Â¶ Â°Ã‹ÃÃµ
+                src_checksum = self.calculate_checksum(src)
+                dst_checksum = self.calculate_checksum(dst)
+                
+                if src_checksum == dst_checksum:
+                    self.log(f"? Model verified: {model_file} (SHA256: {src_checksum[:16]}...)", "OK")
+                    success_count += 1
+                else:
+                    self.log(f"? Checksum mismatch: {model_file}", "ERROR")
+            else:
+                self.log(
+                    f"??  WARNING: Model not found: {model_file}\n"
+                    f"   This model file is CRITICAL for AI Arena submission!\n"
+                    f"   Without it, the bot will run with untrained weights.",
+                    "CRITICAL"
+                )
+
+        if success_count == 0:
+            self.log(
+                "\n? CRITICAL: No model weights found!\n"
+                "   You MUST train the model first: python main_integrated.py\n"
+                "   Expected location: models/zerg_net_model.pt",
+                "ERROR"
+            )
+        
+        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_MODELS)} model files")
+        return success_count > 0
+
+    def copy_data(self) -> bool:
+        """ÂµÂ¥Ã€ÃŒÃ…Ã Ã†Ã„Ã€Ã ÂºÂ¹Â»Ã§ (Ã„Â¿Â¸Â®Ã…Â§Â·Â³ Ã…Ã«Â°Ã¨ ÂµÃ®)"""
+        self.log("\n? Step 3: Copying data files...")
+        success_count = 0
+
+        for data_item in self.ESSENTIAL_DATA:
+            src = self.project_root / data_item
+            dst = self.PACKAGE_DIR / data_item
+
+            if src.is_dir():
+                if src.exists():
+                    if dst.exists():
+                        shutil.rmtree(dst)
+                    shutil.copytree(src, dst)
+                    self.log(f"? Copied directory: {data_item}", "OK")
+                    success_count += 1
+                else:
+                    self.log(f"??  Missing directory: {data_item}", "WARNING")
+            else:
+                if self.verify_file_exists(src):
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+                    success_count += 1
+
+        self.log(f"? Copied {success_count}/{len(self.ESSENTIAL_DATA)} data directories")
+        return success_count > 0
+
+    def create_manifest(self) -> None:
+        """Ã†ÃÃ…Â°ÃÃ¶ Â¸Ã…Â´ÃÃ†Ã¤Â½ÂºÃ†Â® Ã†Ã„Ã€Ã Â»Ã½Â¼Âº (Â°Ã‹ÃÃµÂ¿Ã«)"""
+        self.log("\n? Step 4: Creating package manifest...")
+
+        manifest: Dict[str, object] = {
+            "package_version": "1.0",
+            "creation_timestamp": self.timestamp,
+            "bot_name": "Wicked Zerg Challenger",
+            "files": {
+                "sources": self.ESSENTIAL_SOURCES,
+                "models": self.ESSENTIAL_MODELS,
+                "data": self.ESSENTIAL_DATA,
+            },
+            "model_checksums": {},
+            "package_structure": {
+                "bot_package/": "AI Arena ÃÂ¦ÃƒÃ¢ Ã†ÃÃ…Â°ÃÃ¶ (Â½Ã‡Ã‡Ã  Â°Â¡Â´Ã‰)",
+                "backups/": "Ã€ÃŒÃ€Ã¼ Ã†ÃÃ…Â°ÃÃ¶ Â¹Ã©Â¾Ã·",
+                "verification_report.txt": "Â°Ã‹ÃÃµ ÂºÂ¸Â°Ã­Â¼Â­",
+            }
+        }
+
+        # Â¸Ã°ÂµÂ¨ ÃƒÂ¼Ã…Â©Â¼Â¶ Â±Ã¢Â·Ã
+        checksums = manifest.get("model_checksums")
+        if isinstance(checksums, dict):
+            for model_file in self.ESSENTIAL_MODELS:
+                model_path = self.PACKAGE_DIR / model_file
+                if model_path.exists():
+                    checksum = self.calculate_checksum(model_path)
+                    checksums[model_file] = checksum
+
+        manifest_file = self.DEPLOY_DIR / "package_manifest.json"
+        with open(manifest_file, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+        self.log(f"? Manifest created: {manifest_file.name}")
+
+    def create_readme(self):
+        """AI Arena ÃÂ¦ÃƒÃ¢Â¿Ã« README Â»Ã½Â¼Âº"""
+        self.log("\n? Step 5: Creating AI Arena README...")
+
+        readme_content = f"""# Wicked Zerg Challenger - AI Arena Edition
+
+## Ã†ÃÃ…Â°ÃÃ¶ ÃÂ¤ÂºÂ¸
+- Â»Ã½Â¼Âº Â½ÃƒÂ°Â¢: {self.timestamp}
+- ÂºÂ¿ Ã€ÃŒÂ¸Â§: Wicked Zerg Challenger
+- Ã…Â¸Ã€Ã”: StarCraft II Zerg Bot
+
+## Ã†Ã·Ã‡Ã” Ã†Ã„Ã€Ã
+? **Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥**: {len(self.ESSENTIAL_SOURCES)}Â°Â³ Ã†Ã„Ã€Ã
+? **Â¸Ã°ÂµÂ¨ Â°Â¡ÃÃŸÃ„Â¡**: {len(self.ESSENTIAL_MODELS)}Â°Â³ Ã†Ã„Ã€Ã (Â½Ã…Â°Ã¦Â¸Ã Â¸Ã°ÂµÂ¨ Ã†Ã·Ã‡Ã”)
+? **ÂµÂ¥Ã€ÃŒÃ…Ã**: Ã„Â¿Â¸Â®Ã…Â§Â·Â³ ÃˆÃ†Â·Ãƒ Ã…Ã«Â°Ã¨
+
+## ÃÃŸÂ¿Ã¤ ÃÂ¤ÂºÂ¸
+
+### Â¸Ã°ÂµÂ¨ Â°Â¡ÃÃŸÃ„Â¡ (ÃˆÃ†Â·Ãƒ Â°Ã¡Â°Ãº)
+Ã€ÃŒ Ã†ÃÃ…Â°ÃÃ¶Â¿Â¡Â´Ã‚ Â·ÃÃ„ÃƒÂ¿Â¡Â¼Â­ Â¼Ã¶ÃƒÂµ Â¹Ã¸Ã€Ã‡ Ã€ÃšÂ±Ã¢Â°Â­ÃˆÂ­Ã‡ÃÂ½Ã€(RL)Ã€Â¸Â·Ã ÃˆÃ†Â·ÃƒÂµÃˆ Â½Ã…Â°Ã¦Â¸Ã Â¸Ã°ÂµÂ¨Ã€ÃŒ Ã†Ã·Ã‡Ã”ÂµÃ‡Â¾Ã® Ã€Ã–Â½Ã€Â´ÃÂ´Ã™.
+- Ã†Ã„Ã€Ã: `models/zerg_net_model.pt`
+- Ã…Â©Â±Ã¢: ÃˆÂ®Ã€Ã Ã‡ÃŠÂ¿Ã¤
+- Â»Ã³Ã…Ã‚: ? Ã†Ã·Ã‡Ã”ÂµÃŠ
+
+### ÃÂ¦ÃƒÃ¢ Â¹Ã¦Â¹Ã½
+1. `bot_package/` Ã†ÃºÂ´Ãµ Ã€Ã¼ÃƒÂ¼Â¸Â¦ AI Arena Ã€Â¥Â»Ã§Ã€ÃŒÃ†Â®Â¿Â¡ Â¾Ã·Â·ÃÂµÃ¥
+2. `run.py`Â°Â¡ Ã€ÃšÂµÂ¿Ã€Â¸Â·Ã ÃÃ¸Ã€Ã”ÃÂ¡Ã€Â¸Â·Ã Â¼Â³ÃÂ¤ÂµÃŠ
+3. AI Arena Â¼Â­Â¹Ã¶Â°Â¡ `python run.py` Â½Ã‡Ã‡Ã 
+
+### ÃÃ–Ã€Ã‡Â»Ã§Ã‡Ã—
+?? Ã€ÃŒ Ã†ÃÃ…Â°ÃÃ¶Â´Ã‚ **Windows Â·ÃÃ„Ãƒ ÃˆÂ¯Â°Ã¦Â¿Â¡Â¼Â­ Â»Ã½Â¼Âº**ÂµÃ‡Â¾ÃºÂ½Ã€Â´ÃÂ´Ã™.
+AI Arena ÃÂ¦ÃƒÃ¢ Ã€Ã¼Â¿Â¡ Â´Ã™Ã€Â½Ã€Â» ÃˆÂ®Ã€ÃÃ‡ÃÂ¼Â¼Â¿Ã¤:
+- run.pyÃ€Ã‡ SC2 Â°Ã¦Â·ÃÂ°Â¡ Linux/Â¸Ã–Ã†Â¼Ã‡ÃƒÂ·Â§Ã†Ã» ÃˆÂ¯Â°Ã¦Â¿Â¡ ÃˆÂ£ÃˆÂ¯ÂµÃ‡Â´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
+- Ã€Ã½Â´Ã« Â°Ã¦Â·Ã Â´Ã«Â½Ã… Â»Ã³Â´Ã« Â°Ã¦Â·Ã Â»Ã§Â¿Ã« ÃˆÂ®Ã€Ã
+- Ã†Ã„Ã€ÃŒÂ½Ã£ Ã€Ã‡ÃÂ¸Â¼ÂºÃ€ÃŒ requirements.txtÂ¿Â¡ Â¸Ã­Â½ÃƒÂµÃ‡Â¾Ã® Ã€Ã–Â´Ã‚ÃÃ¶ ÃˆÂ®Ã€Ã
+
+### ÃˆÃ†Â·Ãƒ Ã…Ã«Â°Ã¨
+- Ã„Â¿Â¸Â®Ã…Â§Â·Â³ Â³Â­Ã€ÃŒÂµÂµ: VeryEasy Â¡Ã¦ CheatInsane
+- ÃˆÃ†Â·Ãƒ Â¸Ã°ÂµÃ¥: Ã€ÃšÂ±Ã¢Â°Â­ÃˆÂ­Ã‡ÃÂ½Ã€(REINFORCE) + ÃÃ¶ÂµÂµÃ‡ÃÂ½Ã€(Supervised)
+- ÃƒÃ–Ã€Ã»ÃˆÂ­: Â´Ã™ÃÃŸ Ã€ÃÂ½ÂºÃ…ÃÂ½Âº ÂºÂ´Â·Ã„ ÃˆÃ†Â·Ãƒ
+
+---
+Generated by package_for_aiarena.py
+"""
+
+        readme_file = self.DEPLOY_DIR / "README_AI_ARENA.md"
+        with open(readme_file, "w", encoding="utf-8") as f:
+            f.write(readme_content)
+
+        self.log(f"? README created: {readme_file.name}")
+
+    def backup_previous_package(self):
+        """Ã€ÃŒÃ€Ã¼ Ã†ÃÃ…Â°ÃÃ¶ Â¹Ã©Â¾Ã·"""
+        if self.PACKAGE_DIR.exists():
+            self.log("\n? Backing up previous package...")
+            self.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+            
+            backup_name = f"bot_package_backup_{self.timestamp}"
+            backup_path = self.BACKUP_DIR / backup_name
+            
+            shutil.move(str(self.PACKAGE_DIR), str(backup_path))
+            self.log(f"? Backup created: {backup_name}")
+
+    def build(self) -> bool:
+        """Ã€Ã¼ÃƒÂ¼ Ã†ÃÃ…Â°Ã‚Â¡ Ã‡ÃÂ·ÃÂ¼Â¼Â½Âº Â½Ã‡Ã‡Ã """
+        self.log("=" * 80)
+        self.log("? Wicked Zerg Challenger - AI Arena Packager")
+        self.log("=" * 80)
+
+        try:
+            # Â¹Ã¨Ã†Ã· ÂµÃ°Â·ÂºÃ…Ã¤Â¸Â® ÃƒÃŠÂ±Ã¢ÃˆÂ­
+            self.DEPLOY_DIR.mkdir(exist_ok=True)
+            
+            # Ã€ÃŒÃ€Ã¼ Ã†ÃÃ…Â°ÃÃ¶ Â¹Ã©Â¾Ã·
+            if self.PACKAGE_DIR.exists():
+                self.backup_previous_package()
+            
+            self.PACKAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+            # Step 1: Â¼Ã’Â½ÂºÃ„ÃšÂµÃ¥ ÂºÂ¹Â»Ã§
+            sources_ok = self.copy_sources()
+
+            # Step 2: Â¸Ã°ÂµÂ¨ Â°Â¡ÃÃŸÃ„Â¡ ÂºÂ¹Â»Ã§ (Â°Â¡Ã€Ã¥ ÃÃŸÂ¿Ã¤!)
+            models_ok = self.copy_models()
+
+            # Step 3: ÂµÂ¥Ã€ÃŒÃ…Ã ÂºÂ¹Â»Ã§
+            data_ok = self.copy_data()
+
+            # Step 4: Â¸Ã…Â´ÃÃ†Ã¤Â½ÂºÃ†Â® Â»Ã½Â¼Âº
+            self.create_manifest()
+
+            # Step 5: README Â»Ã½Â¼Âº
+            self.create_readme()
+
+            # ÃƒÃ–ÃÂ¾ ÂºÂ¸Â°Ã­Â¼Â­ Â»Ã½Â¼Âº
+            self.save_report()
+
+            # ÃƒÃ–ÃÂ¾ Â°Ã¡Â°Ãº
+            self.log("\n" + "=" * 80)
+            if models_ok:
+                self.log("? SUCCESS: Package created successfully with trained model!", "SUCCESS")
+                self.log(f"   ? Location: {self.PACKAGE_DIR.absolute()}", "SUCCESS")
+                self.log(f"   Ready for AI Arena submission! ?", "SUCCESS")
+            else:
+                self.log("??  WARNING: Package created but model weights may be missing!", "WARNING")
+                self.log("   ? This package may not work properly on AI Arena!", "WARNING")
+            
+            self.log("=" * 80)
+
+            return sources_ok and models_ok and data_ok
+
+        except Exception as e:
+            self.log(f"? ERROR: {e}", "ERROR")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def save_report(self):
+        """Â°Ã‹ÃÃµ ÂºÂ¸Â°Ã­Â¼Â­ Ã€ÃºÃ€Ã¥"""
+        report_file = self.DEPLOY_DIR / "verification_report.txt"
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(self.report))
+        self.log(f"\n? Verification report saved: {report_file.name}")
+
+
+def main():
+    """Â¸ÃÃ€Ã ÃÃ¸Ã€Ã”ÃÂ¡"""
+    builder = PackageBuilder()
+    success = builder.build()
+    return 0 if success else 1
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

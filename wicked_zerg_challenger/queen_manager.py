@@ -120,7 +120,7 @@ class QueenManager:
                                 # Success debug message (throttled)
                                 if getattr(self.bot, "iteration", 0) % 50 == 0:
                                     print(
-                                        f"[SUCCESS] {hatch.tag}¿¡ ÆßÇÎ ¿Ï·á! ¿©¿Õ ¿¡³ÊÁö: {queen_to_use.energy}"
+                                        f"[SUCCESS] {hatch.tag}Â¿Â¡ Ã†ÃŸÃ‡Ã Â¿ÃÂ·Ã¡! Â¿Â©Â¿Ã• Â¿Â¡Â³ÃŠÃÃ¶: {queen_to_use.energy}"
                                     )
                             except Exception:
                                 # Silently ignore transient failures (network/issue in SC2 API)

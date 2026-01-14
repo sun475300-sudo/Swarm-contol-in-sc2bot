@@ -220,14 +220,14 @@ def safe_stream_handler_emit(self, record):
 logging.StreamHandler.emit = safe_stream_handler_emit
 
 # Bot import - Use WickedZergBotPro as integrated bot
-# 현재 폴더(local_training)의 부모 폴더(루트)를 시스템 경로에 추가
+# Add parent directory (root) to sys.path from current directory (local_training)
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Curriculum Learning System
 from curriculum_manager import CurriculumManager
-# 이제 루트 폴더에 있는 진짜 봇을 불러옵니다
+# This allows importing modules from root directory
 from wicked_zerg_bot_pro import WickedZergBotPro as WickedZergBotIntegrated
 
 # Configuration
@@ -565,7 +565,7 @@ def run_training():
 
             if continuous_failures > 0:
                 print(
-                    f"? [재시도] 현재 연속 실패: {continuous_failures}/{MAX_CONTINUOUS_FAILURES}"
+                    f"[RETRY] Current consecutive failures: {continuous_failures}/{MAX_CONTINUOUS_FAILURES}"
                 )
 
             # Map selection (use default if available maps list is empty or map not found)
@@ -683,21 +683,21 @@ def run_training():
                 # Handle connection reset errors (most common)
                 if "connectionreseterror" in error_msg or "closing transport" in error_msg:
                     continuous_failures += 1
-                    print("??  [SYSTEM] 게임 연결이 예기치 않게 끔겼습니다.")
+                    print("[SYSTEM] Connection reset detected, stopping training.")
                     print(
-                        f"[INFO] 연결 단절 ({continuous_failures}/{MAX_CONTINUOUS_FAILURES}): 게임 클라이언트 종료 또는 통신 타임아웃"
+                        f"[INFO] Connection retry ({continuous_failures}/{MAX_CONTINUOUS_FAILURES}): StarCraft II client disconnected or connection lost"
                     )
 
                     if continuous_failures >= MAX_CONTINUOUS_FAILURES:
                         print("\n" + "=" * 70)
-                        print("? [CRITICAL] 연속 실패 제한 도달")
+                        print("[CRITICAL] Training stopped due to failures")
                         print("=" * 70)
-                        print(f"연속 {MAX_CONTINUOUS_FAILURES}회 연결 단절 발생")
-                        print("시스템 보호를 위해 훈련을 안전하게 중단합니다.")
-                        print("\n? 참고 사항:")
-                        print("  - SC2 클라이언트가 정상 실행 중인지 확인하세요")
-                        print("  - GPU/CPU 온도 및 메모리 사용량을 확인하세요")
-                        print("  - 잠시 후 다시 시도하거나 컴퓨터를 재부팅하세요")
+                        print(f"Training stopped after {MAX_CONTINUOUS_FAILURES} consecutive connection failures")
+                        print("System paused to prevent further issues. Please check system status.")
+                        print("\nPossible causes:")
+                        print("  - SC2 client is still running. Please check.")
+                        print("  - GPU/CPU temperature and memory usage. Please check.")
+                        print("  - Wait a moment and try again, or check other issues")
                         print("=" * 70 + "\n")
 
                         try:
@@ -705,14 +705,14 @@ def run_training():
 
                             with open("crash_report.txt", "a", encoding="utf-8") as f:
                                 f.write(f"\n{'=' * 70}\n")
-                                f.write(f"훈련 중단 시간: {datetime.now()}\n")
+                                f.write(f"Training stopped time: {datetime.now()}\n")
                                 f.write(
-                                    f"중단 원인: 연속 {MAX_CONTINUOUS_FAILURES}회 ConnectionResetError\n"
+                                    f"Stop reason: Training stopped after {MAX_CONTINUOUS_FAILURES} ConnectionResetError\n"
                                 )
-                                f.write(f"총 게임 수: {game_count}\n")
-                                f.write(f"전적: {win_count}승 {loss_count}패\n")
+                                f.write(f"Total games: {game_count}\n")
+                                f.write(f"Win/Loss: {win_count} wins {loss_count} losses\n")
                                 f.write(f"{'=' * 70}\n")
-                            print(f"? crash_report.txt에 로그 저장 완료")
+                            print(f"[INFO] crash_report.txt saved successfully")
                         except Exception:
                             pass
 
@@ -724,7 +724,7 @@ def run_training():
 
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
-                            print("[SYSTEM] GPU 메모리 정리 완료")
+                            print("[SYSTEM] GPU cache cleared")
                     except Exception:
                         pass
                     time.sleep(2)

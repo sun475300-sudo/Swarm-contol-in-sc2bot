@@ -443,7 +443,7 @@ class CombatTactics:
             MIN_DRONES_FOR_DEFENSE = _config.MIN_DRONES_FOR_DEFENSE
             
             if worker_count < MIN_DRONES_FOR_DEFENSE:
-                # ÃÖ¼Ò ÀÏ²Û À¯Áö - µ¿¿øÇÏÁö ¾ÊÀ½ (°æÁ¦ ºØ±« ¹æÁö)
+                # ÃƒÃ–Â¼Ã’ Ã€ÃÂ²Ã› Ã€Â¯ÃÃ¶ - ÂµÂ¿Â¿Ã¸Ã‡ÃÃÃ¶ Â¾ÃŠÃ€Â½ (Â°Ã¦ÃÂ¦ ÂºÃ˜Â±Â« Â¹Ã¦ÃÃ¶)
                 return
             
             # Calculate maximum workers that can be pulled (preserve minimum)
@@ -465,16 +465,16 @@ class CombatTactics:
                         reverse=True,
                     )
                     # CRITICAL FIX: Respect minimum drone preservation
-                    # ÃÖ´ë µ¿¿ø °¡´É ¼ö = ÀüÃ¼ ÀÏ²Û - ÃÖ¼Ò À¯Áö ÀÏ²Û ¼ö
+                    # ÃƒÃ–Â´Ã« ÂµÂ¿Â¿Ã¸ Â°Â¡Â´Ã‰ Â¼Ã¶ = Ã€Ã¼ÃƒÂ¼ Ã€ÃÂ²Ã› - ÃƒÃ–Â¼Ã’ Ã€Â¯ÃÃ¶ Ã€ÃÂ²Ã› Â¼Ã¶
                     max_workers_to_pull = min(
-                        max_pullable_workers,  # ÃÖ´ë µ¿¿ø °¡´É ¼ö (ÃÖ¼Ò À¯Áö ¼ö º¸Àå)
-                        max(int(worker_count * retreat_threshold), 1),  # ÃÖ¼Ò 1±â
-                        min(10, len(workers_list)),  # ÃÖ´ë 10±â
+                        max_pullable_workers,  # ÃƒÃ–Â´Ã« ÂµÂ¿Â¿Ã¸ Â°Â¡Â´Ã‰ Â¼Ã¶ (ÃƒÃ–Â¼Ã’ Ã€Â¯ÃÃ¶ Â¼Ã¶ ÂºÂ¸Ã€Ã¥)
+                        max(int(worker_count * retreat_threshold), 1),  # ÃƒÃ–Â¼Ã’ 1Â±Ã¢
+                        min(10, len(workers_list)),  # ÃƒÃ–Â´Ã« 10Â±Ã¢
                     )
                     
-                    # ÀýÃ¼Àý¸í »óÈ²¿¡¼­µµ ÃÖ¼Ò ÀÏ²ÛÀº º¸Á¸
+                    # Ã€Ã½ÃƒÂ¼Ã€Ã½Â¸Ã­ Â»Ã³ÃˆÂ²Â¿Â¡Â¼Â­ÂµÂµ ÃƒÃ–Â¼Ã’ Ã€ÃÂ²Ã›Ã€Âº ÂºÂ¸ÃÂ¸
                     if max_workers_to_pull <= 0:
-                        # ÃÖ¼Ò ÀÏ²Û ¼ö¸¦ º¸Á¸ÇÒ ¼ö ¾øÀ¸¸é µ¿¿øÇÏÁö ¾ÊÀ½
+                        # ÃƒÃ–Â¼Ã’ Ã€ÃÂ²Ã› Â¼Ã¶Â¸Â¦ ÂºÂ¸ÃÂ¸Ã‡Ã’ Â¼Ã¶ Â¾Ã¸Ã€Â¸Â¸Ã© ÂµÂ¿Â¿Ã¸Ã‡ÃÃÃ¶ Â¾ÃŠÃ€Â½
                         return
                     # CRITICAL FIX: Workers NO LONGER ATTACK - Only retreat to safety
                     # Workers should gather resources, not fight. Army units should handle defense.

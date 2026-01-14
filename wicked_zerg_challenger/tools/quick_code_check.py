@@ -1,83 +1,83 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Quick Code Quality Check
-ºü¸¥ ÄÚµå Ç°Áú Á¡°Ë (ÁÖ¿ä ÆÄÀÏ¸¸)
-
-ÁÖ¿ä Á¡°Ë Ç×¸ñ:
-1. await ´©¶ô ¹®Á¦
-2. ÁÖ¿ä ÆÄÀÏÀÇ ±âº» ¹®¹ı ¿À·ù
-"""
-
-import sys
-from pathlib import Path
-
-# ÇÁ·ÎÁ§Æ® ·çÆ®
-PROJECT_ROOT = Path(__file__).parent.parent.absolute()
-
-# ÁÖ¿ä Á¡°Ë ´ë»ó ÆÄÀÏ
-MAIN_FILES = [
-    "wicked_zerg_bot_pro.py",
-    "production_manager.py",
-    "economy_manager.py",
-    "combat_manager.py",
-]
-
-
-def check_await_in_file(file_path: Path) -> list:
-    """ÆÄÀÏ¿¡¼­ await ´©¶ô ¹®Á¦ Ã£±â"""
-    issues = []
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        in_async = False
-        for line_num, line in enumerate(lines, 1):
-            if "async def" in line:
-                in_async = True
-            elif line.strip().startswith("def ") and in_async:
-                in_async = False
-
-            if in_async and ".train(" in line and "await" not in line:
-                if not line.strip().startswith("#"):
-                    issues.append((line_num, line.strip()))
-
-    except Exception as e:
-        print(f"[ERROR] {file_path}: {e}", file=sys.stderr)
-
-    return issues
-
-
-def main():
-    """ºü¸¥ Á¡°Ë ½ÇÇà"""
-    print("ºü¸¥ ÄÚµå Ç°Áú Á¡°Ë ½ÃÀÛ...\n")
-
-    total_issues = 0
-    for filename in MAIN_FILES:
-        file_path = PROJECT_ROOT / filename
-        if not file_path.exists():
-            continue
-
-        issues = check_await_in_file(file_path)
-        if issues:
-            print(f"?? {filename}: {len(issues)}°÷ ¹ß°ß")
-            for line_num, line in issues[:3]:
-                print(f"   Line {line_num}: {line[:60]}...")
-            if len(issues) > 3:
-                print(f"   ... ¿Ü {len(issues) - 3}°÷")
-            total_issues += len(issues)
-        else:
-            print(f"? {filename}: ¹®Á¦ ¾øÀ½")
-
-    print("\n" + "=" * 60)
-    if total_issues == 0:
-        print("? ¸ğµç ÁÖ¿ä ÆÄÀÏ Á¡°Ë Åë°ú!")
-        return 0
-    else:
-        print(f"?? ÃÑ {total_issues}°÷ÀÇ ¹®Á¦ ¹ß°ß")
-        print("ÀÚ¼¼ÇÑ Á¡°Ë: python tools/code_quality_check.py")
-        return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Quick Code Quality Check
+ÂºÃ¼Â¸Â¥ Ã„ÃšÂµÃ¥ Ã‡Â°ÃÃº ÃÂ¡Â°Ã‹ (ÃÃ–Â¿Ã¤ Ã†Ã„Ã€ÃÂ¸Â¸)
+
+ÃÃ–Â¿Ã¤ ÃÂ¡Â°Ã‹ Ã‡Ã—Â¸Ã±:
+1. await Â´Â©Â¶Ã´ Â¹Â®ÃÂ¦
+2. ÃÃ–Â¿Ã¤ Ã†Ã„Ã€ÃÃ€Ã‡ Â±Ã¢ÂºÂ» Â¹Â®Â¹Ã½ Â¿Ã€Â·Ã¹
+"""
+
+import sys
+from pathlib import Path
+
+# Ã‡ÃÂ·ÃÃÂ§Ã†Â® Â·Ã§Ã†Â®
+PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+
+# ÃÃ–Â¿Ã¤ ÃÂ¡Â°Ã‹ Â´Ã«Â»Ã³ Ã†Ã„Ã€Ã
+MAIN_FILES = [
+    "wicked_zerg_bot_pro.py",
+    "production_manager.py",
+    "economy_manager.py",
+    "combat_manager.py",
+]
+
+
+def check_await_in_file(file_path: Path) -> list:
+    """Ã†Ã„Ã€ÃÂ¿Â¡Â¼Â­ await Â´Â©Â¶Ã´ Â¹Â®ÃÂ¦ ÃƒÂ£Â±Ã¢"""
+    issues = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        in_async = False
+        for line_num, line in enumerate(lines, 1):
+            if "async def" in line:
+                in_async = True
+            elif line.strip().startswith("def ") and in_async:
+                in_async = False
+
+            if in_async and ".train(" in line and "await" not in line:
+                if not line.strip().startswith("#"):
+                    issues.append((line_num, line.strip()))
+
+    except Exception as e:
+        print(f"[ERROR] {file_path}: {e}", file=sys.stderr)
+
+    return issues
+
+
+def main():
+    """ÂºÃ¼Â¸Â¥ ÃÂ¡Â°Ã‹ Â½Ã‡Ã‡Ã """
+    print("ÂºÃ¼Â¸Â¥ Ã„ÃšÂµÃ¥ Ã‡Â°ÃÃº ÃÂ¡Â°Ã‹ Â½ÃƒÃ€Ã›...\n")
+
+    total_issues = 0
+    for filename in MAIN_FILES:
+        file_path = PROJECT_ROOT / filename
+        if not file_path.exists():
+            continue
+
+        issues = check_await_in_file(file_path)
+        if issues:
+            print(f"?? {filename}: {len(issues)}Â°Ã· Â¹ÃŸÂ°ÃŸ")
+            for line_num, line in issues[:3]:
+                print(f"   Line {line_num}: {line[:60]}...")
+            if len(issues) > 3:
+                print(f"   ... Â¿Ãœ {len(issues) - 3}Â°Ã·")
+            total_issues += len(issues)
+        else:
+            print(f"? {filename}: Â¹Â®ÃÂ¦ Â¾Ã¸Ã€Â½")
+
+    print("\n" + "=" * 60)
+    if total_issues == 0:
+        print("? Â¸Ã°ÂµÃ§ ÃÃ–Â¿Ã¤ Ã†Ã„Ã€Ã ÃÂ¡Â°Ã‹ Ã…Ã«Â°Ãº!")
+        return 0
+    else:
+        print(f"?? ÃƒÃ‘ {total_issues}Â°Ã·Ã€Ã‡ Â¹Â®ÃÂ¦ Â¹ÃŸÂ°ÃŸ")
+        print("Ã€ÃšÂ¼Â¼Ã‡Ã‘ ÃÂ¡Â°Ã‹: python tools/code_quality_check.py")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

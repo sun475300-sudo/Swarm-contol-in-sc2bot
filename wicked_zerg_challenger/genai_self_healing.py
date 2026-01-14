@@ -1,407 +1,407 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Gen-AI Self-Healing System
-Google Vertex AI (Gemini)¸¦ È°¿ëÇÑ ÀÚµ¿ ¿¡·¯ ºĞ¼® ¹× ÆĞÄ¡ Á¦¾È ½Ã½ºÅÛ
-
-±â´É:
-1. ·±Å¸ÀÓ ¿¡·¯ ¹ß»ı ½Ã Traceback ¹× ¼Ò½º ÄÚµå¸¦ Gemini·Î Àü¼Û
-2. Gemini°¡ ¿øÀÎ ºĞ¼® ¹× ¼öÁ¤ ÆĞÄ¡ Á¦¾È
-3. ÆĞÄ¡ Á¦¾ÈÀ» ·Î±× ÆÄÀÏ¿¡ ÀúÀå (ÀÚµ¿ Àû¿ëÀº ¼±ÅÃÀû)
-
-ÁÖÀÇ»çÇ×:
-- ÀÚµ¿ ÆĞÄ¡ Àû¿ëÀº À§ÇèÇÒ ¼ö ÀÖÀ¸¹Ç·Î ±âº»ÀûÀ¸·Î ºñÈ°¼ºÈ­
-- ÆĞÄ¡ Á¦¾ÈÀ» ·Î±×·Î ÀúÀåÇÏ¿© °³¹ßÀÚ°¡ °ËÅä ÈÄ Àû¿ëÇÏµµ·Ï ±ÇÀå
-"""
-
-import os
-import traceback
-import json
-from pathlib import Path
-from typing import Dict, Optional, Any, List
-from datetime import datetime
-from dataclasses import dataclass, asdict
-
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
-
-try:
-    from loguru import logger
-except ImportError:
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-
-@dataclass
-class ErrorContext:
-    """¿¡·¯ ¹ß»ı ÄÁÅØ½ºÆ® Á¤º¸"""
-    error_type: str
-    error_message: str
-    traceback: str
-    file_path: Optional[str] = None
-    line_number: Optional[int] = None
-    function_name: Optional[str] = None
-    iteration: Optional[int] = None
-    game_time: Optional[float] = None
-    instance_id: Optional[int] = None
-
-
-@dataclass
-class PatchSuggestion:
-    """Gemini°¡ Á¦¾ÈÇÑ ÆĞÄ¡ Á¤º¸"""
-    description: str
-    file_path: str
-    old_code: str
-    new_code: str
-    confidence: float  # 0.0 ~ 1.0
-    reasoning: str
-
-
-class GenAISelfHealing:
-    """
-    Gen-AI Self-Healing ½Ã½ºÅÛ
-    
-    Google Gemini API¸¦ »ç¿ëÇÏ¿© ¿¡·¯¸¦ ºĞ¼®ÇÏ°í ÆĞÄ¡¸¦ Á¦¾ÈÇÕ´Ï´Ù.
-    """
-    
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        model_name: str = "gemini-1.5-flash",
-        enable_auto_patch: bool = False,
-        log_dir: Optional[Path] = None
-    ):
-        """
-        Args:
-            api_key: Google Gemini API Å° (È¯°æ º¯¼ö GOOGLE_API_KEY¿¡¼­µµ ÀĞÀ½)
-            model_name: »ç¿ëÇÒ Gemini ¸ğµ¨ ÀÌ¸§
-            enable_auto_patch: ÀÚµ¿ ÆĞÄ¡ Àû¿ë ¿©ºÎ (±âº»°ª: False, ±ÇÀåÇÏÁö ¾ÊÀ½)
-            log_dir: ÆĞÄ¡ ·Î±× ÀúÀå µğ·ºÅä¸®
-        """
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        self.model_name = model_name
-        self.enable_auto_patch = enable_auto_patch
-        self.log_dir = log_dir or Path("data/self_healing")
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Gemini API ÃÊ±âÈ­
-        self.client = None
-        if GEMINI_AVAILABLE and self.api_key:
-            try:
-                genai.configure(api_key=self.api_key)
-                self.client = genai.GenerativeModel(model_name)
-                logger.info(f"[SELF-HEALING] Gemini API initialized (model: {model_name})")
-            except Exception as e:
-                logger.warning(f"[SELF-HEALING] Failed to initialize Gemini API: {e}")
-                self.client = None
-        else:
-            if not GEMINI_AVAILABLE:
-                logger.warning("[SELF-HEALING] google-generativeai package not installed")
-            if not self.api_key:
-                logger.warning("[SELF-HEALING] GOOGLE_API_KEY or GEMINI_API_KEY not set")
-    
-    def is_available(self) -> bool:
-        """Gemini API°¡ »ç¿ë °¡´ÉÇÑÁö È®ÀÎ"""
-        return self.client is not None
-    
-    def analyze_error(
-        self,
-        error: Exception,
-        context: Optional[Dict[str, Any]] = None,
-        source_files: Optional[Dict[str, str]] = None
-    ) -> Optional[PatchSuggestion]:
-        """
-        ¿¡·¯¸¦ ºĞ¼®ÇÏ°í ÆĞÄ¡¸¦ Á¦¾È
-        
-        Args:
-            error: ¹ß»ıÇÑ ¿¹¿Ü °´Ã¼
-            context: Ãß°¡ ÄÁÅØ½ºÆ® Á¤º¸ (iteration, game_time, instance_id µî)
-            source_files: °ü·Ã ¼Ò½º ÆÄÀÏ ³»¿ë (ÆÄÀÏ °æ·Î -> ÆÄÀÏ ³»¿ë)
-        
-        Returns:
-            PatchSuggestion °´Ã¼ (ºĞ¼® ½ÇÆĞ ½Ã None)
-        """
-        if not self.is_available():
-            logger.warning("[SELF-HEALING] Gemini API not available, skipping error analysis")
-            return None
-        
-        try:
-            # ¿¡·¯ ÄÁÅØ½ºÆ® ¼öÁı
-            error_context = self._collect_error_context(error, context)
-            
-            # ¼Ò½º ÆÄÀÏ ÀĞ±â (°ü·Ã ÆÄÀÏÀÌ ÀÖ´Â °æ¿ì)
-            if source_files is None:
-                source_files = self._extract_source_files(error_context)
-            
-            # Gemini¿¡ Àü¼ÛÇÒ ÇÁ·ÒÇÁÆ® »ı¼º
-            prompt = self._build_analysis_prompt(error_context, source_files)
-            
-            # Gemini API È£Ãâ
-            response = self.client.generate_content(prompt)
-            
-            # ÀÀ´ä ÆÄ½Ì
-            patch_suggestion = self._parse_gemini_response(response.text, error_context)
-            
-            if patch_suggestion:
-                # ÆĞÄ¡ Á¦¾È ·Î±× ÀúÀå
-                self._save_patch_suggestion(error_context, patch_suggestion)
-                logger.info(f"[SELF-HEALING] Patch suggestion generated: {patch_suggestion.description}")
-            
-            return patch_suggestion
-            
-        except Exception as e:
-            logger.error(f"[SELF-HEALING] Error analysis failed: {e}")
-            logger.debug(traceback.format_exc())
-            return None
-    
-    def _collect_error_context(
-        self,
-        error: Exception,
-        context: Optional[Dict[str, Any]]
-    ) -> ErrorContext:
-        """¿¡·¯ ÄÁÅØ½ºÆ® ¼öÁı"""
-        tb_str = traceback.format_exc()
-        
-        # Traceback¿¡¼­ ÆÄÀÏ °æ·Î¿Í ¶óÀÎ ¹øÈ£ ÃßÃâ
-        file_path = None
-        line_number = None
-        function_name = None
-        
-        tb_lines = tb_str.split('\n')
-        for i, line in enumerate(tb_lines):
-            if 'File "' in line and '", line' in line:
-                try:
-                    parts = line.split('"')
-                    if len(parts) >= 2:
-                        file_path = parts[1]
-                        if '", line' in line:
-                            line_part = line.split('", line ')[1].split(',')[0]
-                            line_number = int(line_part)
-                except (ValueError, IndexError):
-                    pass
-            if 'def ' in line and function_name is None:
-                try:
-                    func_part = line.split('def ')[1].split('(')[0].strip()
-                    if func_part:
-                        function_name = func_part
-                except (IndexError, AttributeError):
-                    pass
-        
-        return ErrorContext(
-            error_type=type(error).__name__,
-            error_message=str(error),
-            traceback=tb_str,
-            file_path=file_path,
-            line_number=line_number,
-            function_name=function_name,
-            iteration=context.get('iteration') if context else None,
-            game_time=context.get('game_time') if context else None,
-            instance_id=context.get('instance_id') if context else None,
-        )
-    
-    def _extract_source_files(self, error_context: ErrorContext) -> Dict[str, str]:
-        """¿¡·¯¿Í °ü·ÃµÈ ¼Ò½º ÆÄÀÏ ÀĞ±â"""
-        source_files = {}
-        
-        if error_context.file_path and Path(error_context.file_path).exists():
-            try:
-                # ¿¡·¯°¡ ¹ß»ıÇÑ ÆÄÀÏ ÀĞ±â
-                with open(error_context.file_path, 'r', encoding='utf-8') as f:
-                    file_content = f.read()
-                
-                # °ü·Ã ¶óÀÎ ÁÖº¯ ÄÚµå ÃßÃâ (¿¡·¯ ¶óÀÎ ¡¾20 ¶óÀÎ)
-                if error_context.line_number:
-                    lines = file_content.split('\n')
-                    start_line = max(0, error_context.line_number - 21)
-                    end_line = min(len(lines), error_context.line_number + 20)
-                    relevant_code = '\n'.join(lines[start_line:end_line])
-                    source_files[error_context.file_path] = relevant_code
-                else:
-                    source_files[error_context.file_path] = file_content
-                    
-            except Exception as e:
-                logger.warning(f"[SELF-HEALING] Failed to read source file {error_context.file_path}: {e}")
-        
-        return source_files
-    
-    def _build_analysis_prompt(
-        self,
-        error_context: ErrorContext,
-        source_files: Dict[str, str]
-    ) -> str:
-        """Gemini¿¡ Àü¼ÛÇÒ ÇÁ·ÒÇÁÆ® »ı¼º"""
-        prompt = f"""You are a Python debugging assistant. Analyze the following error and suggest a fix.
-
-ERROR INFORMATION:
-- Error Type: {error_context.error_type}
-- Error Message: {error_context.error_message}
-- File: {error_context.file_path or 'Unknown'}
-- Line: {error_context.line_number or 'Unknown'}
-- Function: {error_context.function_name or 'Unknown'}
-
-TRACEBACK:
-```
-{error_context.traceback}
-```
-
-"""
-        
-        if source_files:
-            prompt += "SOURCE CODE (relevant section):\n"
-            for file_path, code in source_files.items():
-                prompt += f"\n--- {file_path} ---\n"
-                prompt += code
-                prompt += "\n"
-        
-        prompt += """
-Please analyze the error and provide a fix in the following JSON format:
-{
-    "description": "Brief description of the fix",
-    "file_path": "path/to/file.py",
-    "old_code": "the problematic code section",
-    "new_code": "the fixed code section",
-    "confidence": 0.0-1.0,
-    "reasoning": "Explanation of why this fix should work"
-}
-
-IMPORTANT:
-- Only suggest fixes that are clearly correct based on the error
-- Be conservative with confidence scores
-- Provide complete, runnable code blocks
-- Preserve code structure and indentation
-"""
-        
-        return prompt
-    
-    def _parse_gemini_response(self, response_text: str, error_context: ErrorContext) -> Optional[PatchSuggestion]:
-        """Gemini ÀÀ´ä ÆÄ½Ì"""
-        try:
-            # JSON ÄÚµå ºí·Ï ÃßÃâ
-            if '```json' in response_text:
-                json_start = response_text.find('```json') + 7
-                json_end = response_text.find('```', json_start)
-                json_str = response_text[json_start:json_end].strip()
-            elif '```' in response_text:
-                json_start = response_text.find('```') + 3
-                json_end = response_text.find('```', json_start)
-                json_str = response_text[json_start:json_end].strip()
-            else:
-                # JSONÀÌ ¾øÀ¸¸é ÀüÃ¼ ÅØ½ºÆ®¸¦ JSONÀ¸·Î ½Ãµµ
-                json_str = response_text.strip()
-            
-            # JSON ÆÄ½Ì
-            patch_data = json.loads(json_str)
-            
-            return PatchSuggestion(
-                description=patch_data.get('description', 'No description'),
-                file_path=patch_data.get('file_path', error_context.file_path or 'unknown'),
-                old_code=patch_data.get('old_code', ''),
-                new_code=patch_data.get('new_code', ''),
-                confidence=float(patch_data.get('confidence', 0.5)),
-                reasoning=patch_data.get('reasoning', 'No reasoning provided')
-            )
-            
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            logger.warning(f"[SELF-HEALING] Failed to parse Gemini response: {e}")
-            logger.debug(f"[SELF-HEALING] Response text: {response_text[:500]}")
-            return None
-    
-    def _save_patch_suggestion(self, error_context: ErrorContext, patch: PatchSuggestion):
-        """ÆĞÄ¡ Á¦¾ÈÀ» ÆÄÀÏ¿¡ ÀúÀå"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        patch_file = self.log_dir / f"patch_{timestamp}.json"
-        
-        patch_data = {
-            "timestamp": timestamp,
-            "error_context": asdict(error_context),
-            "patch_suggestion": asdict(patch),
-        }
-        
-        try:
-            with open(patch_file, 'w', encoding='utf-8') as f:
-                json.dump(patch_data, f, indent=2, ensure_ascii=False)
-            logger.info(f"[SELF-HEALING] Patch suggestion saved to {patch_file}")
-        except Exception as e:
-            logger.error(f"[SELF-HEALING] Failed to save patch suggestion: {e}")
-    
-    def apply_patch(self, patch: PatchSuggestion) -> bool:
-        """
-        ÆĞÄ¡ Àû¿ë (ÁÖÀÇ: ÀÚµ¿ ÆĞÄ¡´Â À§ÇèÇÒ ¼ö ÀÖÀ½)
-        
-        Args:
-            patch: Àû¿ëÇÒ ÆĞÄ¡ Á¦¾È
-        
-        Returns:
-            ¼º°ø ¿©ºÎ
-        """
-        if not self.enable_auto_patch:
-            logger.warning("[SELF-HEALING] Auto-patch is disabled. Patch suggestion saved but not applied.")
-            return False
-        
-        if patch.confidence < 0.7:
-            logger.warning(f"[SELF-HEALING] Patch confidence too low ({patch.confidence}), not applying")
-            return False
-        
-        try:
-            file_path = Path(patch.file_path)
-            if not file_path.exists():
-                logger.error(f"[SELF-HEALING] File not found: {file_path}")
-                return False
-            
-            # ÆÄÀÏ ¹é¾÷
-            backup_path = file_path.with_suffix(f"{file_path.suffix}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-            with open(file_path, 'r', encoding='utf-8') as f:
-                original_content = f.read()
-            with open(backup_path, 'w', encoding='utf-8') as f:
-                f.write(original_content)
-            
-            # ÆĞÄ¡ Àû¿ë
-            if patch.old_code in original_content:
-                new_content = original_content.replace(patch.old_code, patch.new_code)
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(new_content)
-                logger.info(f"[SELF-HEALING] Patch applied to {file_path} (backup: {backup_path})")
-                return True
-            else:
-                logger.warning(f"[SELF-HEALING] Old code not found in file, patch not applied")
-                return False
-                
-        except Exception as e:
-            logger.error(f"[SELF-HEALING] Failed to apply patch: {e}")
-            logger.debug(traceback.format_exc())
-            return False
-
-
-# Àü¿ª ÀÎ½ºÅÏ½º (¼±ÅÃÀû »ç¿ë)
-_global_self_healing: Optional[GenAISelfHealing] = None
-
-
-def get_self_healing() -> Optional[GenAISelfHealing]:
-    """Àü¿ª Self-Healing ÀÎ½ºÅÏ½º °¡Á®¿À±â"""
-    return _global_self_healing
-
-
-def init_self_healing(
-    api_key: Optional[str] = None,
-    enable_auto_patch: bool = False
-) -> GenAISelfHealing:
-    """
-    Àü¿ª Self-Healing ÀÎ½ºÅÏ½º ÃÊ±âÈ­
-    
-    Args:
-        api_key: Google Gemini API Å°
-        enable_auto_patch: ÀÚµ¿ ÆĞÄ¡ Àû¿ë ¿©ºÎ (±âº»°ª: False)
-    
-    Returns:
-        GenAISelfHealing ÀÎ½ºÅÏ½º
-    """
-    global _global_self_healing
-    _global_self_healing = GenAISelfHealing(
-        api_key=api_key,
-        enable_auto_patch=enable_auto_patch
-    )
-    return _global_self_healing
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Gen-AI Self-Healing System
+Google Vertex AI (Gemini)Â¸Â¦ ÃˆÂ°Â¿Ã«Ã‡Ã‘ Ã€ÃšÂµÂ¿ Â¿Â¡Â·Â¯ ÂºÃÂ¼Â® Â¹Ã— Ã†ÃÃ„Â¡ ÃÂ¦Â¾Ãˆ Â½ÃƒÂ½ÂºÃ…Ã›
+
+Â±Ã¢Â´Ã‰:
+1. Â·Â±Ã…Â¸Ã€Ã“ Â¿Â¡Â·Â¯ Â¹ÃŸÂ»Ã½ Â½Ãƒ Traceback Â¹Ã— Â¼Ã’Â½Âº Ã„ÃšÂµÃ¥Â¸Â¦ GeminiÂ·Ã Ã€Ã¼Â¼Ã›
+2. GeminiÂ°Â¡ Â¿Ã¸Ã€Ã ÂºÃÂ¼Â® Â¹Ã— Â¼Ã¶ÃÂ¤ Ã†ÃÃ„Â¡ ÃÂ¦Â¾Ãˆ
+3. Ã†ÃÃ„Â¡ ÃÂ¦Â¾ÃˆÃ€Â» Â·ÃÂ±Ã— Ã†Ã„Ã€ÃÂ¿Â¡ Ã€ÃºÃ€Ã¥ (Ã€ÃšÂµÂ¿ Ã€Ã»Â¿Ã«Ã€Âº Â¼Â±Ã…ÃƒÃ€Ã»)
+
+ÃÃ–Ã€Ã‡Â»Ã§Ã‡Ã—:
+- Ã€ÃšÂµÂ¿ Ã†ÃÃ„Â¡ Ã€Ã»Â¿Ã«Ã€Âº Ã€Â§Ã‡Ã¨Ã‡Ã’ Â¼Ã¶ Ã€Ã–Ã€Â¸Â¹Ã‡Â·Ã Â±Ã¢ÂºÂ»Ã€Ã»Ã€Â¸Â·Ã ÂºÃ±ÃˆÂ°Â¼ÂºÃˆÂ­
+- Ã†ÃÃ„Â¡ ÃÂ¦Â¾ÃˆÃ€Â» Â·ÃÂ±Ã—Â·Ã Ã€ÃºÃ€Ã¥Ã‡ÃÂ¿Â© Â°Â³Â¹ÃŸÃ€ÃšÂ°Â¡ Â°Ã‹Ã…Ã¤ ÃˆÃ„ Ã€Ã»Â¿Ã«Ã‡ÃÂµÂµÂ·Ã Â±Ã‡Ã€Ã¥
+"""
+
+import os
+import traceback
+import json
+from pathlib import Path
+from typing import Dict, Optional, Any, List
+from datetime import datetime
+from dataclasses import dataclass, asdict
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+try:
+    from loguru import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+
+@dataclass
+class ErrorContext:
+    """Â¿Â¡Â·Â¯ Â¹ÃŸÂ»Ã½ Ã„ÃÃ…Ã˜Â½ÂºÃ†Â® ÃÂ¤ÂºÂ¸"""
+    error_type: str
+    error_message: str
+    traceback: str
+    file_path: Optional[str] = None
+    line_number: Optional[int] = None
+    function_name: Optional[str] = None
+    iteration: Optional[int] = None
+    game_time: Optional[float] = None
+    instance_id: Optional[int] = None
+
+
+@dataclass
+class PatchSuggestion:
+    """GeminiÂ°Â¡ ÃÂ¦Â¾ÃˆÃ‡Ã‘ Ã†ÃÃ„Â¡ ÃÂ¤ÂºÂ¸"""
+    description: str
+    file_path: str
+    old_code: str
+    new_code: str
+    confidence: float  # 0.0 ~ 1.0
+    reasoning: str
+
+
+class GenAISelfHealing:
+    """
+    Gen-AI Self-Healing Â½ÃƒÂ½ÂºÃ…Ã›
+    
+    Google Gemini APIÂ¸Â¦ Â»Ã§Â¿Ã«Ã‡ÃÂ¿Â© Â¿Â¡Â·Â¯Â¸Â¦ ÂºÃÂ¼Â®Ã‡ÃÂ°Ã­ Ã†ÃÃ„Â¡Â¸Â¦ ÃÂ¦Â¾ÃˆÃ‡Ã•Â´ÃÂ´Ã™.
+    """
+    
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model_name: str = "gemini-1.5-flash",
+        enable_auto_patch: bool = False,
+        log_dir: Optional[Path] = None
+    ):
+        """
+        Args:
+            api_key: Google Gemini API Ã…Â° (ÃˆÂ¯Â°Ã¦ ÂºÂ¯Â¼Ã¶ GOOGLE_API_KEYÂ¿Â¡Â¼Â­ÂµÂµ Ã€ÃÃ€Â½)
+            model_name: Â»Ã§Â¿Ã«Ã‡Ã’ Gemini Â¸Ã°ÂµÂ¨ Ã€ÃŒÂ¸Â§
+            enable_auto_patch: Ã€ÃšÂµÂ¿ Ã†ÃÃ„Â¡ Ã€Ã»Â¿Ã« Â¿Â©ÂºÃ (Â±Ã¢ÂºÂ»Â°Âª: False, Â±Ã‡Ã€Ã¥Ã‡ÃÃÃ¶ Â¾ÃŠÃ€Â½)
+            log_dir: Ã†ÃÃ„Â¡ Â·ÃÂ±Ã— Ã€ÃºÃ€Ã¥ ÂµÃ°Â·ÂºÃ…Ã¤Â¸Â®
+        """
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        self.model_name = model_name
+        self.enable_auto_patch = enable_auto_patch
+        self.log_dir = log_dir or Path("data/self_healing")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Gemini API ÃƒÃŠÂ±Ã¢ÃˆÂ­
+        self.client = None
+        if GEMINI_AVAILABLE and self.api_key:
+            try:
+                genai.configure(api_key=self.api_key)
+                self.client = genai.GenerativeModel(model_name)
+                logger.info(f"[SELF-HEALING] Gemini API initialized (model: {model_name})")
+            except Exception as e:
+                logger.warning(f"[SELF-HEALING] Failed to initialize Gemini API: {e}")
+                self.client = None
+        else:
+            if not GEMINI_AVAILABLE:
+                logger.warning("[SELF-HEALING] google-generativeai package not installed")
+            if not self.api_key:
+                logger.warning("[SELF-HEALING] GOOGLE_API_KEY or GEMINI_API_KEY not set")
+    
+    def is_available(self) -> bool:
+        """Gemini APIÂ°Â¡ Â»Ã§Â¿Ã« Â°Â¡Â´Ã‰Ã‡Ã‘ÃÃ¶ ÃˆÂ®Ã€Ã"""
+        return self.client is not None
+    
+    def analyze_error(
+        self,
+        error: Exception,
+        context: Optional[Dict[str, Any]] = None,
+        source_files: Optional[Dict[str, str]] = None
+    ) -> Optional[PatchSuggestion]:
+        """
+        Â¿Â¡Â·Â¯Â¸Â¦ ÂºÃÂ¼Â®Ã‡ÃÂ°Ã­ Ã†ÃÃ„Â¡Â¸Â¦ ÃÂ¦Â¾Ãˆ
+        
+        Args:
+            error: Â¹ÃŸÂ»Ã½Ã‡Ã‘ Â¿Â¹Â¿Ãœ Â°Â´ÃƒÂ¼
+            context: ÃƒÃŸÂ°Â¡ Ã„ÃÃ…Ã˜Â½ÂºÃ†Â® ÃÂ¤ÂºÂ¸ (iteration, game_time, instance_id ÂµÃ®)
+            source_files: Â°Ã¼Â·Ãƒ Â¼Ã’Â½Âº Ã†Ã„Ã€Ã Â³Â»Â¿Ã« (Ã†Ã„Ã€Ã Â°Ã¦Â·Ã -> Ã†Ã„Ã€Ã Â³Â»Â¿Ã«)
+        
+        Returns:
+            PatchSuggestion Â°Â´ÃƒÂ¼ (ÂºÃÂ¼Â® Â½Ã‡Ã†Ã Â½Ãƒ None)
+        """
+        if not self.is_available():
+            logger.warning("[SELF-HEALING] Gemini API not available, skipping error analysis")
+            return None
+        
+        try:
+            # Â¿Â¡Â·Â¯ Ã„ÃÃ…Ã˜Â½ÂºÃ†Â® Â¼Ã¶ÃÃ½
+            error_context = self._collect_error_context(error, context)
+            
+            # Â¼Ã’Â½Âº Ã†Ã„Ã€Ã Ã€ÃÂ±Ã¢ (Â°Ã¼Â·Ãƒ Ã†Ã„Ã€ÃÃ€ÃŒ Ã€Ã–Â´Ã‚ Â°Ã¦Â¿Ã¬)
+            if source_files is None:
+                source_files = self._extract_source_files(error_context)
+            
+            # GeminiÂ¿Â¡ Ã€Ã¼Â¼Ã›Ã‡Ã’ Ã‡ÃÂ·Ã’Ã‡ÃÃ†Â® Â»Ã½Â¼Âº
+            prompt = self._build_analysis_prompt(error_context, source_files)
+            
+            # Gemini API ÃˆÂ£ÃƒÃ¢
+            response = self.client.generate_content(prompt)
+            
+            # Ã€Ã€Â´Ã¤ Ã†Ã„Â½ÃŒ
+            patch_suggestion = self._parse_gemini_response(response.text, error_context)
+            
+            if patch_suggestion:
+                # Ã†ÃÃ„Â¡ ÃÂ¦Â¾Ãˆ Â·ÃÂ±Ã— Ã€ÃºÃ€Ã¥
+                self._save_patch_suggestion(error_context, patch_suggestion)
+                logger.info(f"[SELF-HEALING] Patch suggestion generated: {patch_suggestion.description}")
+            
+            return patch_suggestion
+            
+        except Exception as e:
+            logger.error(f"[SELF-HEALING] Error analysis failed: {e}")
+            logger.debug(traceback.format_exc())
+            return None
+    
+    def _collect_error_context(
+        self,
+        error: Exception,
+        context: Optional[Dict[str, Any]]
+    ) -> ErrorContext:
+        """Â¿Â¡Â·Â¯ Ã„ÃÃ…Ã˜Â½ÂºÃ†Â® Â¼Ã¶ÃÃ½"""
+        tb_str = traceback.format_exc()
+        
+        # TracebackÂ¿Â¡Â¼Â­ Ã†Ã„Ã€Ã Â°Ã¦Â·ÃÂ¿Ã Â¶Ã³Ã€Ã Â¹Ã¸ÃˆÂ£ ÃƒÃŸÃƒÃ¢
+        file_path = None
+        line_number = None
+        function_name = None
+        
+        tb_lines = tb_str.split('\n')
+        for i, line in enumerate(tb_lines):
+            if 'File "' in line and '", line' in line:
+                try:
+                    parts = line.split('"')
+                    if len(parts) >= 2:
+                        file_path = parts[1]
+                        if '", line' in line:
+                            line_part = line.split('", line ')[1].split(',')[0]
+                            line_number = int(line_part)
+                except (ValueError, IndexError):
+                    pass
+            if 'def ' in line and function_name is None:
+                try:
+                    func_part = line.split('def ')[1].split('(')[0].strip()
+                    if func_part:
+                        function_name = func_part
+                except (IndexError, AttributeError):
+                    pass
+        
+        return ErrorContext(
+            error_type=type(error).__name__,
+            error_message=str(error),
+            traceback=tb_str,
+            file_path=file_path,
+            line_number=line_number,
+            function_name=function_name,
+            iteration=context.get('iteration') if context else None,
+            game_time=context.get('game_time') if context else None,
+            instance_id=context.get('instance_id') if context else None,
+        )
+    
+    def _extract_source_files(self, error_context: ErrorContext) -> Dict[str, str]:
+        """Â¿Â¡Â·Â¯Â¿Ã Â°Ã¼Â·ÃƒÂµÃˆ Â¼Ã’Â½Âº Ã†Ã„Ã€Ã Ã€ÃÂ±Ã¢"""
+        source_files = {}
+        
+        if error_context.file_path and Path(error_context.file_path).exists():
+            try:
+                # Â¿Â¡Â·Â¯Â°Â¡ Â¹ÃŸÂ»Ã½Ã‡Ã‘ Ã†Ã„Ã€Ã Ã€ÃÂ±Ã¢
+                with open(error_context.file_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                
+                # Â°Ã¼Â·Ãƒ Â¶Ã³Ã€Ã ÃÃ–ÂºÂ¯ Ã„ÃšÂµÃ¥ ÃƒÃŸÃƒÃ¢ (Â¿Â¡Â·Â¯ Â¶Ã³Ã€Ã Â¡Â¾20 Â¶Ã³Ã€Ã)
+                if error_context.line_number:
+                    lines = file_content.split('\n')
+                    start_line = max(0, error_context.line_number - 21)
+                    end_line = min(len(lines), error_context.line_number + 20)
+                    relevant_code = '\n'.join(lines[start_line:end_line])
+                    source_files[error_context.file_path] = relevant_code
+                else:
+                    source_files[error_context.file_path] = file_content
+                    
+            except Exception as e:
+                logger.warning(f"[SELF-HEALING] Failed to read source file {error_context.file_path}: {e}")
+        
+        return source_files
+    
+    def _build_analysis_prompt(
+        self,
+        error_context: ErrorContext,
+        source_files: Dict[str, str]
+    ) -> str:
+        """GeminiÂ¿Â¡ Ã€Ã¼Â¼Ã›Ã‡Ã’ Ã‡ÃÂ·Ã’Ã‡ÃÃ†Â® Â»Ã½Â¼Âº"""
+        prompt = f"""You are a Python debugging assistant. Analyze the following error and suggest a fix.
+
+ERROR INFORMATION:
+- Error Type: {error_context.error_type}
+- Error Message: {error_context.error_message}
+- File: {error_context.file_path or 'Unknown'}
+- Line: {error_context.line_number or 'Unknown'}
+- Function: {error_context.function_name or 'Unknown'}
+
+TRACEBACK:
+```
+{error_context.traceback}
+```
+
+"""
+        
+        if source_files:
+            prompt += "SOURCE CODE (relevant section):\n"
+            for file_path, code in source_files.items():
+                prompt += f"\n--- {file_path} ---\n"
+                prompt += code
+                prompt += "\n"
+        
+        prompt += """
+Please analyze the error and provide a fix in the following JSON format:
+{
+    "description": "Brief description of the fix",
+    "file_path": "path/to/file.py",
+    "old_code": "the problematic code section",
+    "new_code": "the fixed code section",
+    "confidence": 0.0-1.0,
+    "reasoning": "Explanation of why this fix should work"
+}
+
+IMPORTANT:
+- Only suggest fixes that are clearly correct based on the error
+- Be conservative with confidence scores
+- Provide complete, runnable code blocks
+- Preserve code structure and indentation
+"""
+        
+        return prompt
+    
+    def _parse_gemini_response(self, response_text: str, error_context: ErrorContext) -> Optional[PatchSuggestion]:
+        """Gemini Ã€Ã€Â´Ã¤ Ã†Ã„Â½ÃŒ"""
+        try:
+            # JSON Ã„ÃšÂµÃ¥ ÂºÃ­Â·Ã ÃƒÃŸÃƒÃ¢
+            if '```json' in response_text:
+                json_start = response_text.find('```json') + 7
+                json_end = response_text.find('```', json_start)
+                json_str = response_text[json_start:json_end].strip()
+            elif '```' in response_text:
+                json_start = response_text.find('```') + 3
+                json_end = response_text.find('```', json_start)
+                json_str = response_text[json_start:json_end].strip()
+            else:
+                # JSONÃ€ÃŒ Â¾Ã¸Ã€Â¸Â¸Ã© Ã€Ã¼ÃƒÂ¼ Ã…Ã˜Â½ÂºÃ†Â®Â¸Â¦ JSONÃ€Â¸Â·Ã Â½ÃƒÂµÂµ
+                json_str = response_text.strip()
+            
+            # JSON Ã†Ã„Â½ÃŒ
+            patch_data = json.loads(json_str)
+            
+            return PatchSuggestion(
+                description=patch_data.get('description', 'No description'),
+                file_path=patch_data.get('file_path', error_context.file_path or 'unknown'),
+                old_code=patch_data.get('old_code', ''),
+                new_code=patch_data.get('new_code', ''),
+                confidence=float(patch_data.get('confidence', 0.5)),
+                reasoning=patch_data.get('reasoning', 'No reasoning provided')
+            )
+            
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning(f"[SELF-HEALING] Failed to parse Gemini response: {e}")
+            logger.debug(f"[SELF-HEALING] Response text: {response_text[:500]}")
+            return None
+    
+    def _save_patch_suggestion(self, error_context: ErrorContext, patch: PatchSuggestion):
+        """Ã†ÃÃ„Â¡ ÃÂ¦Â¾ÃˆÃ€Â» Ã†Ã„Ã€ÃÂ¿Â¡ Ã€ÃºÃ€Ã¥"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        patch_file = self.log_dir / f"patch_{timestamp}.json"
+        
+        patch_data = {
+            "timestamp": timestamp,
+            "error_context": asdict(error_context),
+            "patch_suggestion": asdict(patch),
+        }
+        
+        try:
+            with open(patch_file, 'w', encoding='utf-8') as f:
+                json.dump(patch_data, f, indent=2, ensure_ascii=False)
+            logger.info(f"[SELF-HEALING] Patch suggestion saved to {patch_file}")
+        except Exception as e:
+            logger.error(f"[SELF-HEALING] Failed to save patch suggestion: {e}")
+    
+    def apply_patch(self, patch: PatchSuggestion) -> bool:
+        """
+        Ã†ÃÃ„Â¡ Ã€Ã»Â¿Ã« (ÃÃ–Ã€Ã‡: Ã€ÃšÂµÂ¿ Ã†ÃÃ„Â¡Â´Ã‚ Ã€Â§Ã‡Ã¨Ã‡Ã’ Â¼Ã¶ Ã€Ã–Ã€Â½)
+        
+        Args:
+            patch: Ã€Ã»Â¿Ã«Ã‡Ã’ Ã†ÃÃ„Â¡ ÃÂ¦Â¾Ãˆ
+        
+        Returns:
+            Â¼ÂºÂ°Ã¸ Â¿Â©ÂºÃ
+        """
+        if not self.enable_auto_patch:
+            logger.warning("[SELF-HEALING] Auto-patch is disabled. Patch suggestion saved but not applied.")
+            return False
+        
+        if patch.confidence < 0.7:
+            logger.warning(f"[SELF-HEALING] Patch confidence too low ({patch.confidence}), not applying")
+            return False
+        
+        try:
+            file_path = Path(patch.file_path)
+            if not file_path.exists():
+                logger.error(f"[SELF-HEALING] File not found: {file_path}")
+                return False
+            
+            # Ã†Ã„Ã€Ã Â¹Ã©Â¾Ã·
+            backup_path = file_path.with_suffix(f"{file_path.suffix}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                original_content = f.read()
+            with open(backup_path, 'w', encoding='utf-8') as f:
+                f.write(original_content)
+            
+            # Ã†ÃÃ„Â¡ Ã€Ã»Â¿Ã«
+            if patch.old_code in original_content:
+                new_content = original_content.replace(patch.old_code, patch.new_code)
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                logger.info(f"[SELF-HEALING] Patch applied to {file_path} (backup: {backup_path})")
+                return True
+            else:
+                logger.warning(f"[SELF-HEALING] Old code not found in file, patch not applied")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[SELF-HEALING] Failed to apply patch: {e}")
+            logger.debug(traceback.format_exc())
+            return False
+
+
+# Ã€Ã¼Â¿Âª Ã€ÃÂ½ÂºÃ…ÃÂ½Âº (Â¼Â±Ã…ÃƒÃ€Ã» Â»Ã§Â¿Ã«)
+_global_self_healing: Optional[GenAISelfHealing] = None
+
+
+def get_self_healing() -> Optional[GenAISelfHealing]:
+    """Ã€Ã¼Â¿Âª Self-Healing Ã€ÃÂ½ÂºÃ…ÃÂ½Âº Â°Â¡ÃÂ®Â¿Ã€Â±Ã¢"""
+    return _global_self_healing
+
+
+def init_self_healing(
+    api_key: Optional[str] = None,
+    enable_auto_patch: bool = False
+) -> GenAISelfHealing:
+    """
+    Ã€Ã¼Â¿Âª Self-Healing Ã€ÃÂ½ÂºÃ…ÃÂ½Âº ÃƒÃŠÂ±Ã¢ÃˆÂ­
+    
+    Args:
+        api_key: Google Gemini API Ã…Â°
+        enable_auto_patch: Ã€ÃšÂµÂ¿ Ã†ÃÃ„Â¡ Ã€Ã»Â¿Ã« Â¿Â©ÂºÃ (Â±Ã¢ÂºÂ»Â°Âª: False)
+    
+    Returns:
+        GenAISelfHealing Ã€ÃÂ½ÂºÃ…ÃÂ½Âº
+    """
+    global _global_self_healing
+    _global_self_healing = GenAISelfHealing(
+        api_key=api_key,
+        enable_auto_patch=enable_auto_patch
+    )
+    return _global_self_healing

@@ -36,7 +36,7 @@ from typing import List, Tuple, Dict
 import argparse
 
 # ==================== ?   ====================
-# ?? : local_training ?¢¥ local_training  ?? ?¨ö
+# ?? : local_training ?Â¢Â¥ local_training  ?? ?Â¨Ã¶
 
 from pathlib import Path as _Path
 
@@ -72,7 +72,7 @@ TRAINING_SOURCE_DIR = Path(r"D\replays\replays")
 BOT_OUTPUT_DIR = TRAINING_FOLDER / "replays"
 
 # 4. Archive (stores processed files)
-ARCHIVE_DIR = Path(r"D:\?¡Æ¡¾??¡¦??replay_archive")
+ARCHIVE_DIR = Path(r"D:\?Â¡Ã†Â¡Â¾??Â¡Â¦??replay_archive")
 
 # ========================================================================
 
@@ -104,10 +104,10 @@ class ReplayLifecycleManager:
 
     def extract_and_filter_zips(self, dry_run: bool = False) -> Tuple[int, int]:
         """
-        ?¢¯??  ZIP  ??  ?¡¤?¢¬ 
+        ?Â¢Â¯??  ZIP  ??  ?Â¡Â¤?Â¢Â¬ 
         
         Returns:
-            (_?¡¤_, ??__?¡¤_)
+            (_?Â¡Â¤_, ??__?Â¡Â¤_)
         """
         print(f"\n{'='*80}")
         print("STEP 1: EXTRACT & FILTER ZIPS")
@@ -118,14 +118,14 @@ class ReplayLifecycleManager:
 
         zip_files = sorted(DOWNLOAD_DIR.glob("*.zip"))
         if not zip_files:
-            print(f"??  ZIP  ??  ?¢¥: {DOWNLOAD_DIR}\n")
-            print("?  ?¢ç?¨ù:")
-            print(f"   1. {DOWNLOAD_DIR}  ?¢¥?¡Æ?")
-            print(f"   2. ZIP  ?¢¥?¡Æ?")
-            print(f"   3. ?¢¬ .zip ?¢ç?¡Æ ?¢¥?¡Æ?\n")
+            print(f"??  ZIP  ??  ?Â¢Â¥: {DOWNLOAD_DIR}\n")
+            print("?  ?Â¢Ã§?Â¨Ã¹:")
+            print(f"   1. {DOWNLOAD_DIR}  ?Â¢Â¥?Â¡Ã†?")
+            print(f"   2. ZIP  ?Â¢Â¥?Â¡Ã†?")
+            print(f"   3. ?Â¢Â¬ .zip ?Â¢Ã§?Â¡Ã† ?Â¢Â¥?Â¡Ã†?\n")
             return 0, 0
 
-        print(f"? {len(zip_files)} ZIP  ©¬¡Æ\n")
+        print(f"? {len(zip_files)} ZIP  Â©Â¬Â¡Ã†\n")
 
         total_extracted = 0
         total_filtered = 0
@@ -136,16 +136,16 @@ class ReplayLifecycleManager:
             try:
                 with zipfile.ZipFile(zip_path, "r") as z:
                     all_files = [f for f in z.namelist() if f.endswith(".SC2Replay")]
-                    print(f"         {len(all_files)} ?¡¤ ©¬¡Æ")
+                    print(f"         {len(all_files)} ?Â¡Â¤ Â©Â¬Â¡Ã†")
 
                     for file_in_zip in all_files:
                         fname_lower = Path(file_in_zip).name.lower()
                         total_extracted += 1
 
-                        #  ?¡Æ?¢¬ ?¢ç
+                        #  ?Â¡Ã†?Â¢Â¬ ?Â¢Ã§
                         is_zerg_pro = any(zname in fname_lower for zname in TARGET_ZERGS)
 
-                        # ©¬¡Æ : ?¢¬ Zerg, ZvT, ZvP, ZvZ  ???¨ú ?¢¥?¡Æ?
+                        # Â©Â¬Â¡Ã† : ?Â¢Â¬ Zerg, ZvT, ZvP, ZvZ  ???Â¨Ãº ?Â¢Â¥?Â¡Ã†?
                         has_zerg_tag = any(
                             tag in fname_lower
                             for tag in ["zerg", "zvt", "zvp", "zvz", "z_", "_z", "zergv"]
@@ -154,7 +154,7 @@ class ReplayLifecycleManager:
                         is_target = is_zerg_pro or has_zerg_tag
 
                         if is_target:
-                            # ©¬¨¬   ?¢¬ ?¡©
+                            # Â©Â¬Â¨Â¬   ?Â¢Â¬ ?Â¡Â©
                             new_name = Path(file_in_zip).name.replace(" ", "_")
                             target_path = TRAINING_SOURCE_DIR / new_name
 
@@ -178,11 +178,11 @@ class ReplayLifecycleManager:
         self.stats["filtered"] = total_filtered
 
         print(f"\n{''*80}")
-        print(f"?  ?¡¤:")
-        print(f"   ?  ?¡¤: {total_extracted}")
+        print(f"?  ?Â¡Â¤:")
+        print(f"   ?  ?Â¡Â¤: {total_extracted}")
         print(f"   ?  ??: {total_filtered}")
-        print(f"   ?  ?¢®: {TRAINING_SOURCE_DIR}")
-        print(f"   ? ?¨ù ??: {self.stats['total_size_mb']:.1f} MB")
+        print(f"   ?  ?Â¢Â®: {TRAINING_SOURCE_DIR}")
+        print(f"   ? ?Â¨Ã¹ ??: {self.stats['total_size_mb']:.1f} MB")
 
         if dry_run:
             print(f"   (DRY RUN -    )")
@@ -191,9 +191,9 @@ class ReplayLifecycleManager:
 
     def cleanup_after_training(self, dry_run: bool = False) -> Dict:
         """
-        ¨¡¡¤  ?¡¤ :
-        1.   ?¡¤  BOT_OUTPUT_DIR ??
-        2.   ?¡¤  archive ??
+        Â¨Â¡Â¡Â¤  ?Â¡Â¤ :
+        1.   ?Â¡Â¤  BOT_OUTPUT_DIR ??
+        2.   ?Â¡Â¤  archive ??
         """
         print(f"\n{'='*80}")
         print("STEP 2: CLEANUP AFTER TRAINING")
@@ -206,18 +206,18 @@ class ReplayLifecycleManager:
         moved_pro_replays = 0
         deleted_replays = 0
 
-        print(f"? ¨¡¡¤  ??: {TRAINING_SOURCE_DIR}")
+        print(f"? Â¨Â¡Â¡Â¤  ??: {TRAINING_SOURCE_DIR}")
 
         if not TRAINING_SOURCE_DIR.exists():
-            print(f"??  ¨¡¡¤  ?¢¥: {TRAINING_SOURCE_DIR}\n")
+            print(f"??  Â¨Â¡Â¡Â¤  ?Â¢Â¥: {TRAINING_SOURCE_DIR}\n")
             return self.stats
 
         replays = list(TRAINING_SOURCE_DIR.glob("*.SC2Replay"))
         if not replays:
-            print(f"??  ?¡¤?¡Æ ?¢¥.\n")
+            print(f"??  ?Â¡Â¤?Â¡Ã† ?Â¢Â¥.\n")
             return self.stats
 
-        print(f"? {len(replays)} ?¡¤ ?©ø \n")
+        print(f"? {len(replays)} ?Â¡Â¤ ?Â©Ã¸ \n")
 
         # CRITICAL: Load learning tracking from multiple sources for hard requirement enforcement
         learning_counts = {}
@@ -319,12 +319,12 @@ class ReplayLifecycleManager:
                 print(f"  [UNKNOWN] {rep.name[:50]} (learning: {learning_count}/{MIN_LEARNING_ITERATIONS})")
 
         self.stats["moved"] = moved_bot_replays + moved_pro_replays
-        self.stats["deleted"] = moved_pro_replays  # ???¨¬ = 
+        self.stats["deleted"] = moved_pro_replays  # ???Â¨Â¬ = 
 
         print(f"\n{''*80}")
-        print(f"?  ?¡¤:")
-        print(f"   ?  ?¡¤ ??: {moved_bot_replays}  {BOT_OUTPUT_DIR}")
-        print(f"   ?  ?¡¤ ??: {moved_pro_replays}  {ARCHIVE_DIR}")
+        print(f"?  ?Â¡Â¤:")
+        print(f"   ?  ?Â¡Â¤ ??: {moved_bot_replays}  {BOT_OUTPUT_DIR}")
+        print(f"   ?  ?Â¡Â¤ ??: {moved_pro_replays}  {ARCHIVE_DIR}")
 
         if dry_run:
             print(f"   (DRY RUN -   ?? )")
@@ -333,7 +333,7 @@ class ReplayLifecycleManager:
 
     def validate_replays(self) -> Dict:
         """
-        ?¡¤  (sc2reader ,  ?¨¬???)
+        ?Â¡Â¤  (sc2reader ,  ?Â¨Â¬???)
         """
         print(f"\n{'='*80}")
         print("STEP 3: VALIDATE REPLAYS")
@@ -345,7 +345,7 @@ class ReplayLifecycleManager:
         except ImportError:
             HAS_SC2READER = False
             print("??  sc2reader  (pip install sc2reader)")
-            print("   ?¨¬? ?¢¥?¢¥.\n")
+            print("   ?Â¨Â¬? ?Â¢Â¥?Â¢Â¥.\n")
 
         validation_stats = {
             "total": 0,
@@ -356,21 +356,21 @@ class ReplayLifecycleManager:
 
         replays = list(TRAINING_SOURCE_DIR.glob("*.SC2Replay"))
         if not replays:
-            print(f"??  ?¡¤?¡Æ ?¢¥.\n")
+            print(f"??  ?Â¡Â¤?Â¡Ã† ?Â¢Â¥.\n")
             return validation_stats
 
-        print(f"? {len(replays)} ?¡¤  \n")
+        print(f"? {len(replays)} ?Â¡Â¤  \n")
 
         for i, rep in enumerate(replays, 1):
             validation_stats["total"] += 1
             valid = True
             error = None
 
-            # ?¨¬???
+            # ?Â¨Â¬???
             try:
-                if rep.stat().st_size < 10_000:  # 10KB ?¢¬
+                if rep.stat().st_size < 10_000:  # 10KB ?Â¢Â¬
                     valid = False
-                    error = " ?©ö  (<10KB)"
+                    error = " ?Â©Ã¶  (<10KB)"
 
                 # sc2reader 
                 if HAS_SC2READER and valid:
@@ -402,13 +402,13 @@ class ReplayLifecycleManager:
                 print(msg)
 
         print(f"\n{''*80}")
-        print(f"?  ?¡¤:")
+        print(f"?  ?Â¡Â¤:")
         print(f"   ? : {validation_stats['total']}")
-        print(f"   ? ?¢¯: {validation_stats['valid']}")
-        print(f"   ? ?¢¯: {validation_stats['invalid']}")
+        print(f"   ? ?Â¢Â¯: {validation_stats['valid']}")
+        print(f"   ? ?Â¢Â¯: {validation_stats['invalid']}")
 
         if validation_stats["errors"]:
-            print(f"\n??  ?¢¯ :")
+            print(f"\n??  ?Â¢Â¯ :")
             for err in validation_stats["errors"][:5]:
                 print(f"   ? {err}")
             if len(validation_stats["errors"]) > 5:
@@ -453,23 +453,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python replay_lifecycle_manager.py --extract     # ZIP  ?¡¤ 
-  python replay_lifecycle_manager.py --cleanup     # ¨¡¡¤  
-  python replay_lifecycle_manager.py --validate    # ?¡¤ 
-  python replay_lifecycle_manager.py --full        # ?¨ù ??
-  python replay_lifecycle_manager.py --dry-run     #   ?¢¬
+  python replay_lifecycle_manager.py --extract     # ZIP  ?Â¡Â¤ 
+  python replay_lifecycle_manager.py --cleanup     # Â¨Â¡Â¡Â¤  
+  python replay_lifecycle_manager.py --validate    # ?Â¡Â¤ 
+  python replay_lifecycle_manager.py --full        # ?Â¨Ã¹ ??
+  python replay_lifecycle_manager.py --dry-run     #   ?Â¢Â¬
         """
     )
 
     parser.add_argument("--extract", action="store_true", help="ZIP ")
-    parser.add_argument("--cleanup", action="store_true", help="¨¡¡¤  ")
+    parser.add_argument("--cleanup", action="store_true", help="Â¨Â¡Â¡Â¤  ")
     parser.add_argument("--validate", action="store_true", help="")
-    parser.add_argument("--full", action="store_true", help="?¨ù ?? (extract + cleanup)")
-    parser.add_argument("--dry-run", action="store_true", help="  ?¢¬ (   )")
+    parser.add_argument("--full", action="store_true", help="?Â¨Ã¹ ?? (extract + cleanup)")
+    parser.add_argument("--dry-run", action="store_true", help="  ?Â¢Â¬ (   )")
 
     args = parser.parse_args()
 
-    # ?¨¬?: --extract 
+    # ?Â¨Â¬?: --extract 
     if not any([args.extract, args.cleanup, args.validate, args.full]):
         args.extract = True
 
@@ -493,7 +493,7 @@ Examples:
     manager.generate_report(validation_stats)
 
     print(f"\n{'='*80}")
-    print("? Step 2 COMPLETE:  ¨¡¡¤ ?¨ù")
+    print("? Step 2 COMPLETE:  Â¨Â¡Â¡Â¤ ?Â¨Ã¹")
     print(f"{'='*80}\n")
 
 if __name__ == "__main__":
