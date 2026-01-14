@@ -2,10 +2,16 @@
 
 import json
 import os
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import statistics
+
+# CRITICAL: Add script directory to sys.path for local imports
+script_dir = Path(__file__).parent
+if str(script_dir) not in sys.path:
+    sys.path.insert(0, str(script_dir))
 
 try:
     import sc2reader
@@ -349,11 +355,7 @@ class ReplayBuildOrderExtractor:
         strategies = []
 
         try:
-            import sys
-            from pathlib import Path
-            script_dir = Path(__file__).parent
-            if str(script_dir) not in sys.path:
-                sys.path.insert(0, str(script_dir))
+            # sys.path is already set up at module level
             from strategy_database import StrategyType, MatchupType
 
             replay = sc2reader.load_replay(str(replay_path), load_map=True)
@@ -466,11 +468,7 @@ class ReplayBuildOrderExtractor:
         """
         # IMPROVED: Use learning tracker to get replays that need training
         try:
-            import sys
-            from pathlib import Path
-            script_dir = Path(__file__).parent
-            if str(script_dir) not in sys.path:
-                sys.path.insert(0, str(script_dir))
+            # sys.path is already set up at module level
             from replay_learning_manager import ReplayLearningTracker
             from learning_logger import LearningLogger
             from strategy_database import StrategyDatabase, StrategyType, MatchupType
@@ -516,11 +514,7 @@ class ReplayBuildOrderExtractor:
         # CRITICAL: Load crash handler to prevent infinite retry loops
         crash_handler = None
         try:
-            import sys
-            from pathlib import Path
-            script_dir = Path(__file__).parent
-            if str(script_dir) not in sys.path:
-                sys.path.insert(0, str(script_dir))
+            # sys.path is already set up at module level
             from replay_crash_handler import ReplayCrashHandler
             crash_log_file = self.replay_dir / "crash_log.json"
             crash_handler = ReplayCrashHandler(crash_log_file, max_crashes=3)
@@ -529,8 +523,8 @@ class ReplayBuildOrderExtractor:
             # If a session is older than 30 minutes, it's likely a crashed/stuck process
             # This prevents "Already being learned" false positives
             crash_handler.recover_stale_sessions(max_age_seconds=1800)  # 30 minutes
-        except ImportError:
-            logger.warning("replay_crash_handler not available - crash recovery disabled")
+        except ImportError as e:
+            logger.warning(f"replay_crash_handler not available - crash recovery disabled: {e}")
 
         extracted_count = 0
         for replay_path in replay_files:
@@ -591,11 +585,7 @@ class ReplayBuildOrderExtractor:
 
                         # CRITICAL: Also update learning_status.json for hard requirement enforcement
                         try:
-                            import sys
-                            from pathlib import Path
-                            script_dir = Path(__file__).parent
-                            if str(script_dir) not in sys.path:
-                                sys.path.insert(0, str(script_dir))
+                            # sys.path is already set up at module level
                             from learning_status_manager import LearningStatusManager
                             status_file = self.replay_dir / "learning_status.json"
                             status_manager = LearningStatusManager(status_file, min_iterations=5)
@@ -784,11 +774,11 @@ def main():
         print("\n[INFO] Auto commit enabled - committing changes...")
         try:
             import subprocess
-                    script_path = Path(__file__).parent.parent / "tools" / "auto_commit_after_training.py"
-                    if script_path.exists():
-                        import sys
-                        result = subprocess.run(
-                            [sys.executable, str(script_path)],
+            script_path = Path(__file__).parent.parent / "tools" / "auto_commit_after_training.py"
+            if script_path.exists():
+                import sys
+                result = subprocess.run(
+                    [sys.executable, str(script_path)],
                     cwd=str(Path(__file__).parent.parent),
                     capture_output=True,
                     text=True,

@@ -98,3 +98,24 @@ for unit_name, time, param in found_units[:10]:
 print(f"\n=== All Zerg Buildings Found ===")
 for building_name, count in sorted(all_zerg_buildings.items()):
     print(f"  {building_name}: {count} times")
+
+print(f"\n=== Checking for Extractor variants ===")
+extractor_variants = []
+for event in replay.events:
+    if hasattr(event, '__class__') and 'UnitBorn' in str(event.__class__):
+        if hasattr(event, 'control_pid') and event.control_pid == zerg_pid:
+            if hasattr(event, 'unit') and hasattr(event.unit, 'name'):
+                unit_name = event.unit.name
+                # Check for any gas-related buildings
+                if 'extractor' in unit_name.lower() or 'gas' in unit_name.lower() or 'vespene' in unit_name.lower():
+                    if hasattr(event, 'second'):
+                        extractor_variants.append((unit_name, event.second))
+                    elif hasattr(event, 'frame'):
+                        extractor_variants.append((unit_name, event.frame / 16.0))
+
+if extractor_variants:
+    print(f"Found {len(extractor_variants)} gas-related buildings:")
+    for unit_name, time in extractor_variants[:10]:
+        print(f"  {unit_name} at {time:.1f}s")
+else:
+    print("No gas-related buildings found in UnitBornEvents")
