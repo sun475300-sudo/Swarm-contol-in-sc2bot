@@ -2213,7 +2213,7 @@ class WickedZergBotPro(BotAI):
                         f"   Context: M:{self.minerals} G:{self.vespene} | Supply:{self.supply_used}/{self.supply_cap}"
                     )
 
-                    print(f"   Traceback: {tb.format_exc()}")
+                    print(f"   Traceback: {traceback.format_exc()}")
                 except Exception:
                     pass
 
