@@ -2742,12 +2742,22 @@ class ProductionManager:
                 # Emergency: Enemy attacking or minerals high - use all larvae
                 available_larvae = larvae
             else:
-                # Normal: Save only 10% for tech units (reduced from 30%)
-                reserved_larvae_count = max(1, int(total_larvae * 0.1))
-                if total_larvae > reserved_larvae_count:
-                    available_larvae = larvae[:-reserved_larvae_count]
+                # IMPROVED: Late-game (20+ minutes) - use more larvae for tech units when gas is high
+                game_time = b.time
+                if game_time >= 1200 and b.vespene >= 100:
+                    # Late-game with high gas: Reserve 30% for tech units (increased from 10%)
+                    reserved_larvae_count = max(1, int(total_larvae * 0.3))
+                    if total_larvae > reserved_larvae_count:
+                        available_larvae = larvae[:-reserved_larvae_count]
+                    else:
+                        available_larvae = []
                 else:
-                    available_larvae = []
+                    # Normal: Save only 10% for tech units (reduced from 30%)
+                    reserved_larvae_count = max(1, int(total_larvae * 0.1))
+                    if total_larvae > reserved_larvae_count:
+                        available_larvae = larvae[:-reserved_larvae_count]
+                    else:
+                        available_larvae = []
 
             if not available_larvae and not minerals_high:
                 return
@@ -3026,10 +3036,37 @@ class ProductionManager:
                         return
 
             if force_high_tech:
+                # IMPROVED: Late-game tech activation - prioritize tech units
+                # Try Hydralisk first (best DPS), then Roach, then Baneling morph
                 if await self._try_produce_unit(UnitTypeId.HYDRALISK, larvae):
+                    current_iteration = getattr(b, "iteration", 0)
+                    if current_iteration % 75 == 0:
+                        print(f"[LATE-GAME TECH] [{int(b.time)}s] Producing Hydralisk (gas: {b.vespene})")
                     return
                 if await self._try_produce_unit(UnitTypeId.ROACH, larvae):
+                    current_iteration = getattr(b, "iteration", 0)
+                    if current_iteration % 75 == 0:
+                        print(f"[LATE-GAME TECH] [{int(b.time)}s] Producing Roach (gas: {b.vespene})")
                     return
+                
+                # IMPROVED: Also try Baneling morph when force_high_tech is active
+                baneling_nests = b.structures(UnitTypeId.BANELINGNEST).ready
+                if baneling_nests.exists:
+                    intel = getattr(b, "intel", None)
+                    if intel and intel.cached_zerglings is not None:
+                        zerglings_ready = [u for u in intel.cached_zerglings if u.is_ready and u.is_idle]
+                    else:
+                        zerglings_ready = [u for u in b.units(UnitTypeId.ZERGLING) if u.is_ready and u.is_idle]
+                    
+                    if zerglings_ready and b.can_afford(AbilityId.MORPHZERGLINGTOBANELING_BANELING):
+                        try:
+                            zerglings_ready[0](AbilityId.MORPHZERGLINGTOBANELING_BANELING)
+                            current_iteration = getattr(b, "iteration", 0)
+                            if current_iteration % 75 == 0:
+                                print(f"[LATE-GAME TECH] [{int(b.time)}s] Morphing Zergling to Baneling (gas: {b.vespene})")
+                            return
+                        except Exception:
+                            pass
 
             if not force_high_tech and b.supply_left >= 4:
                 if await self._try_produce_unit(UnitTypeId.ZERGLING, larvae):
