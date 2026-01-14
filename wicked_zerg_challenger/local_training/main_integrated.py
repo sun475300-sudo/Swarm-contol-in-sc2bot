@@ -220,8 +220,14 @@ def safe_stream_handler_emit(self, record):
 logging.StreamHandler.emit = safe_stream_handler_emit
 
 # Bot import - Use WickedZergBotPro as integrated bot
+# 현재 폴더(local_training)의 부모 폴더(루트)를 시스템 경로에 추가
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Curriculum Learning System
 from curriculum_manager import CurriculumManager
+# 이제 루트 폴더에 있는 진짜 봇을 불러옵니다
 from wicked_zerg_bot_pro import WickedZergBotPro as WickedZergBotIntegrated
 
 # Configuration
