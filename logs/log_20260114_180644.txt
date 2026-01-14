@@ -1,8 +1,0 @@
-=== Monsterbot Log ===
-Started: 2026-01-14 18:06:44
-Personality: serral
-==================================================
-
-[18:07:03] [INFO] Monsterbot online! Version 2026.01.06
-[18:07:03] [INFO] Personality: SERRAL
-[18:07:03] [INFO] Opponent race: Zerg

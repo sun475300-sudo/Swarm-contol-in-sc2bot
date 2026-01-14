@@ -1,0 +1,115 @@
+# ===================================
+# Swarm Control in SC2Bot - Git Ignore
+# ===================================
+
+# Environment Variables & Secrets
+# -------------------------------
+.env
+.env.*
+*.env
+!.env.example
+!.env.template
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Personal/Private Text Files
+# ---------------------------
+인공지능에게 물어본 나의 인생고민.txt
+*개인*.txt
+*private*.txt
+*personal*.txt
+
+# Logs
+# ----
+logs/
+*.log
+*.log.*
+
+# Python
+# -------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+# -------------------
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & Editors
+# -------------
+.vscode/
+.idea/
+.cursor/
+.cursorignore
+.cursorrules
+*.swp
+*.swo
+*~
+
+# OS Files
+# --------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Credentials & API Keys
+# ---------------------
+*.key
+*.pem
+*.json
+!pyrightconfig.json
+!requirements.json
+*-key.json
+gcp-key.json
+secrets/
+credentials/
+config.ini
+config.local.ini
+
+# Documents containing API keys (exclude from commit)
+# ---------------------------------------------------
+# Pattern to exclude documents that may contain actual API keys
+# Add specific file paths here if they contain real API keys
+# Note: Documentation files with example keys (like YOUR_API_KEY_HERE) are OK
+# Only add files here if they contain actual, working API keys
+
+# Example patterns (uncomment and modify as needed):
+# *api_key*.md
+# *API_KEY*.txt
+# *secret*.md
+# *credentials*.md
+
+# Specific files with actual API keys (add file paths here):
+# wicked_zerg_challenger/docs/ANDROID_GEMINI_API_KEY_SETUP.md
+# wicked_zerg_challenger/docs/ANDROID_GEMINI_API_KEY_QUICK_SETUP.md
+
+# Android local.properties (contains API keys and SDK paths)
+local.properties
+**/local.properties
+
+# Temporary Files
+# ---------------
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Build Artifacts
+# ---------------
+dist/
+build/
+*.egg-info/
+.gradle/
+build_output.log

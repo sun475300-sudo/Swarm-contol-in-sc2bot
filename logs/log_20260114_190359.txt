@@ -1,9 +1,0 @@
-=== Monsterbot Log ===
-Started: 2026-01-14 19:03:59
-Personality: reynor
-==================================================
-
-[19:04:18] [INFO] Monsterbot online! Version 2026.01.06
-[19:04:18] [INFO] Personality: REYNOR
-[19:04:18] [INFO] Opponent race: Protoss
-[19:04:18] [DEBUG] State: 0M/0G, Supply: 12/14, Army: 0
