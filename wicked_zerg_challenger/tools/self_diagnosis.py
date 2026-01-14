@@ -34,13 +34,48 @@ def main():
         try:
             with open(strategy_db_path, 'r', encoding='utf-8') as f:
                 strategy_db = json.load(f)
-            total_strategies = len(strategy_db.get("strategies", []))
-            last_updated = strategy_db.get("last_updated", "Unknown")
+            
+            # CRITICAL: strategy_db.json structure is flat - strategies are top-level keys
+            # Keys are like "build_order_ZvP_0_1", "build_order_ZvT_0_2", etc.
+            strategy_keys = [k for k in strategy_db.keys() if k.startswith("build_order")]
+            total_strategies = len(strategy_keys)
+            
+            # Find last updated time from strategy objects
+            last_updated = "Unknown"
+            if strategy_keys:
+                # Get the most recent extracted_at timestamp
+                extracted_times = []
+                for key in strategy_keys:
+                    strategy = strategy_db.get(key, {})
+                    if isinstance(strategy, dict):
+                        extracted_at = strategy.get("extracted_at")
+                        if extracted_at:
+                            extracted_times.append(extracted_at)
+                
+                if extracted_times:
+                    # Sort and get the most recent
+                    extracted_times.sort(reverse=True)
+                    last_updated = extracted_times[0]
+            
+            # Also get matchup breakdown
+            matchup_counts = {}
+            for key in strategy_keys:
+                strategy = strategy_db.get(key, {})
+                if isinstance(strategy, dict):
+                    matchup = strategy.get("matchup", "Unknown")
+                    matchup_counts[matchup] = matchup_counts.get(matchup, 0) + 1
+            
             print(f"    Status: ? Exists")
             print(f"    Total strategies: {total_strategies}")
             print(f"    Last updated: {last_updated}")
+            if matchup_counts:
+                print(f"    Matchup breakdown:")
+                for matchup, count in sorted(matchup_counts.items()):
+                    print(f"      {matchup}: {count}")
         except Exception as e:
             print(f"    Status: ? Exists but error reading: {e}")
+            import traceback
+            traceback.print_exc()
     else:
         print(f"    Status: ? Not found")
     
@@ -104,8 +139,9 @@ def main():
             errors='ignore'
         )
         python_processes = [line for line in result.stdout.split('\n') if 'python.exe' in line.lower()]
-        print(f"    Python processes: {len(python_processes) - 1}")  # -1 for header
-        if len(python_processes) > 1:
+        python_count = len(python_processes) - 1  # -1 for header
+        print(f"    Python processes: {python_count}")
+        if python_count > 0:
             print(f"    Status: ? Python processes running")
         else:
             print(f"    Status: ? No Python processes found")
