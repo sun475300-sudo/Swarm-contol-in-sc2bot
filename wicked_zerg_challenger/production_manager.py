@@ -2454,8 +2454,9 @@ class ProductionManager:
                 for larva in larva_list[:min(5, len(larva_list))]:
                     if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.HYDRALISK)
-                            units_produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.HYDRALISK):
+                                units_produced += 1
                         except Exception:
                             break
                 if units_produced > 0:
@@ -2469,8 +2470,9 @@ class ProductionManager:
                 for larva in larva_list[:min(5, len(larva_list))]:
                     if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.ROACH)
-                            units_produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ROACH):
+                                units_produced += 1
                         except Exception:
                             break
                 if units_produced > 0:
