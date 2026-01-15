@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
 """
 Run a mock battle simulation using BasicZergAgent and MockSC2Env.
 """
+
+import sys
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(project_root))
 
 from src.bot.agents.basic_zerg_agent import BasicZergAgent
 from src.sc2_env.mock_env import MockSC2Env

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Basic Zerg Agent - A simplified Zerg agent that works without SC2 runtime.
 """
