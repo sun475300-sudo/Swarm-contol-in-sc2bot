@@ -12,6 +12,8 @@ Core features:
 
 import csv
 import json
+import shutil
+from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -138,25 +140,55 @@ class TelemetryLogger:
                 print(f"[WARNING] Telemetry logging error: {e}")
 
     async def save_telemetry(self) -> None:
-        """Save telemetry data to JSON and CSV files"""
+        """Save telemetry data to JSON and CSV files (Atomic Write)"""
         try:
             if not self.telemetry_data:
                 print("[TELEMETRY] No data to save")
                 return
 
-            # Save as JSON
-            with open(self.telemetry_file, "w", encoding="utf-8") as f:
-                json.dump(self.telemetry_data, f, indent=2, ensure_ascii=False)
+            # Atomic write for JSON (임시 파일 생성 후 교체)
+            json_path = Path(self.telemetry_file)
+            temp_json = json_path.with_suffix(json_path.suffix + '.tmp')
+            
+            try:
+                # 임시 파일에 쓰기
+                with open(temp_json, "w", encoding="utf-8") as f:
+                    json.dump(self.telemetry_data, f, indent=2, ensure_ascii=False)
+                
+                # 원자적 교체 (Windows 호환)
+                try:
+                    temp_json.replace(json_path)
+                except OSError:
+                    # Windows: rename가 실패할 수 있으므로 copy + remove
+                    shutil.copy2(temp_json, json_path)
+                    temp_json.unlink()
+            except Exception as e:
+                if temp_json.exists():
+                    temp_json.unlink()
+                raise e
 
-            # Save as CSV
-            csv_file = self.telemetry_file.replace(".json", ".csv")
-            if self.telemetry_data:
-                with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            # Atomic write for CSV
+            csv_file = json_path.with_suffix('.csv')
+            temp_csv = csv_file.with_suffix(csv_file.suffix + '.tmp')
+            
+            try:
+                with open(temp_csv, "w", encoding="utf-8", newline="") as f:
                     writer = csv.DictWriter(f, fieldnames=self.telemetry_data[0].keys())
                     writer.writeheader()
                     writer.writerows(self.telemetry_data)
+                
+                # 원자적 교체
+                try:
+                    temp_csv.replace(csv_file)
+                except OSError:
+                    shutil.copy2(temp_csv, csv_file)
+                    temp_csv.unlink()
+            except Exception as e:
+                if temp_csv.exists():
+                    temp_csv.unlink()
+                raise e
 
-            print(f"[TELEMETRY] Data saved: {self.telemetry_file}, {csv_file}")
+            print(f"[TELEMETRY] Data saved (atomic): {self.telemetry_file}, {csv_file}")
 
         except Exception as e:
             print(f"[WARNING] Telemetry save error: {e}")
