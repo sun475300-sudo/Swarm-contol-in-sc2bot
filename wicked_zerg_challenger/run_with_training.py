@@ -166,7 +166,9 @@ def main():
             
             # Create new bot instance for each game
             bot = create_bot_with_training()
-            bot.game_count = game_count  # Track game count
+            # bot is already a Bot instance, so we can set attributes on the underlying AI
+            if hasattr(bot, 'ai') and bot.ai:
+                bot.ai.game_count = game_count  # Track game count
             
             # Run game with error handling
             try:
@@ -182,10 +184,11 @@ def main():
                     time.sleep(5)
                     continue
                 
+                # bot is already a Bot instance from create_bot_with_training()
                 run_game(
                     map_instance,
                     [
-                        Bot(Race.Zerg, bot),
+                        bot,  # Use bot directly, don't wrap it again
                         Computer(opponent_race, difficulty)
                     ],
                     realtime=False  # False = fast speed, True = real-time speed
