@@ -1,28 +1,27 @@
 
 from typing import TYPE_CHECKING, List, Optional
 
+if TYPE_CHECKING:
     from wicked_zerg_bot_pro import WickedZergBotPro
 import json
 import math
 import os
 import traceback
 from config import TARGET_PRIORITY, Config, GamePhase
-                        from personality_manager import ChatPriority
-                    import random
-            from config import Config
+try:
+    from personality_manager import ChatPriority
+except ImportError:
+    ChatPriority = None
+import random
 
 from sc2.data import Race  # type: ignore
 from sc2.ids.ability_id import AbilityId  # type: ignore
 from sc2.ids.unit_typeid import UnitTypeId  # type: ignore
 from sc2.position import Point2  # type: ignore
 from sc2.unit import Unit  # type: ignore
-                    from sc2.ids.upgrade_id import UpgradeId
+from sc2.ids.upgrade_id import UpgradeId  # type: ignore
 
 # -*- coding: utf-8 -*-
-if TYPE_CHECKING:
-
-
-
 
 class CombatManager:
     def __init__(self, bot: "WickedZergBotPro"):

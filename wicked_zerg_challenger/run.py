@@ -71,6 +71,7 @@ def main():
     # 2. Run on local machine for testing
     else:
         print("Starting Local Game...")
+        print("Game window will open - you can watch the game in real-time!")
         map_name = "AbyssalReefLE"
         run_game(
             maps.get(map_name),
@@ -78,7 +79,7 @@ def main():
                 bot,
                 Computer(Race.Terran, Difficulty.VeryHard)
             ],
-            realtime=False
+            realtime=False  # False = fast speed, True = real-time speed
         )
 
 if __name__ == "__main__":

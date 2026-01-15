@@ -5,9 +5,11 @@ import traceback
 
 
 from config import Config
-
-        from config import get_learned_parameter
-        from config import get_learned_parameter, Config
+try:
+    from config import get_learned_parameter
+except ImportError:
+    def get_learned_parameter(*args, **kwargs):
+        return None
 
 from sc2.bot_ai import BotAI  # type: ignore
 from sc2.ids.ability_id import AbilityId  # type: ignore
@@ -2327,14 +2329,25 @@ class EconomyManager:
 
         # Map-specific expansion logic for official AI Arena maps
         # Check if we have expansion locations available
+        # IMPROVED: Don't block expansion if expansion_locations check fails
+        # expand_now() will handle finding expansion locations
+        expansion_locations_available = True
         try:
             expansion_locations = list(b.expansion_locations.keys())
             if not expansion_locations:
                 # No expansion locations (Micro Ladder or special map)
-                return
+                # But still try expand_now() - it might work
+                expansion_locations_available = False
         except Exception:
             # Fallback if expansion_locations not available
-            pass
+            # Still try to expand - expand_now() will handle it
+            expansion_locations_available = False
+        
+        # IMPROVED: Only skip if minerals are low AND no expansion locations
+        # If minerals are high (1000+), try expanding anyway
+        if not expansion_locations_available and b.minerals < 1000:
+            # Low minerals and no expansion locations - skip
+            pass  # Continue to check other conditions
 
         build_plan = getattr(b, "current_build_plan", None)
         should_expand_aggressive = build_plan.get("should_expand", False) if build_plan else False
@@ -2358,9 +2371,10 @@ class EconomyManager:
 
         # CRITICAL: Emergency expansion when minerals are excessive - Use learned parameters
         # This prevents ARMY_OVERWHELMED defeats due to unspent resources
+        # IMPROVED: Lower threshold to 1000 for more aggressive expansion
 
         emergency_expand_mineral_threshold = get_learned_parameter(
-            "emergency_expand_mineral_threshold", 1500
+            "emergency_expand_mineral_threshold", 1000  # Lowered from 1500 to 1000
         )
         emergency_expand_max_bases = get_learned_parameter("emergency_expand_max_bases", 4)
 
@@ -2388,7 +2402,19 @@ class EconomyManager:
 
         if current_base_count == 1:
             # First expansion: Use learned thresholds
-            if (
+            # IMPROVED: Relax conditions when minerals are high
+            minerals_high = b.minerals >= 800
+            if minerals_high:
+                # When minerals are high, only check if we can afford it
+                if b.can_afford(UnitTypeId.HATCHERY):
+                    try:
+                        await b.expand_now()
+                        if getattr(b, "iteration", 0) % 100 == 0:
+                            print(f"[EXPANSION] [{int(b.time)}s] First expansion (high minerals: {b.minerals})")
+                        return
+                    except Exception:
+                        pass
+            elif (
                 worker_count >= first_expand_worker_threshold
                 and army_supply >= first_expand_army_threshold
                 and b.minerals >= first_expand_mineral_threshold
@@ -2423,41 +2449,47 @@ class EconomyManager:
 
         expansion_mineral_minimum = get_learned_parameter("expansion_mineral_minimum", 300)
 
+        # IMPROVED: If minerals are very high (1000+), skip strict defense requirements
+        minerals_very_high = b.minerals >= 1000
+        
         if b.minerals < expansion_mineral_minimum:
             return
 
         if current_base_count == 1:
-            intel = getattr(b, "intel", None)
-            if intel and intel.cached_zerglings is not None:
-                zerglings = intel.cached_zerglings
-                zergling_count = (
-                    zerglings.amount if hasattr(zerglings, "amount") else len(list(zerglings))
-                )
-            else:
-                zerglings = b.units(UnitTypeId.ZERGLING)
-                zergling_count = (
-                    zerglings.amount if hasattr(zerglings, "amount") else len(list(zerglings))
-                )
-            if zergling_count < 8:
-                return
+            # IMPROVED: Relax defense requirements when minerals are very high
+            # This allows expansion even if defense is not perfect
+            if not minerals_very_high:
+                intel = getattr(b, "intel", None)
+                if intel and intel.cached_zerglings is not None:
+                    zerglings = intel.cached_zerglings
+                    zergling_count = (
+                        zerglings.amount if hasattr(zerglings, "amount") else len(list(zerglings))
+                    )
+                else:
+                    zerglings = b.units(UnitTypeId.ZERGLING)
+                    zergling_count = (
+                        zerglings.amount if hasattr(zerglings, "amount") else len(list(zerglings))
+                    )
+                if zergling_count < 8:
+                    return
 
-            if intel and intel.cached_queens is not None:
-                queens = intel.cached_queens
-                queen_count = queens.amount if hasattr(queens, "amount") else len(list(queens))
-            else:
-                queens = b.units(UnitTypeId.QUEEN)
-                queen_count = queens.amount if hasattr(queens, "amount") else len(list(queens))
-            if queen_count < 1:
-                return
+                if intel and intel.cached_queens is not None:
+                    queens = intel.cached_queens
+                    queen_count = queens.amount if hasattr(queens, "amount") else len(list(queens))
+                else:
+                    queens = b.units(UnitTypeId.QUEEN)
+                    queen_count = queens.amount if hasattr(queens, "amount") else len(list(queens))
+                if queen_count < 1:
+                    return
 
-            if intel and intel.cached_spine_crawlers is not None:
-                spine_crawlers = (
-                    list(intel.cached_spine_crawlers) if intel.cached_spine_crawlers.exists else []
-                )
-            else:
-                spine_crawlers = list(b.structures(UnitTypeId.SPINECRAWLER))
-            if len(spine_crawlers) < 1:
-                return
+                if intel and intel.cached_spine_crawlers is not None:
+                    spine_crawlers = (
+                        list(intel.cached_spine_crawlers) if intel.cached_spine_crawlers.exists else []
+                    )
+                else:
+                    spine_crawlers = list(b.structures(UnitTypeId.SPINECRAWLER))
+                if len(spine_crawlers) < 1:
+                    return
 
         elif current_base_count >= 2:
             intel = getattr(b, "intel", None)

@@ -12,44 +12,84 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
-    import logging
+import logging
 from combat_manager import CombatManager
-from combat_tactics import CombatTactics
+try:
+    from combat_tactics import CombatTactics
+except ImportError:
+    try:
+        from local_training.combat_tactics import CombatTactics
+    except ImportError:
+        CombatTactics = None
 from config import Config, EnemyRace, GamePhase
 from economy_manager import EconomyManager
 from intel_manager import IntelManager
+try:
     from micro_controller import MicroController
+except ImportError:
+    MicroController = None
 from rogue_tactics_manager import RogueTacticsManager
-from personality_manager import PersonalityManager
+try:
+    from personality_manager import PersonalityManager
+except ImportError:
+    try:
+        from local_training.personality_manager import PersonalityManager
+    except ImportError:
+        PersonalityManager = None
 from production_manager import ProductionManager
 from production_resilience import ProductionResilience
 from queen_manager import QueenManager
 from scouting_system import ScoutingSystem
 from telemetry_logger import TelemetryLogger
+try:
     from strategy_analyzer import StrategyAnalyzer
+except ImportError:
+    StrategyAnalyzer = None
+try:
     from bot_api_connector import bot_connector
+except ImportError:
+    bot_connector = None
+try:
     from genai_self_healing import GenAISelfHealing, init_self_healing
+except ImportError:
+    GenAISelfHealing = None
+    init_self_healing = None
+try:
     from debug_visualizer import DebugVisualizer as SC2DebugVisualizer
+except ImportError:
+    SC2DebugVisualizer = None
+try:
     from zerg_net import Action, ReinforcementLearner, ZergNet
-        from pathlib import Path
-        from config import Config
-                from spell_unit_manager import SpellUnitManager
-                import traceback as tb
-                            from pathlib import Path as PathLib
-            import psutil
-            from zerg_net import MODELS_DIR
+except ImportError:
+    Action = None
+    ReinforcementLearner = None
+    ZergNet = None
+try:
+    from spell_unit_manager import SpellUnitManager
+except ImportError:
+    SpellUnitManager = None
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 from sc2.bot_ai import BotAI  # type: ignore
 from sc2.data import Race, Result  # type: ignore
 from sc2.ids.ability_id import AbilityId  # type: ignore
 from sc2.ids.unit_typeid import UnitTypeId  # type: ignore
+try:
     from sc2.ids.buff_id import BuffId as SC2BuffId
+except ImportError:
+    SC2BuffId = None
 import numpy as np
+try:
     from loguru import logger
+except ImportError:
+    logger = None
+try:
     import torch
-                                    from loguru import logger as loguru_logger
-                        from sc2.position import Point2
-                        from sc2.ids.unit_typeid import UnitTypeId
+except ImportError:
+    torch = None
 
 # -*- coding: utf-8 -*-
 try:
@@ -93,18 +133,13 @@ if sys.platform == "win32":
         pass
 
 
-# MicroController - optional import
-try:
-except ImportError:
-    MicroController = None  # type: ignore[assignment]
-
+# MicroController - optional import (already imported above)
+# MicroController is already imported at the top
 
 # 🎯 New modules - Code slimdown
 
 # IMPROVED: Strategy analyzer (optional - gracefully handles missing module)
-try:
-except Exception:
-    StrategyAnalyzer = None  # type: ignore[assignment]
+# StrategyAnalyzer is already imported at the top with try/except
 
 try:
     DASHBOARD_AVAILABLE = True
@@ -426,7 +461,10 @@ class WickedZergBotPro(BotAI):
         self.strategy_hub = None
 
         try:
-            self.combat_tactics = CombatTactics(self)
+            if CombatTactics is not None:
+                self.combat_tactics = CombatTactics(self)
+            else:
+                self.combat_tactics = None
         except Exception as e:
             print(f"[WARNING] CombatTactics init failed: {e}")
             self.combat_tactics = None
@@ -3629,8 +3667,35 @@ class WickedZergBotPro(BotAI):
                 overlord_count = len(overlords)
                 scout_overlord = overlords[0]
 
+                # CRITICAL: Don't send overlords to enemy base if supply is blocked or we have too few overlords
+                pending_overlords = self.already_pending(UnitTypeId.OVERLORD)
+                total_overlords = overlord_count + pending_overlords
+                
+                # Safety check: Don't send overlord to enemy base if:
+                # 1. Supply is blocked (supply_left < 4) - we need overlords for supply
+                # 2. We have less than 3 overlords total - need minimum for supply buffer
+                # 3. Supply is getting low (supply_left < 8) and we have less than 4 overlords
+                supply_blocked = self.supply_left < 4
+                low_supply_buffer = self.supply_left < 8 and total_overlords < 4
+                too_few_overlords = total_overlords < 3
+                
+                should_not_scout = supply_blocked or low_supply_buffer or too_few_overlords
+
                 try:
-                    if overlord_count == 1:
+                    if should_not_scout:
+                        # Keep overlord safe near our base instead of sending to enemy
+                        if self.townhalls.exists:
+                            safe_pos = self.townhalls.first.position.towards(
+                                self.game_info.map_center, 15
+                            )
+                            scout_overlord.move(safe_pos)
+                            if self.iteration % 100 == 0:
+                                print(
+                                    f"[SCOUT] [{int(self.time)}s] ⚠️ 대군주 스카우팅 지연 - 인구수 막힘 (supply: {self.supply_left}/{self.supply_cap}, 대군주: {total_overlords})"
+                                )
+                        else:
+                            scout_overlord.move(self.start_location)
+                    elif overlord_count == 1:
                         # First overlord: Scout enemy natural expansion entrance
                         if self.enemy_start_locations:
                             enemy_start = self.enemy_start_locations[0]
@@ -3654,11 +3719,20 @@ class WickedZergBotPro(BotAI):
                                 )
                     else:
                         # Remaining overlords: Position on high ground for drop defense
-                        scout_overlord.move(enemy_start)
-                        if self.iteration % 50 == 0:
-                            print(
-                                f"[SCOUT] [{int(self.time)}s] 대군주 스카우팅 중"
-                            )
+                        # Only send if we have enough overlords (3+)
+                        if total_overlords >= 3:
+                            scout_overlord.move(enemy_start)
+                            if self.iteration % 50 == 0:
+                                print(
+                                    f"[SCOUT] [{int(self.time)}s] 대군주 스카우팅 중"
+                                )
+                        else:
+                            # Keep overlord safe if we don't have enough
+                            if self.townhalls.exists:
+                                safe_pos = self.townhalls.first.position.towards(
+                                    self.game_info.map_center, 15
+                                )
+                                scout_overlord.move(safe_pos)
 
                     return
                 except Exception:

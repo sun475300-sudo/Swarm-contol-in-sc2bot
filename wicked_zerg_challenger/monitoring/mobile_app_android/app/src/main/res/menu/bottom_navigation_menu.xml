@@ -21,11 +21,6 @@
         android:title="Training" />
     
     <item
-        android:id="@+id/nav_bot_config"
-        android:icon="@android:drawable/ic_menu_preferences"
-        android:title="Bot Config" />
-    
-    <item
         android:id="@+id/nav_arena"
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:title="AI Arena" />

@@ -263,12 +263,12 @@ class TelemetryLogger:
                         army_count=loss_details.get("army_count", 0),
                     )
                     if success:
-                        print(f"[MANUS] 게임 결과를 대시보드에 전송했습니다: {result_str}")
+                        print(f"[MANUS] Game result sent to dashboard: {result_str}")
             except ImportError:
                 # Manus client not available, skip
                 pass
             except Exception as e:
-                print(f"[WARNING] Manus 대시보드 전송 실패: {e}")
+                print(f"[WARNING] Manus dashboard send failed: {e}")
 
         except Exception as e:
             print(f"[WARNING] Failed to record statistics: {e}")

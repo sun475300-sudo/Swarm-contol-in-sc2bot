@@ -13,6 +13,10 @@ import java.util.concurrent.TimeUnit
 
 class ManusApiClient {
     
+    // Server URL configuration
+    // For Android Emulator: use 10.0.2.2 (maps to host's localhost)
+    // For Physical Device: use your PC's local IP address (e.g., 192.168.1.100)
+    // To find your IP: ipconfig (Windows) or ifconfig (Linux/Mac)
     private val BASE_URL = "http://10.0.2.2:8000" // Emulator IP for Manus
     
     private val client: OkHttpClient
@@ -25,8 +29,10 @@ class ManusApiClient {
         logging.setLevel(HttpLoggingInterceptor.Level.BODY)
         client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS) // Increased from 10 to 15 seconds
+            .readTimeout(20, TimeUnit.SECONDS) // Increased from 10 to 20 seconds
+            .writeTimeout(15, TimeUnit.SECONDS) // Added write timeout
+            .retryOnConnectionFailure(true) // Enable automatic retry on connection failure
             .build()
     }
     

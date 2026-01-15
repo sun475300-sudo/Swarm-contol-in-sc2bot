@@ -1,16 +1,22 @@
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
+
+if TYPE_CHECKING:
     from wicked_zerg_bot_pro import WickedZergBotPro
+
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
-from typing import Dict, List, Optional, Set
-            from config import TARGET_PRIORITY
+
+try:
+    from config import TARGET_PRIORITY
+except ImportError:
+    TARGET_PRIORITY = {}
 
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
 from sc2.unit import Unit
-        from sc2.ids.upgrade_id import UpgradeId
+from sc2.ids.upgrade_id import UpgradeId
 
 # -*- coding: utf-8 -*-
 """
@@ -32,11 +38,6 @@ from sc2.unit import Unit
 """
 
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
-
-
-if TYPE_CHECKING:
-
-
 
 
 class StrategyMode(Enum):

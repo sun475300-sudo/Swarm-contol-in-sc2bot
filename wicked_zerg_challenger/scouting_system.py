@@ -663,6 +663,22 @@ class ScoutingSystem:
         if not overlords:
             return
 
+        # CRITICAL: Don't send overlords to enemy base if supply is blocked or we have too few overlords
+        # This prevents losing overlords when we need them for supply
+        overlord_count = len(overlords)
+        pending_overlords = b.already_pending(UnitTypeId.OVERLORD)
+        total_overlords = overlord_count + pending_overlords
+        
+        # Safety check: Don't send overlord to enemy base if:
+        # 1. Supply is blocked (supply_left < 4) - we need overlords for supply
+        # 2. We have less than 3 overlords total - need minimum for supply buffer
+        # 3. Supply is getting low (supply_left < 8) and we have less than 4 overlords
+        supply_blocked = b.supply_left < 4
+        low_supply_buffer = b.supply_left < 8 and total_overlords < 4
+        too_few_overlords = total_overlords < 3
+        
+        should_not_scout = supply_blocked or low_supply_buffer or too_few_overlords
+
         if (not self.overlord_scout_sent and overlords and len(self.scout_targets) > 0) or (
             b.time >= 2 and not self.overlord_scout_sent
         ):
@@ -689,7 +705,23 @@ class ScoutingSystem:
                 else:
                     scout_overlord.move(b.start_location)
             else:
-                if b.enemy_start_locations and len(b.enemy_start_locations) > 0:
+                # CRITICAL: Only send overlord to enemy base if it's safe
+                if should_not_scout:
+                    # Keep overlord safe near our base instead
+                    if b.townhalls.exists:
+                        townhalls = [th for th in b.townhalls]
+                        if townhalls:
+                            safe_pos = townhalls[0].position.towards(b.game_info.map_center, 15)
+                            scout_overlord.move(safe_pos)
+                            if b.iteration % 100 == 0:
+                                print(
+                                    f"[SCOUT] [{int(b.time)}s] ⚠️ Overlord scouting delayed - Supply blocked (supply: {b.supply_left}/{b.supply_cap}, overlords: {total_overlords})"
+                                )
+                        else:
+                            scout_overlord.move(b.start_location)
+                    else:
+                        scout_overlord.move(b.start_location)
+                elif b.enemy_start_locations and len(b.enemy_start_locations) > 0:
                     enemy_start = b.enemy_start_locations[0]
                     scout_overlord.move(enemy_start)
 

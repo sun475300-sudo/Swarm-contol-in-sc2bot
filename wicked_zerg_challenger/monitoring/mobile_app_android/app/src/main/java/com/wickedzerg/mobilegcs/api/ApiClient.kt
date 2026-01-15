@@ -13,6 +13,8 @@ class ApiClient {
     
     // TODO: Change this to your PC's IP address
     // Find your IP: ipconfig (Windows) or ifconfig (Linux/Mac)
+    // For Android Emulator: use 10.0.2.2
+    // For Physical Device: use your PC's local IP (e.g., 192.168.1.100)
     private val BASE_URL = "http://10.0.2.2:8000" // Special IP for Android Emulator
     
     private val client: OkHttpClient
@@ -22,8 +24,10 @@ class ApiClient {
         logging.setLevel(HttpLoggingInterceptor.Level.BODY)
         client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS) // Increased from 5 to 15 seconds
+            .readTimeout(20, TimeUnit.SECONDS) // Increased from 5 to 20 seconds
+            .writeTimeout(15, TimeUnit.SECONDS) // Added write timeout
+            .retryOnConnectionFailure(true) // Enable automatic retry
             .build()
     }
     

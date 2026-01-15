@@ -1,39 +1,44 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+if TYPE_CHECKING:
     from wicked_zerg_bot_pro import WickedZergBotPro
+
 import json
 import os
 import random
 import traceback
 from config import COUNTER_BUILD, Config, EnemyRace, GamePhase, get_learned_parameter
 from unit_factory import UnitFactory
+
+try:
     import logging
-                from config import Config
-            from config import get_learned_parameter
-                            from personality_manager import ChatPriority
+except ImportError:
+    logging = None
+
+try:
+    from personality_manager import ChatPriority
+except ImportError:
+    try:
+        from local_training.personality_manager import ChatPriority
+    except ImportError:
+        ChatPriority = None
 
 from sc2.data import Race  # type: ignore
 from sc2.ids.ability_id import AbilityId  # type: ignore
 from sc2.ids.unit_typeid import UnitTypeId  # type: ignore
 from sc2.ids.upgrade_id import UpgradeId  # type: ignore
 from sc2.position import Point2  # type: ignore
-    from loguru import logger
-                        from loguru import logger as loguru_logger
-                                    from sc2.position import Point2
 
 # -*- coding: utf-8 -*-
-if TYPE_CHECKING:
-
-
-
 
 # Logger setup
 try:
+    from loguru import logger
 except ImportError:
-
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger = logging.getLogger(__name__) if logging else None
+    if logger:
+        logger.setLevel(logging.INFO)
 
 class ProductionManager:
     def __init__(self, bot: "WickedZergBotPro"):
@@ -917,15 +922,18 @@ class ProductionManager:
             5  # Produce overlord when 5 supply left (optimal for continuous production)
         )
         if b.supply_left < supply_threshold and b.supply_cap < 200:
-            if b.can_afford(UnitTypeId.OVERLORD) and larvae and len(larvae) > 0:
-                if pending_overlords == 0:
-                    await random.choice(larvae).train(UnitTypeId.OVERLORD)
-                    print(f"[OVERLORD] Emergency production at {b.supply_left} supply left")
-                    return True
-                elif pending_overlords == 1 and b.supply_left < 2:
-                    # Double emergency: produce second overlord
-                    if b.can_afford(UnitTypeId.OVERLORD) and len(larvae) > 1:
-                        await random.choice(larvae).train(UnitTypeId.OVERLORD)
+            if b.can_afford(UnitTypeId.OVERLORD) and larvae:
+                # Convert larvae to list if needed
+                larva_list = list(larvae) if hasattr(larvae, '__iter__') and not isinstance(larvae, bool) else []
+                if len(larva_list) > 0:
+                    if pending_overlords == 0:
+                        await random.choice(larva_list).train(UnitTypeId.OVERLORD)
+                        print(f"[OVERLORD] Emergency production at {b.supply_left} supply left")
+                        return True
+                    elif pending_overlords == 1 and b.supply_left < 2:
+                        # Double emergency: produce second overlord
+                        if b.can_afford(UnitTypeId.OVERLORD) and len(larva_list) > 1:
+                            await random.choice(larva_list).train(UnitTypeId.OVERLORD)
                         print(
                             f"[OVERLORD] Double emergency production at {b.supply_left} supply left"
                         )
@@ -948,14 +956,16 @@ class ProductionManager:
 
             # Produce overlords if needed
             if pending_overlords < needed_overlords:
-                if b.can_afford(UnitTypeId.OVERLORD) and larvae and len(larvae) > 0:
+                # Convert larvae to list if needed
+                larva_list = list(larvae) if hasattr(larvae, '__iter__') and not isinstance(larvae, bool) else []
+                if b.can_afford(UnitTypeId.OVERLORD) and len(larva_list) > 0:
                     # Produce multiple overlords if needed and affordable
                     overlords_to_produce = int(
-                        min(needed_overlords - pending_overlords, len(larvae))
+                        min(needed_overlords - pending_overlords, len(larva_list))
                     )
                     for _ in range(overlords_to_produce):
-                        if b.can_afford(UnitTypeId.OVERLORD) and larvae:
-                            await random.choice(larvae).train(UnitTypeId.OVERLORD)
+                        if b.can_afford(UnitTypeId.OVERLORD) and len(larva_list) > 0:
+                            await random.choice(larva_list).train(UnitTypeId.OVERLORD)
                             if overlords_to_produce > 1:
                                 print(
                                     f"[OVERLORD] Predictive production: {overlords_to_produce} overlords (supply: {b.supply_left}/{b.supply_cap})"
@@ -976,12 +986,14 @@ class ProductionManager:
         excess_mineral_threshold = get_learned_parameter("excess_mineral_threshold", 200)
 
         if b.supply_left < supply_buffer + 4 and b.supply_cap < 200:
+            # Convert larvae to list if needed
+            larva_list = list(larvae) if hasattr(larvae, '__iter__') and not isinstance(larvae, bool) else []
             if (
-                b.minerals >= excess_mineral_threshold and larvae and len(larvae) > 0
+                b.minerals >= excess_mineral_threshold and len(larva_list) > 0
             ):  # Excess minerals
                 if pending_overlords == 0:
                     if b.can_afford(UnitTypeId.OVERLORD):
-                        await random.choice(larvae).train(UnitTypeId.OVERLORD)
+                        await random.choice(larva_list).train(UnitTypeId.OVERLORD)
                         print(f"[OVERLORD] Proactive production (excess minerals: {b.minerals})")
                         return True
 
@@ -2003,7 +2015,7 @@ class ProductionManager:
                     print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Building Hydralisk Den (minerals: {int(b.minerals)})")
                     return True
 
-        # Priority 2: Build Macro Hatchery if larvae are limited
+        # Priority 2: Build Macro Hatchery if larvae are limited OR minerals are very high
         intel = getattr(b, "intel", None)
         if intel and intel.cached_larva is not None:
             larvae = intel.cached_larva
@@ -2011,7 +2023,12 @@ class ProductionManager:
             larvae = b.larva
         larva_count = larvae.amount if hasattr(larvae, "amount") else (len(list(larvae)) if larvae.exists else 0)
 
-        if larva_count < 3 and b.can_afford(UnitTypeId.HATCHERY) and b.already_pending(UnitTypeId.HATCHERY) == 0:
+        # IMPROVED: Build macro hatchery if larva is limited OR minerals are very high (1500+)
+        should_build_hatchery = (
+            (larva_count < 3 and b.minerals >= 600) or  # Larva shortage
+            (b.minerals >= 1500)  # Very high minerals - need more larva production
+        )
+        if should_build_hatchery and b.can_afford(UnitTypeId.HATCHERY) and b.already_pending(UnitTypeId.HATCHERY) == 0:
             if await self._build_macro_hatchery():
                 print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Building Macro Hatchery (minerals: {int(b.minerals)}, larvae: {larva_count})")
                 return True
@@ -2075,6 +2092,45 @@ class ProductionManager:
                     print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Produced {produced} Zerglings (minerals: {int(b.minerals)})")
                     return True
 
+        # Priority 5: CRITICAL - If nothing else worked, produce Overlords to unlock supply
+        # This is the last resort when minerals are high but we can't produce units
+        if b.can_afford(UnitTypeId.OVERLORD) and larvae.exists and len(larvae) > 0:
+            pending_overlords = b.already_pending(UnitTypeId.OVERLORD)
+            # Produce multiple overlords if minerals are very high
+            overlords_to_produce = min(3, len(list(larvae))) if b.minerals >= 1500 else 1
+            produced = 0
+            for larva in list(larvae)[:overlords_to_produce]:
+                if b.can_afford(UnitTypeId.OVERLORD) and b.supply_left >= 1:
+                    try:
+                        await larva.train(UnitTypeId.OVERLORD)
+                        produced += 1
+                    except Exception:
+                        break
+            if produced > 0:
+                print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Produced {produced} Overlords to unlock supply (minerals: {int(b.minerals)})")
+                return True
+
+        # Priority 6: Build Macro Hatchery even if larva count is higher (when minerals >= 1500)
+        if b.minerals >= 1500 and b.can_afford(UnitTypeId.HATCHERY) and b.already_pending(UnitTypeId.HATCHERY) == 0:
+            if await self._build_macro_hatchery():
+                print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Building Macro Hatchery (minerals: {int(b.minerals)}, larvae: {larva_count})")
+                return True
+
+        # Priority 7: Build static defense (Spine Crawlers) if nothing else works
+        if b.minerals >= 1000 and b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
+            if b.can_afford(UnitTypeId.SPINECRAWLER) and b.already_pending(UnitTypeId.SPINECRAWLER) == 0:
+                if b.townhalls.exists:
+                    for hatch in b.townhalls.ready:
+                        close_spines = b.structures(UnitTypeId.SPINECRAWLER).closer_than(10, hatch.position)
+                        if close_spines.amount < 3:  # Build up to 3 spine crawlers per base
+                            try:
+                                spine_pos = hatch.position.towards(b.game_info.map_center, 5)
+                                if await self._try_build_structure(UnitTypeId.SPINECRAWLER, near=spine_pos):
+                                    print(f"[EMERGENCY FLUSH] [{int(b.time)}s] Building Spine Crawler (minerals: {int(b.minerals)})")
+                                    return True
+                            except Exception:
+                                pass
+
         return False
 
     async def _aggressive_unit_production(self) -> bool:
@@ -2097,13 +2153,15 @@ class ProductionManager:
         try:
             intel = getattr(b, "intel", None)
             if intel and intel.cached_larva is not None:
-                larvae = (
+                larvae_raw = (
                     intel.cached_larva.ready
                     if hasattr(intel.cached_larva, "ready")
                     else intel.cached_larva
                 )
-                if not larvae.exists:
+                if not larvae_raw.exists:
                     return False
+                # Convert Units object to list
+                larvae = list(larvae_raw)
             else:
                 larvae = [u for u in b.units(UnitTypeId.LARVA) if u.is_ready]
                 if not larvae or len(larvae) == 0:
@@ -2121,9 +2179,11 @@ class ProductionManager:
             # Try to produce overlord if we can afford it
             if b.can_afford(UnitTypeId.OVERLORD) and b.supply_left >= 1:
                 try:
-
-                    await random.choice(larvae).train(UnitTypeId.OVERLORD)
-                    return True
+                    # Convert larvae to list if needed
+                    larva_list = list(larvae) if hasattr(larvae, '__iter__') and not isinstance(larvae, bool) else []
+                    if len(larva_list) > 0:
+                        await random.choice(larva_list).train(UnitTypeId.OVERLORD)
+                        return True
                 except Exception:
                     pass
             return False
@@ -2930,14 +2990,21 @@ class ProductionManager:
             # IMPROVED: Check if we have enough gas income (at least 1 extractor with workers)
             extractors = b.structures(UnitTypeId.EXTRACTOR).ready
             has_gas_income = extractors.exists and b.vespene >= 50  # At least 50 gas or extractor exists
+            
+            # CRITICAL: If minerals are very high (1000+), be more aggressive with Lair upgrade
+            # Even if gas is slightly low, try to upgrade if we have extractors
+            minerals_very_high = b.minerals >= 1000
+            if minerals_very_high:
+                # When minerals are very high, allow Lair upgrade even with less gas (if extractor exists)
+                has_gas_income = extractors.exists and b.vespene >= 30  # Lower threshold when minerals are high
 
             if (
                 spawning_pools  # Spawning Pool exists and ready
                 and hatcheries  # Have at least one Hatchery
                 and not lairs  # Don't have Lair yet
                 and b.already_pending(UnitTypeId.LAIR) == 0  # CRITICAL: Check if already upgrading
-                and b.time > 120  # IMPROVED: After 2 minutes (was 150s/2.5min)
-                and has_gas_income  # IMPROVED: Check gas income
+                and (b.time > 120 or minerals_very_high)  # IMPROVED: Lower time threshold OR minerals very high
+                and (has_gas_income or minerals_very_high)  # IMPROVED: More lenient gas check when minerals high
                 and b.can_afford(UnitTypeId.LAIR)  # Can afford (150M + 100G)
             ):
                 try:
@@ -2970,14 +3037,20 @@ class ProductionManager:
             # IMPROVED: Check if we have enough gas income for Hive upgrade
             extractors = b.structures(UnitTypeId.EXTRACTOR).ready
             has_gas_income = extractors.exists and b.vespene >= 100  # At least 100 gas or extractor exists
+            
+            # CRITICAL: If minerals are very high (1000+), be more aggressive with Hive upgrade
+            minerals_very_high = b.minerals >= 1000
+            if minerals_very_high:
+                # When minerals are very high, allow Hive upgrade even with less gas (if extractor exists)
+                has_gas_income = extractors.exists and b.vespene >= 80  # Lower threshold when minerals are high
 
             if (
                 lairs  # Have Lair
                 and infestation_pits  # Have Infestation Pit ready
                 and not hives  # Don't have Hive yet
                 and b.already_pending(UnitTypeId.HIVE) == 0  # CRITICAL: Check if already upgrading
-                and b.time > 240  # IMPROVED: After 4 minutes (was 300s/5min)
-                and has_gas_income  # IMPROVED: Check gas income
+                and (b.time > 240 or minerals_very_high)  # IMPROVED: Lower time threshold OR minerals very high
+                and (has_gas_income or minerals_very_high)  # IMPROVED: More lenient gas check when minerals high
                 and b.can_afford(UnitTypeId.HIVE)  # Can afford (200M + 150G)
             ):
                 try:
@@ -3842,13 +3915,18 @@ class ProductionManager:
         if not b.structures(UnitTypeId.SPAWNINGPOOL).exists:
             score += 100.0
         # IMPROVED: Lower time thresholds for faster tech progression
+        # CRITICAL: Lair must be built FIRST before other T2 buildings
+        if not b.structures(UnitTypeId.LAIR).exists and not b.structures(UnitTypeId.HIVE).exists and b.time > 120:
+            score += 60.0  # Increased from 40.0 - Lair is highest priority
         if not b.structures(UnitTypeId.ROACHWARREN).exists and b.time > 90:
             score += 50.0
-        if not b.structures(UnitTypeId.HYDRALISKDEN).exists and b.time > 180:
-            score += 45.0
-        # IMPROVED: Add Lair check - Lair is critical for T2 units
-        if not b.structures(UnitTypeId.LAIR).exists and not b.structures(UnitTypeId.HIVE).exists and b.time > 120:
-            score += 40.0
+        # CRITICAL: Hydralisk Den requires Lair - only score if Lair exists
+        has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+        if not b.structures(UnitTypeId.HYDRALISKDEN).exists and has_lair and b.time > 180:
+            score += 55.0  # Increased from 45.0 - Higher priority when Lair exists
+        elif not b.structures(UnitTypeId.HYDRALISKDEN).exists and not has_lair and b.time > 180:
+            # Lair needed first - lower priority
+            score += 20.0
 
 
         tech_build_mineral_threshold_1 = get_learned_parameter(
@@ -4023,9 +4101,16 @@ class ProductionManager:
                 self.autonomous_reserve_vespene = float(baneling_nest_vespene_cost)
 
         # IMPROVED: More aggressive tech building construction
-        # Lower threshold to enter CONSTRUCTION mode (tech_score > prod_score * 0.8 instead of 1.0)
-        # This allows tech buildings to be built even when production score is slightly higher
-        if self.tech_priority_score > self.production_priority_score * 0.8:  # IMPROVED: 0.8 multiplier
+        # CRITICAL: Lower threshold significantly to prioritize tech buildings
+        # When minerals are high (1000+), prioritize tech buildings even more
+        minerals_very_high = b.minerals >= 1000
+        if minerals_very_high:
+            # When minerals are very high, prioritize tech buildings more aggressively
+            threshold_multiplier = 0.5  # Much lower threshold
+        else:
+            threshold_multiplier = 0.7  # Lowered from 0.8
+        
+        if self.tech_priority_score > self.production_priority_score * threshold_multiplier:
             self.current_mode = "CONSTRUCTION"
         else:
             self.current_mode = "PRODUCTION"
@@ -4101,7 +4186,14 @@ class ProductionManager:
                 target_vespene = item["vespene"]
 
                 # Double-check with _can_build_safely for extra safety
-                if b.structures(tid).exists or b.already_pending(tid) > 0:
+                try:
+                    if b.structures(tid).exists or b.already_pending(tid) > 0:
+                        continue
+                except (KeyError, AttributeError) as e:
+                    # Invalid UnitTypeId (e.g., 901) - skip this building
+                    current_iteration = getattr(b, "iteration", 0)
+                    if current_iteration % 200 == 0:
+                        print(f"[WARNING] Invalid UnitTypeId in tech queue: {tid} (error: {e})")
                     continue
 
                 # Additional safety check: _can_build_safely also checks for workers moving to build
@@ -4112,7 +4204,15 @@ class ProductionManager:
                 # Allow building if prerequisites are being built (pending)
                 # Spawning Pool: no prerequisites
                 # Roach Warren: no prerequisites (but usually built after Spawning Pool)
-                # Hydralisk Den: no prerequisites (but Lair is recommended for better units)
+                # CRITICAL: Hydralisk Den REQUIRES Lair (not optional!)
+                # Hydralisk Den cannot produce Hydralisks without Lair
+                if tid == UnitTypeId.HYDRALISKDEN:
+                    has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+                    if not has_lair and b.already_pending(UnitTypeId.LAIR) == 0:
+                        # Lair is required - skip Hydralisk Den until Lair is built
+                        if current_iteration % 200 == 0:
+                            print(f"[TECH] [{int(b.time)}s] Skipping Hydralisk Den - Lair required first")
+                        continue
                 # Baneling Nest: requires Spawning Pool
                 if tid == UnitTypeId.BANELINGNEST:
                     if not b.structures(UnitTypeId.SPAWNINGPOOL).exists and b.already_pending(UnitTypeId.SPAWNINGPOOL) == 0:
@@ -5045,11 +5145,20 @@ class ProductionManager:
             getattr(UpgradeId, "ZERGMISSILEWEAPONSLEVEL1", None),
             getattr(UpgradeId, "ZERGGROUNDARMORSLEVEL1", None),
         ]
+        # Filter out None values
+        candidate_upgrades = [upg for upg in candidate_upgrades if upg is not None]
         pending_any = False
         for upg in candidate_upgrades:
-            if upg and b.already_pending_upgrade(upg) > 0:
-                pending_any = True
-                break
+            try:
+                if upg and b.already_pending_upgrade(upg) > 0:
+                    pending_any = True
+                    break
+            except (AttributeError, KeyError) as e:
+                # Invalid upgrade ID - skip
+                current_iteration = getattr(b, "iteration", 0)
+                if current_iteration % 200 == 0:
+                    print(f"[WARNING] Invalid UpgradeId: {upg} (error: {e})")
+                continue
         if b.vespene >= 500 and not pending_any:
             current_iteration = getattr(b, "iteration", 0)
             if current_iteration % 50 == 0:

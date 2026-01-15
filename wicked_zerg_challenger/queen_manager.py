@@ -73,23 +73,14 @@ class QueenManager:
                     self.queen_hatchery_assignments[queen_tag] = hatch.tag
 
         # Queen abilities - process all queens (limited by CPU optimization in main loop)
-        for queen in queen_list:
-            if not queen.is_ready:
-                continue
-
+        # CRITICAL: Always inject larva unless we have excessive larvae
+        current_larva_count = self.bot.units(UnitTypeId.LARVA).amount
+        should_skip_inject = current_larva_count > 100
+        
+        if not should_skip_inject:
             # Larva inject (energy >= 25) - Priority 1
             # Use explicit ready queen filter and per-hatchery check to avoid missed injects
-            # FIXED: Only skip inject if larva count is EXTREMELY high (>100), not at 30
-            current_larva_count = self.bot.units(UnitTypeId.LARVA).amount
-            if current_larva_count > 100:
-                # Too many larvae already - skip inject to save energy for other abilities
-                if getattr(self.bot, "iteration", 0) % 200 == 0:
-                    print(
-                        f"[QUEEN MANAGER] Skipping inject - {current_larva_count} larvae already available"
-                    )
-                continue
-
-            ready_queens = [q for q in queen_list if q.energy >= 25]
+            ready_queens = [q for q in queen_list if q.is_ready and q.energy >= 25]
             if ready_queens:
                 for hatch in hatchery_list:
                     # Skip if hatchery already has an active inject buff
@@ -125,6 +116,17 @@ class QueenManager:
                             except Exception:
                                 # Silently ignore transient failures (network/issue in SC2 API)
                                 pass
+        else:
+            # Too many larvae already - skip inject to save energy for other abilities
+            if getattr(self.bot, "iteration", 0) % 200 == 0:
+                print(
+                    f"[QUEEN MANAGER] Skipping inject - {current_larva_count} larvae already available"
+                )
+
+        # Process each queen for other abilities
+        for queen in queen_list:
+            if not queen.is_ready:
+                continue
 
             # Transfuse (energy >= 50) - Priority 2 (only if not injecting)
             # Performance optimization: Use IntelManager cache + distance calculation optimization

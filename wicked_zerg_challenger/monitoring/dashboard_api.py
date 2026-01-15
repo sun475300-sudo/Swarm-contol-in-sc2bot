@@ -78,7 +78,7 @@ else:
                 ngrok_url = f.read().strip()
                 if ngrok_url:
                     _allowed_origins.append(ngrok_url)
-                    logger.info(f"Ngrok URL 추가됨: {ngrok_url}")
+                    logger.info(f"Ngrok URL added: {ngrok_url}")
     except Exception:
         pass  # Ngrok URL 파일이 없어도 계속 진행
 
