@@ -584,11 +584,28 @@ class ProductionManager:
                 if zergling_produced > 0:
                     return  # Continue next frame after Zergling production
 
-            # CRITICAL: If minerals exceed 1000, force immediate resource consumption
-            # This prevents mineral accumulation and ensures resources are spent
-            if b.minerals >= 1000:
+            # CRITICAL: Resource cap enforcement - prevent minerals and gas from exceeding 1000
+            # If minerals OR gas exceed 1000, force immediate resource consumption
+            # This prevents resource accumulation and ensures resources are spent efficiently
+            resource_cap = 1000
+            resource_warning_threshold = 900  # Start aggressive spending at 900
+            
+            # CRITICAL: Emergency flush if either resource exceeds 1000
+            if b.minerals >= resource_cap or b.vespene >= resource_cap:
                 # Force aggressive resource spending - build tech buildings, produce units, expand
-                if await self._emergency_mineral_flush():
+                if b.minerals >= resource_cap:
+                    if await self._emergency_mineral_flush():
+                        return  # Resources flushed, continue next frame
+                
+                if b.vespene >= resource_cap:
+                    if await self._emergency_gas_flush():
+                        return  # Resources flushed, continue next frame
+            
+            # IMPROVED: Aggressive flush if approaching cap (900+) to prevent accumulation
+            # This prevents resources from reaching 1000 in the first place
+            if b.minerals >= resource_warning_threshold or b.vespene >= resource_warning_threshold:
+                # Force flush BEFORE any other production decisions
+                if await self._flush_resources_aggressive(mineral_threshold=resource_warning_threshold, gas_threshold=resource_warning_threshold):
                     return  # Resources flushed, continue next frame
 
             # If minerals exceed aggressive threshold (500+), force resource consumption
@@ -2245,6 +2262,214 @@ class ProductionManager:
                             except Exception:
                                 pass
 
+        return False
+
+    async def _emergency_gas_flush(self) -> bool:
+        """
+        CRITICAL: Emergency gas flush when gas exceeds 1000
+        
+        This function is called when vespene >= 1000 to force immediate gas spending.
+        Priority order:
+        1. Build tech buildings that require gas (if not built yet)
+        2. Research expensive upgrades (requires gas)
+        3. Produce expensive tech units (Hydralisk, Mutalisk, etc.)
+        4. Produce mid-tier units (Roach) if tech buildings ready
+        
+        Returns:
+            bool: True if any action was taken to consume gas
+        """
+        b = self.bot
+        
+        # Priority 1: Build tech buildings that require gas
+        if not b.structures(UnitTypeId.BANELINGNEST).exists and b.already_pending(UnitTypeId.BANELINGNEST) == 0:
+            if b.can_afford(UnitTypeId.BANELINGNEST) and b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
+                if await self._try_build_structure(UnitTypeId.BANELINGNEST):
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Building Baneling Nest (gas: {int(b.vespene)})")
+                    return True
+        
+        if not b.structures(UnitTypeId.INFESTATIONPIT).exists and b.already_pending(UnitTypeId.INFESTATIONPIT) == 0:
+            has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+            if b.can_afford(UnitTypeId.INFESTATIONPIT) and has_lair:
+                if await self._try_build_structure(UnitTypeId.INFESTATIONPIT):
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Building Infestation Pit (gas: {int(b.vespene)})")
+                    return True
+        
+        if not b.structures(UnitTypeId.ULTRALISKCAVERN).exists and b.already_pending(UnitTypeId.ULTRALISKCAVERN) == 0:
+            has_hive = b.structures(UnitTypeId.HIVE).exists
+            if b.can_afford(UnitTypeId.ULTRALISKCAVERN) and has_hive:
+                if await self._try_build_structure(UnitTypeId.ULTRALISKCAVERN):
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Building Ultralisk Cavern (gas: {int(b.vespene)})")
+                    return True
+        
+        # Priority 2: Research expensive upgrades
+        evo_chambers = [s for s in b.structures(UnitTypeId.EVOLUTIONCHAMBER) if s.is_ready]
+        if evo_chambers:
+            evo = evo_chambers[0]
+            # Research all weapon/armor upgrades if affordable
+            if b.vespene >= 200:
+                # Level 3 upgrades require 200 gas
+                for upgrade in [UpgradeId.ZERGMISSILEWEAPONSLEVEL3, UpgradeId.ZERGMELEEWEAPONSLEVEL3, 
+                               UpgradeId.ZERGGROUNDARMORSLEVEL3]:
+                    if upgrade not in b.state.upgrades and b.can_afford(upgrade):
+                        if evo.is_idle and b.already_pending_upgrade(upgrade) == 0:
+                            try:
+                                evo.research(upgrade)
+                                print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Researching {upgrade.name} (gas: {int(b.vespene)})")
+                                return True
+                            except Exception:
+                                pass
+        
+        # Priority 3: Produce expensive tech units
+        intel = getattr(b, "intel", None)
+        if intel and intel.cached_larva is not None:
+            larvae = intel.cached_larva
+        else:
+            larvae = b.larva
+        larva_count = larvae.amount if hasattr(larvae, "amount") else (len(list(larvae)) if larvae.exists else 0)
+        
+        if larvae.exists and len(larvae) > 0:
+            # Hydralisks (expensive: 100 gas each)
+            hydra_dens_ready = b.structures(UnitTypeId.HYDRALISKDEN).ready.exists
+            has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+            if hydra_dens_ready and has_lair:
+                produced = 0
+                for larva in list(larvae)[:min(10, len(larvae))]:  # Use up to 10 larvae
+                    if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.HYDRALISK)
+                            produced += 1
+                        except Exception:
+                            break
+                if produced > 0:
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Produced {produced} Hydralisks (gas: {int(b.vespene)})")
+                    return True
+            
+            # Mutalisks (expensive: 100 gas each, requires Spire)
+            spires_ready = b.structures(UnitTypeId.SPIRE).ready.exists or b.structures(UnitTypeId.GREATERSPIRE).ready.exists
+            if spires_ready and has_lair:
+                produced = 0
+                for larva in list(larvae)[:min(10, len(larvae))]:
+                    if b.can_afford(UnitTypeId.MUTALISK) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.MUTALISK)
+                            produced += 1
+                        except Exception:
+                            break
+                if produced > 0:
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Produced {produced} Mutalisks (gas: {int(b.vespene)})")
+                    return True
+            
+            # Roaches (mid-tier: 25 gas each)
+            roach_warrens_ready = b.structures(UnitTypeId.ROACHWARREN).ready.exists
+            if roach_warrens_ready:
+                produced = 0
+                for larva in list(larvae)[:min(10, len(larvae))]:
+                    if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.ROACH)
+                            produced += 1
+                        except Exception:
+                            break
+                if produced > 0:
+                    print(f"[EMERGENCY GAS FLUSH] [{int(b.time)}s] Produced {produced} Roaches (gas: {int(b.vespene)})")
+                    return True
+        
+        return False
+
+    async def _flush_resources_aggressive(self, mineral_threshold: int = 900, gas_threshold: int = 900) -> bool:
+        """
+        Aggressively flush resources when approaching cap (900+)
+        
+        This prevents resources from reaching 1000 by spending them proactively.
+        More aggressive than normal flush - triggers earlier to prevent accumulation.
+        
+        Args:
+            mineral_threshold: Mineral threshold for aggressive flush (default: 900)
+            gas_threshold: Gas threshold for aggressive flush (default: 900)
+        
+        Returns:
+            bool: True if any resources were flushed
+        """
+        b = self.bot
+        
+        # Check if we need to flush
+        needs_mineral_flush = b.minerals >= mineral_threshold
+        needs_gas_flush = b.vespene >= gas_threshold
+        
+        if not needs_mineral_flush and not needs_gas_flush:
+            return False
+        
+        # Get available larvae
+        intel = getattr(b, "intel", None)
+        if intel and intel.cached_larva is not None:
+            larvae = intel.cached_larva
+        else:
+            larvae = b.larva
+        
+        if not larvae.exists or len(larvae) == 0:
+            return False
+        
+        larva_list = list(larvae)
+        units_produced = 0
+        
+        # Priority: Produce expensive units first to maximize resource consumption
+        # When both minerals and gas are high, prefer units that consume both
+        
+        # Hydralisks (50 minerals + 100 gas) - best for high minerals AND high gas
+        if needs_mineral_flush and needs_gas_flush:
+            hydra_dens_ready = b.structures(UnitTypeId.HYDRALISKDEN).ready.exists
+            has_lair = b.structures(UnitTypeId.LAIR).exists or b.structures(UnitTypeId.HIVE).exists
+            if hydra_dens_ready and has_lair:
+                for larva in larva_list[:min(5, len(larva_list))]:
+                    if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.HYDRALISK)
+                            units_produced += 1
+                        except Exception:
+                            break
+                if units_produced > 0:
+                    print(f"[AGGRESSIVE FLUSH] [{int(b.time)}s] Produced {units_produced} Hydralisks (M:{int(b.minerals)}, G:{int(b.vespene)})")
+                    return True
+        
+        # Roaches (75 minerals + 25 gas) - good for high minerals with moderate gas
+        if needs_mineral_flush:
+            roach_warrens_ready = b.structures(UnitTypeId.ROACHWARREN).ready.exists
+            if roach_warrens_ready:
+                for larva in larva_list[:min(5, len(larva_list))]:
+                    if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
+                        try:
+                            await larva.train(UnitTypeId.ROACH)
+                            units_produced += 1
+                        except Exception:
+                            break
+                if units_produced > 0:
+                    print(f"[AGGRESSIVE FLUSH] [{int(b.time)}s] Produced {units_produced} Roaches (M:{int(b.minerals)})")
+                    return True
+        
+        # Zerglings (50 minerals, 0 gas) - fallback for high minerals only
+        if needs_mineral_flush:
+            spawning_pool_ready = b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists
+            if spawning_pool_ready:
+                for larva in larva_list[:min(5, len(larva_list))]:
+                    if b.can_afford(UnitTypeId.ZERGLING) and b.supply_left >= 1:
+                        try:
+                            await larva.train(UnitTypeId.ZERGLING)
+                            units_produced += 1
+                        except Exception:
+                            break
+                if units_produced > 0:
+                    print(f"[AGGRESSIVE FLUSH] [{int(b.time)}s] Produced {units_produced} Zerglings (M:{int(b.minerals)})")
+                    return True
+        
+        # If gas is high but can't produce units, build tech buildings or research upgrades
+        if needs_gas_flush and units_produced == 0:
+            # Try to build tech buildings
+            if not b.structures(UnitTypeId.SPIRE).exists and b.already_pending(UnitTypeId.SPIRE) == 0:
+                if b.can_afford(UnitTypeId.SPIRE) and b.structures(UnitTypeId.LAIR).exists:
+                    if await self._try_build_structure(UnitTypeId.SPIRE):
+                        print(f"[AGGRESSIVE FLUSH] [{int(b.time)}s] Building Spire (G:{int(b.vespene)})")
+                        return True
+        
         return False
 
     async def _aggressive_unit_production(self) -> bool:

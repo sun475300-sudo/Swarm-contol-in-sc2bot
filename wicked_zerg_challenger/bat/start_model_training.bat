@@ -52,8 +52,21 @@ if exist __pycache__ (
 del /q *.pyc 2>nul
 echo.
 
-REM Run training script (will loop continuously)
-python run_with_training.py
+REM Check if --LadderServer flag is provided
+set LADDER_MODE=0
+if "%1"=="--LadderServer" set LADDER_MODE=1
+
+if %LADDER_MODE%==1 (
+    echo [INFO] Connecting to AI Arena server...
+    echo [INFO] Training will run on ladder server
+    python run_with_training.py --LadderServer
+) else (
+    echo [INFO] Running local training (no server connection)
+    echo [INFO] To connect to server, run: start_model_training.bat --LadderServer
+    echo.
+    REM Run training script (will loop continuously)
+    python run_with_training.py
+)
 
 echo.
 echo ================================
