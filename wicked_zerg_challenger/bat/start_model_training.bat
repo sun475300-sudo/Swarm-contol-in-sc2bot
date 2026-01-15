@@ -43,6 +43,15 @@ echo.
 
 cd wicked_zerg_challenger
 
+REM Clear Python cache to ensure latest code is used
+echo [INFO] Clearing Python cache...
+if exist __pycache__ (
+    rmdir /s /q __pycache__
+    echo [OK] Python cache cleared
+)
+del /q *.pyc 2>nul
+echo.
+
 REM Run training script (will loop continuously)
 python run_with_training.py
 
