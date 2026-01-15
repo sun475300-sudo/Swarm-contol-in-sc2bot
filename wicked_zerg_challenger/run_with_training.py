@@ -184,11 +184,14 @@ def main():
                     time.sleep(5)
                     continue
                 
-                # bot is already a Bot instance from create_bot_with_training()
+                # CRITICAL: bot is already a Bot instance from create_bot_with_training()
+                # DO NOT wrap it again with Bot() - it will cause AssertionError
+                # bot = Bot(Race.Zerg, bot)  # ? WRONG - causes error
+                # bot is already a Bot instance, use it directly
                 run_game(
                     map_instance,
                     [
-                        bot,  # Use bot directly, don't wrap it again
+                        bot,  # ? CORRECT: Use bot directly (already a Bot instance)
                         Computer(opponent_race, difficulty)
                     ],
                     realtime=False  # False = fast speed, True = real-time speed
