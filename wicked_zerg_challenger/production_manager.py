@@ -746,9 +746,10 @@ class ProductionManager:
                 if b.larva.exists and b.can_afford(UnitTypeId.ZERGLING):
                     for larva in b.larva:
                         if b.supply_left >= 1:
-                            await larva.train(UnitTypeId.ZERGLING)
-                            print(f"[FALLBACK] Produced 1 Zergling as fallback")
-                            break
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                print(f"[FALLBACK] Produced 1 Zergling as fallback")
+                                break
             except Exception as fallback_error:
                 print(f"[ERROR] Fallback production also failed: {fallback_error}")
 
@@ -1089,7 +1090,8 @@ class ProductionManager:
         mineral_threshold = 200  # Need at least 200 minerals after queen cost
         gas_threshold = 100      # Need at least 100 gas after queen cost
         
-        if b.minerals < mineral_threshold or b.vespene_gas < gas_threshold:
+        # CRITICAL FIX: Use 'vespene' instead of 'vespene_gas' (correct SC2 API attribute)
+        if b.minerals < mineral_threshold or b.vespene < gas_threshold:
             # Resource shortage - skip queen production
             return
         
@@ -1126,9 +1128,11 @@ class ProductionManager:
                 continue
             
             try:
-                await hatch.train(UnitTypeId.QUEEN)
-                print(f"👑 [{int(b.time)}초] 여왕 생산 (기지: {len(townhalls)}개, 여왕: {queens_count}개)")
-                break
+                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                # Note: hatch.train() for QUEEN is typically sync, but use _safe_train for consistency
+                if await self._safe_train(hatch, UnitTypeId.QUEEN):
+                    print(f"👑 [{int(b.time)}초] 여왕 생산 (기지: {len(townhalls)}개, 여왕: {queens_count}개)")
+                    break
             except Exception as e:
                 # Hatchery might be busy or queen production might have failed
                 # Continue to next hatchery instead of breaking
@@ -1223,8 +1227,10 @@ class ProductionManager:
                     if b.can_afford(UnitTypeId.ZERGLING):
                         ready_larvae = larvae.ready.idle if hasattr(larvae, "ready") else larvae
                         if ready_larvae.exists:
-                            await ready_larvae.random.train(UnitTypeId.ZERGLING)
-                            return True
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            larva = ready_larvae.random
+                            if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                return True
         except Exception as e:
             current_iteration = getattr(b, "iteration", 0)
             if current_iteration % 50 == 0:
@@ -1529,10 +1535,13 @@ class ProductionManager:
                     if b.can_afford(UnitTypeId.MUTALISK) and b.supply_left >= 2:
                         if larvae and len(larvae) > 0:
                             try:
-                                await random.choice(larvae).train(UnitTypeId.MUTALISK)
-                                print(
-                                    f"[EVOLUTION] Unit Composition: Producing Mutalisk vs Terran Mech (Tanks: {tanks})"
-                                )
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                larva_list = list(larvae) if hasattr(larvae, '__iter__') and not isinstance(larvae, bool) else []
+                                if len(larva_list) > 0:
+                                    if await self._safe_train(random.choice(larva_list), UnitTypeId.MUTALISK):
+                                        print(
+                                            f"[EVOLUTION] Unit Composition: Producing Mutalisk vs Terran Mech (Tanks: {tanks})"
+                                        )
                                 return True
                             except Exception:
                                 pass
@@ -1945,10 +1954,11 @@ class ProductionManager:
                         continue
                     if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.HYDRALISK)
-                            units_produced += 1
-                            if b.iteration % 50 == 0:
-                                print(f"[GAS FLUSH] [{int(b.time)}s] Producing Hydralisk (gas: {b.vespene})")
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.HYDRALISK):
+                                units_produced += 1
+                                if b.iteration % 50 == 0:
+                                    print(f"[GAS FLUSH] [{int(b.time)}s] Producing Hydralisk (gas: {b.vespene})")
                         except Exception:
                             continue
                 if units_produced > 0:
@@ -1960,10 +1970,11 @@ class ProductionManager:
                         continue
                     if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.ROACH)
-                            units_produced += 1
-                            if b.iteration % 50 == 0:
-                                print(f"[GAS FLUSH] [{int(b.time)}s] Producing Roach (gas: {b.vespene})")
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ROACH):
+                                units_produced += 1
+                                if b.iteration % 50 == 0:
+                                    print(f"[GAS FLUSH] [{int(b.time)}s] Producing Roach (gas: {b.vespene})")
                         except Exception:
                             continue
                 if units_produced > 0:
@@ -2069,10 +2080,11 @@ class ProductionManager:
 
                 # Produce the unit!
                 try:
-                    await larva.train(unit_type)
-                    units_produced += 1
-                    produced = True
-                    break  # Move to next larva
+                    # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                    if await self._safe_train(larva, unit_type):
+                        units_produced += 1
+                        produced = True
+                        break  # Move to next larva
                 except Exception as e:
                     # CRITICAL: Log the exception so we know why production fails
                     print(f"[ERROR] Failed to train {unit_type}: {e}")
@@ -2191,8 +2203,9 @@ class ProductionManager:
                     for larva in list(larvae)[:min(5, len(larvae))]:  # Use up to 5 larvae
                         if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
                             try:
-                                await larva.train(UnitTypeId.HYDRALISK)
-                                produced += 1
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                if await self._safe_train(larva, UnitTypeId.HYDRALISK):
+                                    produced += 1
                             except Exception:
                                 break
                     if produced > 0:
@@ -2208,8 +2221,9 @@ class ProductionManager:
                     for larva in list(larvae)[:min(5, len(larvae))]:  # Use up to 5 larvae
                         if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
                             try:
-                                await larva.train(UnitTypeId.ROACH)
-                                produced += 1
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                if await self._safe_train(larva, UnitTypeId.ROACH):
+                                    produced += 1
                             except Exception:
                                 break
                     if produced > 0:
@@ -2225,8 +2239,9 @@ class ProductionManager:
                 for larva in list(larvae):
                     if b.can_afford(UnitTypeId.ZERGLING) and b.supply_left >= 1:
                         try:
-                            await larva.train(UnitTypeId.ZERGLING)
-                            produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                produced += 1
                         except Exception:
                             break
                     else:
@@ -2245,8 +2260,9 @@ class ProductionManager:
             for larva in list(larvae)[:overlords_to_produce]:
                 if b.can_afford(UnitTypeId.OVERLORD) and b.supply_left >= 1:
                     try:
-                        await larva.train(UnitTypeId.OVERLORD)
-                        produced += 1
+                        # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                        if await self._safe_train(larva, UnitTypeId.OVERLORD):
+                            produced += 1
                     except Exception:
                         break
             if produced > 0:
@@ -2348,8 +2364,9 @@ class ProductionManager:
                 for larva in list(larvae)[:min(10, len(larvae))]:  # Use up to 10 larvae
                     if b.can_afford(UnitTypeId.HYDRALISK) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.HYDRALISK)
-                            produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.HYDRALISK):
+                                produced += 1
                         except Exception:
                             break
                 if produced > 0:
@@ -2363,8 +2380,9 @@ class ProductionManager:
                 for larva in list(larvae)[:min(10, len(larvae))]:
                     if b.can_afford(UnitTypeId.MUTALISK) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.MUTALISK)
-                            produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.MUTALISK):
+                                produced += 1
                         except Exception:
                             break
                 if produced > 0:
@@ -2378,8 +2396,9 @@ class ProductionManager:
                 for larva in list(larvae)[:min(10, len(larvae))]:
                     if b.can_afford(UnitTypeId.ROACH) and b.supply_left >= 2:
                         try:
-                            await larva.train(UnitTypeId.ROACH)
-                            produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ROACH):
+                                produced += 1
                         except Exception:
                             break
                 if produced > 0:
@@ -2465,8 +2484,9 @@ class ProductionManager:
                 for larva in larva_list[:min(5, len(larva_list))]:
                     if b.can_afford(UnitTypeId.ZERGLING) and b.supply_left >= 1:
                         try:
-                            await larva.train(UnitTypeId.ZERGLING)
-                            units_produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                units_produced += 1
                         except Exception:
                             break
                 if units_produced > 0:
@@ -2580,10 +2600,11 @@ class ProductionManager:
 
                 # Produce the unit
                 try:
-                    await larva.train(unit_type)
-                    units_produced += 1
-                    produced = True
-                    break
+                    # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                    if await self._safe_train(larva, unit_type):
+                        units_produced += 1
+                        produced = True
+                        break
                 except Exception:
                     continue
 
@@ -5052,8 +5073,9 @@ class ProductionManager:
                         try:
                             larva = larvae[i]
                             if hasattr(larva, 'is_ready') and larva.is_ready:
-                                await larva.train(unit_type)
-                                produced += 1
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                if await self._safe_train(larva, unit_type):
+                                    produced += 1
                         except Exception as e:
                             if b.iteration % 50 == 0:
                                 print(f"[ERROR] Failed to train {unit_type.name}: {e}")
@@ -5068,7 +5090,8 @@ class ProductionManager:
                 larva = random.choice(larvae) if larvae else None
                 if larva:
                     try:
-                        await larva.train(unit_type)
+                        # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                        await self._safe_train(larva, unit_type)
                     except Exception as e:
                         if b.iteration % 50 == 0:
                             print(f"[ERROR] Failed to train {unit_type.name}: {e}")
@@ -5417,9 +5440,10 @@ class ProductionManager:
                                     continue
                                 
                                 if b.can_afford(UnitTypeId.QUEEN):
-                                    await hatch.train(UnitTypeId.QUEEN)
-                                    print(f"[SERRAL BUILD] [{int(b.time)}s] 20 Supply: Queen (여왕) - 조건 충족")
-                                    return True
+                                    # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                    if await self._safe_train(hatch, UnitTypeId.QUEEN):
+                                        print(f"[SERRAL BUILD] [{int(b.time)}s] 20 Supply: Queen (여왕) - 조건 충족")
+                                        return True
 
                 spawning_pools = [
                     s for s in b.units(UnitTypeId.SPAWNINGPOOL) if s.is_structure and s.is_ready

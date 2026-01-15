@@ -713,7 +713,8 @@ class UnitFactory:
         mineral_threshold = 200
         gas_threshold = 100
         
-        if b.minerals < mineral_threshold or b.vespene_gas < gas_threshold:
+        # CRITICAL FIX: Use 'vespene' instead of 'vespene_gas' (correct SC2 API attribute)
+        if b.minerals < mineral_threshold or b.vespene < gas_threshold:
             # Resource shortage - skip queen production
             return
         
