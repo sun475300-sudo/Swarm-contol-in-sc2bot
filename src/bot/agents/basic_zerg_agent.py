@@ -11,8 +11,8 @@ from .base_agent import BaseAgent
 
 class BasicZergAgent(BaseAgent):
     """
-    SC2 없이도 동작 가능한 추상화된 Zerg 에이전트.
-    관측 obs(dict)를 받아 문자열 action을 반환한다.
+    SC2 agent that works without SC2 runtime.
+    Takes observation dict and returns action string.
     
     This agent implements a basic decision-making loop:
     1. Update intelligence from observation
