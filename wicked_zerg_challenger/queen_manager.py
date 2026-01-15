@@ -63,7 +63,8 @@ class QueenManager:
             mineral_threshold = 200  # Need sufficient minerals after queen cost
             gas_threshold = 100      # Need sufficient gas after queen cost
             
-            if self.bot.minerals < mineral_threshold or self.bot.vespene_gas < gas_threshold:
+            # CRITICAL FIX: Use 'vespene' instead of 'vespene_gas' (correct SC2 API attribute)
+            if self.bot.minerals < mineral_threshold or self.bot.vespene < gas_threshold:
                 # Resource shortage - skip queen production, let production_manager handle it
                 return
             

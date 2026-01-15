@@ -561,8 +561,9 @@ class ProductionManager:
                         continue
                     if b.can_afford(UnitTypeId.ZERGLING) and b.supply_left >= 1:
                         try:
-                            await larva.train(UnitTypeId.ZERGLING)
-                            zergling_produced += 1
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                zergling_produced += 1
                         except Exception as e:
                             if b.iteration % 50 == 0:
                                 print(f"[ERROR] Force Zergling failed: {e}")
@@ -841,9 +842,10 @@ class ProductionManager:
                         break
                     if b.can_afford(UnitTypeId.OVERLORD):
                         try:
-                            await larva.train(UnitTypeId.OVERLORD)
-                            overlords_produced += 1
-                            print(f"[MASS OVERLORD] Produced Overlord #{overlords_produced} (minerals: {b.minerals})")
+                            # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                            if await self._safe_train(larva, UnitTypeId.OVERLORD):
+                                overlords_produced += 1
+                                print(f"[MASS OVERLORD] Produced Overlord #{overlords_produced} (minerals: {b.minerals})")
                         except Exception as e:
                             print(f"[ERROR] Overlord production failed: {e}")
                             break
@@ -1656,8 +1658,9 @@ class ProductionManager:
                     for larva in larvae:
                         if b.can_afford(UnitTypeId.ZERGLING) and b.supply_left >= 1:
                             try:
-                                await larva.train(UnitTypeId.ZERGLING)
-                                zergling_count += 1
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                                    zergling_count += 1
                             except Exception as e:
                                 logger.error(f"[EMERGENCY] Failed to train Zergling: {e}")
                         else:
@@ -2047,10 +2050,11 @@ class ProductionManager:
                     if emergency_flush and b.supply_left < 2:
                         if b.can_afford(UnitTypeId.OVERLORD) and b.supply_left >= 1:
                             try:
-                                await larva.train(UnitTypeId.OVERLORD)
-                                units_produced += 1
-                                produced = True
-                                break
+                                # CRITICAL FIX: Use _safe_train to handle both sync and async train() methods
+                                if await self._safe_train(larva, UnitTypeId.OVERLORD):
+                                    units_produced += 1
+                                    produced = True
+                                    break
                             except Exception:
                                 pass
                     continue
