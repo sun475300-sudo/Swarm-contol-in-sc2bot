@@ -116,7 +116,8 @@ def main():
     # Available maps
     available_maps = ["AbyssalReefLE", "BelShirVestigeLE", "CactusValleyLE", "HonorgroundsLE", "ProximaStationLE"]
     opponent_races = [Race.Terran, Race.Protoss, Race.Zerg]
-    difficulties = [Difficulty.Hard, Difficulty.VeryHard, Difficulty.Elite]
+    # IMPROVED: Use only available Difficulty values (Elite doesn't exist, VeryHard is the highest)
+    difficulties = [Difficulty.Hard, Difficulty.VeryHard]
     
     print("Starting Continuous Training Loop...")
     print("Game windows will open - you can watch the games in real-time!")
