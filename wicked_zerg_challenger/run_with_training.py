@@ -117,6 +117,15 @@ def main():
     print("\n[STEP 2] ? Initializing Continuous Training Loop...")
     print("=" * 70)
     
+    # Initialize Training Session Manager
+    try:
+        from tools.training_session_manager import TrainingSessionManager
+        session_manager = TrainingSessionManager()
+        print("[OK] Training session manager initialized")
+    except ImportError as e:
+        print(f"[WARNING] Training session manager not available: {e}")
+        session_manager = None
+    
     game_count = 0
     max_consecutive_failures = 5
     consecutive_failures = 0
@@ -147,14 +156,26 @@ def main():
                     print(f"? [ERROR] Too many consecutive failures ({consecutive_failures}). Stopping training.")
                     break
             
-            # [STEP 3] Select random map, opponent race, and difficulty
+            # [STEP 3] Select random map, opponent race, and adaptive difficulty
             print(f"\n{'='*70}")
             print(f"? [STEP 3] GAME #{game_count} - Random Selection")
             print("=" * 70)
             
             map_name = random.choice(available_maps)
             opponent_race = random.choice(opponent_races)
-            difficulty = random.choice(difficulties)
+            
+            # IMPROVED: Use adaptive difficulty from session manager
+            if session_manager:
+                recommended_difficulty_str = session_manager.get_adaptive_difficulty()
+                # Convert string to Difficulty enum
+                if recommended_difficulty_str == "VeryHard":
+                    difficulty = Difficulty.VeryHard
+                else:
+                    difficulty = Difficulty.Hard
+                print(f"[ADAPTIVE] Recommended difficulty: {recommended_difficulty_str} "
+                      f"(based on {session_manager.session_stats.win_rate:.1f}% win rate)")
+            else:
+                difficulty = random.choice(difficulties)
             
             print(f"[SELECTED] Map: {map_name}")
             print(f"[SELECTED] Opponent Race: {opponent_race.name}")
@@ -199,6 +220,36 @@ def main():
                 
                 # Game completed successfully
                 consecutive_failures = 0
+                if session_manager:
+                    session_manager.reset_error_count()
+                
+                # IMPROVED: Get game result from bot (if available)
+                game_result_str = "Unknown"
+                game_time = 0.0
+                build_order_score = None
+                loss_reason = None
+                parameters_updated = 0
+                
+                if hasattr(bot, 'ai') and bot.ai:
+                    # Try to get game result from bot
+                    if hasattr(bot.ai, 'last_result'):
+                        game_result_str = str(bot.ai.last_result)
+                    if hasattr(bot.ai, 'time'):
+                        game_time = float(bot.ai.time)
+                
+                # Record game result in session manager
+                if session_manager:
+                    session_manager.record_game_result(
+                        game_id=game_count,
+                        map_name=map_name,
+                        opponent_race=opponent_race.name,
+                        difficulty=difficulty.name,
+                        result=game_result_str,
+                        game_time=game_time,
+                        build_order_score=build_order_score,
+                        loss_reason=loss_reason,
+                        parameters_updated=parameters_updated
+                    )
                 
                 print(f"\n{'='*70}")
                 print(f"? [GAME #{game_count}] COMPLETED SUCCESSFULLY")
@@ -215,6 +266,13 @@ def main():
                 break
             except Exception as game_error:
                 consecutive_failures += 1
+                
+                # IMPROVED: Record error in session manager
+                if session_manager:
+                    error_type = type(game_error).__name__
+                    error_message = str(game_error)
+                    session_manager.record_error(error_type, error_message)
+                
                 print(f"\n[ERROR] Game #{game_count} failed: {game_error}")
                 print(f"[RETRY] Will retry after 5 seconds...")
                 import traceback
@@ -227,6 +285,13 @@ def main():
             break
         except Exception as e:
             consecutive_failures += 1
+            
+            # IMPROVED: Record error in session manager
+            if session_manager:
+                error_type = type(e).__name__
+                error_message = str(e)
+                session_manager.record_error(error_type, error_message)
+            
             print(f"\n[ERROR] Unexpected error in training loop: {e}")
             print(f"[RETRY] Will retry after 5 seconds...")
             import traceback
@@ -234,6 +299,7 @@ def main():
             time.sleep(5)
             continue
     
+    # IMPROVED: Print final training summary
     print()
     print("=" * 70)
     print("TRAINING STOPPED")
@@ -241,6 +307,10 @@ def main():
     print(f"Total games completed: {game_count}")
     print("Model saved to: local_training/models/zerg_net_model.pt")
     print("You can now use this trained model in future games!")
+    
+    if session_manager:
+        print(session_manager.get_training_summary())
+    
     print("=" * 70)
 
 if __name__ == "__main__":

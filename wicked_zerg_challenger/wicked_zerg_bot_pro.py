@@ -5638,6 +5638,24 @@ class WickedZergBotPro(BotAI):
                         learned_json_path = Path(__file__).parent / "local_training" / "scripts" / "learned_build_orders.json"
                         learned_json_path.parent.mkdir(parents=True, exist_ok=True)
                         
+                        # IMPROVED: Backup learning data before update
+                        try:
+                            from tools.training_session_manager import TrainingSessionManager
+                            session_manager = TrainingSessionManager()
+                            backup_path = session_manager.backup_learning_data(learned_json_path)
+                            if backup_path:
+                                print(f"[BACKUP] Learning data backed up: {backup_path}")
+                            
+                            # Validate learning data before update
+                            is_valid, error_msg = session_manager.validate_learning_data(learned_json_path)
+                            if not is_valid:
+                                print(f"[WARNING] Learning data validation failed: {error_msg}")
+                                print("[WARNING] Skipping parameter update to prevent corruption")
+                                raise ValueError(f"Invalid learning data: {error_msg}")
+                        except ImportError:
+                            # Session manager not available, continue without backup/validation
+                            pass
+                        
                         # Load existing data or create new
                         if learned_json_path.exists():
                             with open(learned_json_path, 'r', encoding='utf-8') as f:
@@ -5656,6 +5674,28 @@ class WickedZergBotPro(BotAI):
                             if old_value is None or abs(new_value - old_value) > 0.5:
                                 existing_data["learned_parameters"][param_name] = new_value
                                 updated_count += 1
+                        
+                        # IMPROVED: Validate updated data before saving
+                        try:
+                            from tools.training_session_manager import TrainingSessionManager
+                            session_manager = TrainingSessionManager()
+                            # Create temporary file for validation
+                            import tempfile
+                            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp_file:
+                                json.dump(existing_data, tmp_file, indent=2, ensure_ascii=False)
+                                tmp_path = Path(tmp_file.name)
+                            
+                            is_valid, error_msg = session_manager.validate_learning_data(tmp_path)
+                            if not is_valid:
+                                print(f"[WARNING] Updated data validation failed: {error_msg}")
+                                print("[WARNING] Skipping save to prevent corruption")
+                                tmp_path.unlink()  # Clean up temp file
+                                raise ValueError(f"Invalid updated data: {error_msg}")
+                            
+                            tmp_path.unlink()  # Clean up temp file after validation
+                        except ImportError:
+                            # Session manager not available, skip validation
+                            pass
                         
                         # Save updated data
                         with open(learned_json_path, 'w', encoding='utf-8') as f:
