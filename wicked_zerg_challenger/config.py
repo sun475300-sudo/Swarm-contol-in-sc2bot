@@ -276,7 +276,17 @@ def get_config_loader() -> ConfigLoader:
 
 
 def get_learned_parameter(parameter_name: str, default_value: Any = None) -> Any:
-    learned_json_path = Path(__file__).parent / "learned_build_orders.json"
+    """
+    Get learned parameter from local_training/scripts/learned_build_orders.json
+    Priority: local_training/scripts/learned_build_orders.json > learned_build_orders.json (same dir)
+    """
+    # Priority 1: local_training/scripts/learned_build_orders.json (where training saves)
+    local_training_path = Path(__file__).parent / "local_training" / "scripts" / "learned_build_orders.json"
+    # Priority 2: learned_build_orders.json in same directory (backward compatibility)
+    default_path = Path(__file__).parent / "learned_build_orders.json"
+    
+    # Try local_training first
+    learned_json_path = local_training_path if local_training_path.exists() else default_path
     if learned_json_path.exists():
         try:
             with open(learned_json_path, 'r', encoding='utf-8') as f:

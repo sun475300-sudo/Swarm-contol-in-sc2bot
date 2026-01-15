@@ -38,9 +38,20 @@ def get_project_root():
 # Project root path
 PROJECT_ROOT = get_project_root()
 
-# Model storage directory (in local_training folder)
+# Model storage directory - Priority: local_training/models/ > wicked_zerg_challenger/models/
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
+# Try local_training/models/ first (where training saves models)
+LOCAL_TRAINING_MODELS_DIR = os.path.join(SCRIPT_DIR, "local_training", "models")
+# Fallback to current directory models/
+DEFAULT_MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
+
+# Use local_training/models/ if it exists, otherwise use default
+if os.path.exists(LOCAL_TRAINING_MODELS_DIR):
+    MODELS_DIR = LOCAL_TRAINING_MODELS_DIR
+    print(f"[MODEL] Using local_training/models/ directory: {MODELS_DIR}")
+else:
+    MODELS_DIR = DEFAULT_MODELS_DIR
+    print(f"[MODEL] Using default models/ directory: {MODELS_DIR}")
 
 
 class Action(Enum):
@@ -271,6 +282,7 @@ class ReinforcementLearner:
     def _load_model(self):
         """
         Load model if saved (with file locking handling)
+        Priority: local_training/models/ > default models/
 
         Enhanced error reporting for model loading failures
         """
