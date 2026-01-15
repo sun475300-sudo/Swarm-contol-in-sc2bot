@@ -59,8 +59,19 @@ from sc2.main import run_game  # type: ignore
 from sc2.player import Bot, Computer  # type: ignore
 from sc2 import maps  # type: ignore
 
+def create_bot():
+    """
+    AI Arena entry point - Create bot instance.
+    This function can be called directly by AI Arena if needed.
+    """
+    return Bot(Race.Zerg, WickedZergBotPro())
+
 def main():
-    bot = Bot(Race.Zerg, WickedZergBotPro())
+    """
+    Main entry point for bot execution.
+    Supports both AI Arena ladder mode and local testing.
+    """
+    bot = create_bot()
 
     # 1. Run on AI Arena server (when --LadderServer flag is present)
     if "--LadderServer" in sys.argv:
