@@ -13,7 +13,6 @@ These algorithms are directly applicable to real-world drone swarm control.
 import math
 from typing import List, Tuple, Dict, Any
 from dataclasses import dataclass
-import numpy as np
 
 try:
     from sc2.position import Point2, Point3
@@ -35,6 +34,44 @@ except ImportError:
                 return self
             return Point2((self.x + dx/dist * distance, self.y + dy/dist * distance))
     SC2_AVAILABLE = False
+
+
+# Utility functions to reduce code duplication
+def _distance(p1: Point2, p2: Point2) -> float:
+    """Calculate Euclidean distance between two points."""
+    return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
+
+
+def _magnitude(p: Point2) -> float:
+    """Calculate magnitude of a vector."""
+    return math.sqrt(p.x**2 + p.y**2)
+
+
+def _normalize(p: Point2, max_magnitude: float = None) -> Point2:
+    """Normalize a vector, optionally limiting to max_magnitude."""
+    mag = _magnitude(p)
+    if mag == 0:
+        return Point2((0.0, 0.0))
+    
+    if max_magnitude and mag > max_magnitude:
+        return Point2((p.x / mag * max_magnitude, p.y / mag * max_magnitude))
+    
+    return Point2((p.x / mag, p.y / mag))
+
+
+def _zero_point() -> Point2:
+    """Create a zero point."""
+    return Point2((0.0, 0.0))
+
+
+def _average_points(points: List[Point2]) -> Point2:
+    """Calculate average position of a list of points."""
+    if not points:
+        return _zero_point()
+    return Point2((
+        sum(p.x for p in points) / len(points),
+        sum(p.y for p in points) / len(points)
+    ))
 
 
 @dataclass
@@ -92,7 +129,7 @@ class PotentialFieldController:
         # Attractive force toward target (goal)
         to_target = Point2((target_position.x - unit_position.x, 
                            target_position.y - unit_position.y))
-        target_distance = math.sqrt(to_target.x**2 + to_target.y**2)
+        target_distance = _magnitude(to_target)
         
         if target_distance > 0:
             attractive_force = Point2((
@@ -100,14 +137,14 @@ class PotentialFieldController:
                 to_target.y / target_distance * self.config.potential_field_strength
             ))
         else:
-            attractive_force = Point2((0.0, 0.0))
+            attractive_force = _zero_point()
         
         # Repulsive force from nearby units (separation)
-        repulsive_force = Point2((0.0, 0.0))
+        repulsive_force = _zero_point()
         for nearby_unit in nearby_units:
             to_unit = Point2((nearby_unit.x - unit_position.x,
                              nearby_unit.y - unit_position.y))
-            unit_distance = math.sqrt(to_unit.x**2 + to_unit.y**2)
+            unit_distance = _magnitude(to_unit)
             
             if 0 < unit_distance < self.config.separation_distance:
                 # Strong repulsion when too close
@@ -121,7 +158,7 @@ class PotentialFieldController:
         for obstacle in obstacles:
             to_obstacle = Point2((obstacle.x - unit_position.x,
                                  obstacle.y - unit_position.y))
-            obstacle_distance = math.sqrt(to_obstacle.x**2 + to_obstacle.y**2)
+            obstacle_distance = _magnitude(to_obstacle)
             
             if obstacle_distance < self.config.separation_distance * 2:
                 repulsion_strength = self.config.obstacle_repulsion / (obstacle_distance + 0.1)
@@ -137,14 +174,7 @@ class PotentialFieldController:
         ))
         
         # Limit force magnitude
-        force_magnitude = math.sqrt(total_force.x**2 + total_force.y**2)
-        if force_magnitude > self.config.max_speed:
-            total_force = Point2((
-                total_force.x / force_magnitude * self.config.max_speed,
-                total_force.y / force_magnitude * self.config.max_speed
-            ))
-        
-        return total_force
+        return _normalize(total_force, self.config.max_speed)
 
 
 class BoidsController:
@@ -208,14 +238,7 @@ class BoidsController:
         ))
         
         # Limit speed
-        speed = math.sqrt(desired_velocity.x**2 + desired_velocity.y**2)
-        if speed > self.config.max_speed:
-            desired_velocity = Point2((
-                desired_velocity.x / speed * self.config.max_speed,
-                desired_velocity.y / speed * self.config.max_speed
-            ))
-        
-        return desired_velocity
+        return _normalize(desired_velocity, self.config.max_speed)
     
     def _calculate_separation(
         self,
@@ -223,11 +246,11 @@ class BoidsController:
         nearby_units: List[Tuple[Point2, Point2]]
     ) -> Point2:
         """Calculate separation force (steer away from neighbors)."""
-        separation_force = Point2((0.0, 0.0))
+        separation_force = _zero_point()
         neighbor_count = 0
         
         for neighbor_pos, _ in nearby_units:
-            distance = unit_position.distance_to(neighbor_pos)
+            distance = _distance(unit_position, neighbor_pos)
             
             if 0 < distance < self.config.separation_distance:
                 # Steer away from neighbor
@@ -236,13 +259,12 @@ class BoidsController:
                     unit_position.y - neighbor_pos.y
                 ))
                 # Normalize and weight by distance (closer = stronger)
-                if distance > 0:
-                    weight = 1.0 / distance
-                    separation_force = Point2((
-                        separation_force.x + away_vector.x * weight,
-                        separation_force.y + away_vector.y * weight
-                    ))
-                    neighbor_count += 1
+                weight = 1.0 / distance
+                separation_force = Point2((
+                    separation_force.x + away_vector.x * weight,
+                    separation_force.y + away_vector.y * weight
+                ))
+                neighbor_count += 1
         
         if neighbor_count > 0:
             separation_force = Point2((
@@ -258,32 +280,20 @@ class BoidsController:
         nearby_units: List[Tuple[Point2, Point2]]
     ) -> Point2:
         """Calculate alignment force (steer toward average neighbor velocity)."""
-        avg_velocity = Point2((0.0, 0.0))
-        neighbor_count = 0
-        
+        neighbor_velocities = []
         for _, neighbor_vel in nearby_units:
-            distance = math.sqrt(neighbor_vel.x**2 + neighbor_vel.y**2)
-            if distance < self.config.alignment_radius:
-                avg_velocity = Point2((
-                    avg_velocity.x + neighbor_vel.x,
-                    avg_velocity.y + neighbor_vel.y
-                ))
-                neighbor_count += 1
+            if _magnitude(neighbor_vel) < self.config.alignment_radius:
+                neighbor_velocities.append(neighbor_vel)
         
-        if neighbor_count > 0:
-            avg_velocity = Point2((
-                avg_velocity.x / neighbor_count,
-                avg_velocity.y / neighbor_count
-            ))
-            # Steer toward average velocity
-            alignment_force = Point2((
-                avg_velocity.x - unit_velocity.x,
-                avg_velocity.y - unit_velocity.y
-            ))
-        else:
-            alignment_force = Point2((0.0, 0.0))
+        if not neighbor_velocities:
+            return _zero_point()
         
-        return alignment_force
+        avg_velocity = _average_points(neighbor_velocities)
+        # Steer toward average velocity
+        return Point2((
+            avg_velocity.x - unit_velocity.x,
+            avg_velocity.y - unit_velocity.y
+        ))
     
     def _calculate_cohesion(
         self,
@@ -291,32 +301,20 @@ class BoidsController:
         nearby_units: List[Tuple[Point2, Point2]]
     ) -> Point2:
         """Calculate cohesion force (steer toward average neighbor position)."""
-        avg_position = Point2((0.0, 0.0))
-        neighbor_count = 0
+        neighbor_positions = [
+            neighbor_pos for neighbor_pos, _ in nearby_units
+            if _distance(unit_position, neighbor_pos) < self.config.cohesion_radius
+        ]
         
-        for neighbor_pos, _ in nearby_units:
-            distance = unit_position.distance_to(neighbor_pos)
-            if distance < self.config.cohesion_radius:
-                avg_position = Point2((
-                    avg_position.x + neighbor_pos.x,
-                    avg_position.y + neighbor_pos.y
-                ))
-                neighbor_count += 1
+        if not neighbor_positions:
+            return _zero_point()
         
-        if neighbor_count > 0:
-            avg_position = Point2((
-                avg_position.x / neighbor_count,
-                avg_position.y / neighbor_count
-            ))
-            # Steer toward average position
-            cohesion_force = Point2((
-                avg_position.x - unit_position.x,
-                avg_position.y - unit_position.y
-            ))
-        else:
-            cohesion_force = Point2((0.0, 0.0))
-        
-        return cohesion_force
+        avg_position = _average_points(neighbor_positions)
+        # Steer toward average position
+        return Point2((
+            avg_position.x - unit_position.x,
+            avg_position.y - unit_position.y
+        ))
 
 
 class MicroController:
@@ -527,13 +525,11 @@ class MicroController:
             
             # Find all positions within radius
             cluster_members = [p for p in positions 
-                             if pos.distance_to(p) <= radius]
+                             if _distance(pos, p) <= radius]
             
             if cluster_members:
                 # Calculate cluster center
-                center_x = sum(p.x for p in cluster_members) / len(cluster_members)
-                center_y = sum(p.y for p in cluster_members) / len(cluster_members)
-                clusters.append(Point2((center_x, center_y)))
+                clusters.append(_average_points(cluster_members))
                 
                 # Mark as used
                 used_positions.update(cluster_members)
