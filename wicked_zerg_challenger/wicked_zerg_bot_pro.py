@@ -5842,11 +5842,18 @@ class WickedZergBotPro(BotAI):
 
                 self.neural_network.finish_episode(final_reward)
 
+                # [NEURAL NETWORK TRAINING] Save model
+                print("\n" + "-" * 70)
+                print("🧠 [NEURAL NETWORK] Training Complete")
+                print("-" * 70)
                 self.save_model_safe()
                 if hasattr(self, "instance_id"):
-                    print(f"[TRAIN] ✅ 학습 완료 및 모델 저장 (인스턴스 #{self.instance_id})")
+                    print(f"[SAVED] Model saved (Instance #{self.instance_id})")
                 else:
-                    print("[TRAIN] ✅ 학습 완료 및 모델 저장")
+                    print("[SAVED] Model saved")
+                print(f"[PATH] local_training/models/zerg_net_model.pt")
+                print(f"[REWARD] Episode reward: {final_reward:.2f}")
+                print("-" * 70)
 
             except Exception as e:
                 print(f"[WARNING] 신경망 학습 중 오류 (무시): {e}")
