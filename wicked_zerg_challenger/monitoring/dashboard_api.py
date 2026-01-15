@@ -60,7 +60,7 @@ _auth_cred = os.environ.get("MONITORING_AUTH_PASSWORD", None)
 if _auth_cred is None:
     import warnings
     warnings.warn("MONITORING_AUTH_PASSWORD environment variable not set. Please set it for production use.")
-    _auth_cred = ""  # Empty string - must be set via MONITORING_AUTH_PASSWORD environment variable
+    _auth_cred = ""  # Empty string - must be set via environment variable
 _auth_password = _auth_cred  # Alias for backward compatibility
 
 security = HTTPBasic()

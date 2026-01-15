@@ -105,7 +105,7 @@
 ```markdown
 **예시** (실제 키 아님):
 ```
-AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+YOUR_API_KEY_HERE
 ```
 ```
 

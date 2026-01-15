@@ -115,8 +115,8 @@ AIzaSy[알파벳/숫자/특수문자 35자]
 
 **예시**:
 ```
-AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  ← 예시 (실제 키 아님)
 YOUR_API_KEY_HERE  ← 환경 변수에서 로드
+```
 ```
 
 ---
