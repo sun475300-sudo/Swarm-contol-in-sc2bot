@@ -248,9 +248,39 @@ class TelemetryLogger:
                 "army_count": loss_details.get("army_count", 0),
             }
 
-            # Append to training_stats.json (append mode)
-            with open(self.stats_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
+            # Atomic append to training_stats.json (JSONL format)
+            stats_path = Path(self.stats_file)
+            temp_stats = stats_path.with_suffix(stats_path.suffix + '.tmp')
+            
+            try:
+                # 기존 내용 읽기
+                existing_lines = []
+                if stats_path.exists():
+                    try:
+                        with open(stats_path, "r", encoding="utf-8") as f:
+                            existing_lines = [line.strip() for line in f if line.strip()]
+                    except Exception:
+                        pass
+                
+                # 새 라인 추가
+                new_line = json.dumps(log_data, ensure_ascii=False)
+                existing_lines.append(new_line)
+                
+                # 임시 파일에 전체 내용 쓰기
+                with open(temp_stats, "w", encoding="utf-8") as f:
+                    for line in existing_lines:
+                        f.write(line + "\n")
+                
+                # 원자적 교체
+                try:
+                    temp_stats.replace(stats_path)
+                except OSError:
+                    shutil.copy2(temp_stats, stats_path)
+                    temp_stats.unlink()
+            except Exception as e:
+                if temp_stats.exists():
+                    temp_stats.unlink()
+                raise e
 
             print(f"[STATS] {personality} ({self.instance_id}): {loss_reason} -> {self.stats_file}")
 

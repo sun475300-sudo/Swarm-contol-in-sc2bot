@@ -5,8 +5,9 @@ Dashboard API Server - sc2AIagent Integration
 Real-time game state, combat stats, and AI control API
 """
 
-from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi import FastAPI, WebSocket, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.responses import FileResponse
 import asyncio
@@ -17,6 +18,7 @@ import logging
 from pathlib import Path
 from glob import glob
 import os
+import secrets
 
 # Logging setup
 logging.basicConfig(
