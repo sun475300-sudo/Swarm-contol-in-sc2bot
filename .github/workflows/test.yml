@@ -13,8 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Windows + Python 3.11 조합 제거 (numpy 호환성 문제)
+        # Python 3.10만 사용하여 안정성 확보
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.10', '3.11']
+        python-version: ['3.10']
+        include:
+          # Ubuntu에서만 Python 3.11 테스트 (빌드가 빠름)
+          - os: ubuntu-latest
+            python-version: '3.11'
     
     steps:
     - uses: actions/checkout@v4
@@ -23,24 +29,38 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'  # pip 캐시 활용으로 설치 속도 향상
     
     - name: Install dependencies
-      timeout-minutes: 15
+      timeout-minutes: 20
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip setuptools wheel
         cd wicked_zerg_challenger
-        # Install numpy first with specific version to avoid resolution issues
-        pip install "numpy>=1.20.0,<2.0.0" --no-cache-dir || pip install numpy==1.24.3 --no-cache-dir
+        
+        # Python 버전별 numpy 설치 (호환성 보장)
+        if [ "${{ matrix.python-version }}" == "3.11" ]; then
+          echo "Installing numpy for Python 3.11..."
+          pip install "numpy>=1.26.0,<2.0.0" --no-cache-dir
+        else
+          echo "Installing numpy for Python 3.10..."
+          pip install "numpy>=1.23.0,<2.0.0" --no-cache-dir
+        fi
+        
+        # 나머지 의존성 설치
         pip install -r requirements.txt --no-cache-dir
-        pip install pytest pytest-cov
+        
+        # 테스트 도구 설치
+        pip install pytest pytest-cov pytest-timeout
     
     - name: Run tests
+      timeout-minutes: 10
       run: |
         cd wicked_zerg_challenger
-        pytest tests/ -v --tb=short || true
+        pytest tests/ -v --tb=short --timeout=300 || true
       continue-on-error: true  # StarCraft II 환경 없이 실행 시 일부 테스트 실패 가능
     
     - name: Code quality check
+      timeout-minutes: 5
       run: |
         python -m pip install flake8 black
         flake8 wicked_zerg_challenger --count --select=E9,F63,F7,F82 --show-source --statistics || true
@@ -49,6 +69,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
     
@@ -56,18 +77,22 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+        cache: 'pip'
     
     - name: Install linting tools
+      timeout-minutes: 5
       run: |
         python -m pip install --upgrade pip
         pip install flake8 black isort
     
     - name: Run flake8
+      timeout-minutes: 5
       run: |
         flake8 wicked_zerg_challenger --count --max-line-length=120 --statistics || true
       continue-on-error: true
     
     - name: Check code formatting
+      timeout-minutes: 5
       run: |
         black --check wicked_zerg_challenger || true
         isort --check-only wicked_zerg_challenger || true
