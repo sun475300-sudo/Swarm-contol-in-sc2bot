@@ -615,14 +615,22 @@ class ProductionManager:
                 if await self._flush_resources():
                     return  # Resources flushed, continue next frame
 
-            # IMPROVED: Build order execution (early game priority) - Always check in early game
+            # CRITICAL: Build order execution (HIGHEST PRIORITY) - Execute BEFORE resource flush
             # Execute Serral opening regardless of game phase if early game conditions are met
             # This ensures critical build orders (natural expansion, gas, spawning pool) are executed
-            early_game = b.supply_used <= 50 or b.time < 180  # Early game: Supply <= 50 or Time < 3 minutes
+            # IMPROVED: More lenient early game condition to ensure build orders execute
+            # Also check if build orders are not yet completed (even if late game)
+            early_game = b.supply_used <= 60 or b.time < 300  # Early game: Supply <= 60 or Time < 5 minutes
+            build_orders_incomplete = (
+                not self.serral_build_completed["natural_expansion"] or
+                not self.serral_build_completed["gas"] or
+                not self.serral_build_completed["spawning_pool"]
+            )
             
-            if early_game or game_phase == GamePhase.OPENING:
+            # CRITICAL: Execute build orders if early game OR if critical build orders are incomplete
+            if early_game or game_phase == GamePhase.OPENING or build_orders_incomplete:
                 if await self._execute_serral_opening():
-                    return
+                    return  # Build order executed, skip resource flush for this frame
 
             try:
                 if intel and intel.cached_workers is not None:
@@ -5186,10 +5194,13 @@ class ProductionManager:
                                 try:
                                     await b.expand_now()
                                     self.serral_build_completed["natural_expansion"] = True
-                                    self.build_order_timing["natural_expansion_supply"] = float(
-                                        b.supply_used
-                                    )  # type: ignore
-                                    self.build_order_timing["natural_expansion_time"] = b.time  # type: ignore
+                                    # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                    supply_value = float(b.supply_used)
+                                    time_value = float(b.time)
+                                    self.build_order_timing["natural_expansion_supply"] = supply_value  # type: ignore
+                                    self.build_order_timing["natural_expansion_time"] = time_value  # type: ignore
+                                    self.serral_build_order_timing["natural_expansion_supply"] = supply_value  # type: ignore
+                                    self.serral_build_order_timing["natural_expansion_time"] = time_value  # type: ignore
                                     print(
                                         f"[SERRAL BUILD] [{int(b.time)}s] Supply {b.supply_used}: Natural Expansion (앞마당)"
                                     )
@@ -5205,10 +5216,13 @@ class ProductionManager:
                             try:
                                 await b.expand_now()
                                 self.serral_build_completed["natural_expansion"] = True
-                                self.build_order_timing["natural_expansion_supply"] = float(
-                                    b.supply_used
-                                )  # type: ignore
-                                self.build_order_timing["natural_expansion_time"] = b.time  # type: ignore
+                                # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                supply_value = float(b.supply_used)
+                                time_value = float(b.time)
+                                self.build_order_timing["natural_expansion_supply"] = supply_value  # type: ignore
+                                self.build_order_timing["natural_expansion_time"] = time_value  # type: ignore
+                                self.serral_build_order_timing["natural_expansion_supply"] = supply_value  # type: ignore
+                                self.serral_build_order_timing["natural_expansion_time"] = time_value  # type: ignore
                                 print(
                                     f"[SERRAL BUILD] [{int(b.time)}s] ⚠️ LATE Natural Expansion (Supply {b.supply_used})"
                                 )
@@ -5251,10 +5265,13 @@ class ProductionManager:
                                                     worker = workers[0]
                                                     worker.build(UnitTypeId.EXTRACTOR, target_gas)
                                                     self.serral_build_completed["gas"] = True
-                                                    self.build_order_timing["gas_supply"] = float(
-                                                        b.supply_used
-                                                    )  # type: ignore
-                                                    self.build_order_timing["gas_time"] = b.time  # type: ignore
+                                                    # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                                    supply_value = float(b.supply_used)
+                                                    time_value = float(b.time)
+                                                    self.build_order_timing["gas_supply"] = supply_value  # type: ignore
+                                                    self.build_order_timing["gas_time"] = time_value  # type: ignore
+                                                    self.serral_build_order_timing["gas_supply"] = supply_value  # type: ignore
+                                                    self.serral_build_order_timing["gas_time"] = time_value  # type: ignore
                                                     print(
                                                         f"[SERRAL BUILD] [{int(b.time)}s] Supply {b.supply_used}: Extractor (가스)"
                                                     )
@@ -5292,10 +5309,13 @@ class ProductionManager:
                                                         worker = workers[0]
                                                         worker.build(UnitTypeId.EXTRACTOR, target_gas)
                                                         self.serral_build_completed["gas"] = True
-                                                        self.build_order_timing["gas_supply"] = float(
-                                                            b.supply_used
-                                                        )  # type: ignore
-                                                        self.build_order_timing["gas_time"] = b.time  # type: ignore
+                                                        # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                                        supply_value = float(b.supply_used)
+                                                        time_value = float(b.time)
+                                                        self.build_order_timing["gas_supply"] = supply_value  # type: ignore
+                                                        self.build_order_timing["gas_time"] = time_value  # type: ignore
+                                                        self.serral_build_order_timing["gas_supply"] = supply_value  # type: ignore
+                                                        self.serral_build_order_timing["gas_time"] = time_value  # type: ignore
                                                         print(
                                                             f"[SERRAL BUILD] [{int(b.time)}s] ⚠️ LATE Extractor (Supply {b.supply_used})"
                                                         )
@@ -5326,10 +5346,13 @@ class ProductionManager:
                                             near=main_hatch.position,
                                         ):
                                             self.serral_build_completed["spawning_pool"] = True
-                                            self.build_order_timing["spawning_pool_supply"] = float(
-                                                b.supply_used
-                                            )  # type: ignore
-                                            self.build_order_timing["spawning_pool_time"] = b.time  # type: ignore
+                                            # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                            supply_value = float(b.supply_used)
+                                            time_value = float(b.time)
+                                            self.build_order_timing["spawning_pool_supply"] = supply_value  # type: ignore
+                                            self.build_order_timing["spawning_pool_time"] = time_value  # type: ignore
+                                            self.serral_build_order_timing["spawning_pool_supply"] = supply_value  # type: ignore
+                                            self.serral_build_order_timing["spawning_pool_time"] = time_value  # type: ignore
                                             print(
                                                 f"[SERRAL BUILD] [{int(b.time)}s] Supply {b.supply_used}: Spawning Pool (산란못)"
                                             )
@@ -5351,10 +5374,13 @@ class ProductionManager:
                                             near=main_hatch.position,
                                         ):
                                             self.serral_build_completed["spawning_pool"] = True
-                                            self.build_order_timing["spawning_pool_supply"] = float(
-                                                b.supply_used
-                                            )  # type: ignore
-                                            self.build_order_timing["spawning_pool_time"] = b.time  # type: ignore
+                                            # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                            supply_value = float(b.supply_used)
+                                            time_value = float(b.time)
+                                            self.build_order_timing["spawning_pool_supply"] = supply_value  # type: ignore
+                                            self.build_order_timing["spawning_pool_time"] = time_value  # type: ignore
+                                            self.serral_build_order_timing["spawning_pool_supply"] = supply_value  # type: ignore
+                                            self.serral_build_order_timing["spawning_pool_time"] = time_value  # type: ignore
                                             print(
                                                 f"[SERRAL BUILD] [{int(b.time)}s] ⚠️ LATE Spawning Pool (Supply {b.supply_used})"
                                             )
@@ -5377,7 +5403,8 @@ class ProductionManager:
                 # IMPROVED: Additional checks to prevent excessive queen production
                 if queens_count < len(townhalls):
                     # IMPROVED: Resource availability check (minerals >= 200, gas >= 100)
-                    if b.minerals >= 200 and b.vespene_gas >= 100:
+                    # CRITICAL FIX: Use 'vespene' instead of 'vespene_gas' (correct SC2 API attribute)
+                    if b.minerals >= 200 and b.vespene >= 100:
                         # IMPROVED: Worker count check (at least 8 workers per base)
                         worker_count = b.workers.amount
                         min_workers_per_base = 8
@@ -5422,10 +5449,13 @@ class ProductionManager:
                             try:
                                 await b.expand_now()
                                 self.serral_build_completed["third_hatchery"] = True
-                                self.build_order_timing["third_hatchery_supply"] = float(
-                                    b.supply_used
-                                )  # type: ignore
-                                self.build_order_timing["third_hatchery_time"] = b.time  # type: ignore
+                                # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                supply_value = float(b.supply_used)
+                                time_value = float(b.time)
+                                self.build_order_timing["third_hatchery_supply"] = supply_value  # type: ignore
+                                self.build_order_timing["third_hatchery_time"] = time_value  # type: ignore
+                                self.serral_build_order_timing["third_hatchery_supply"] = supply_value  # type: ignore
+                                self.serral_build_order_timing["third_hatchery_time"] = time_value  # type: ignore
                                 print(
                                     f"[SERRAL BUILD] [{int(b.time)}s] 28 Supply: 3rd Hatchery (세 번째 해처리)"
                                 )
@@ -5460,10 +5490,13 @@ class ProductionManager:
                                     try:
                                         pool.research(UpgradeId.ZERGLINGMOVEMENTSPEED)
                                         self.serral_build_completed["speed_upgrade"] = True
-                                        self.build_order_timing["speed_upgrade_supply"] = float(
-                                            b.supply_used
-                                        )  # type: ignore
-                                        self.build_order_timing["speed_upgrade_time"] = b.time  # type: ignore
+                                        # CRITICAL FIX: Store in both build_order_timing and serral_build_order_timing
+                                        supply_value = float(b.supply_used)
+                                        time_value = float(b.time)
+                                        self.build_order_timing["speed_upgrade_supply"] = supply_value  # type: ignore
+                                        self.build_order_timing["speed_upgrade_time"] = time_value  # type: ignore
+                                        self.serral_build_order_timing["speed_upgrade_supply"] = supply_value  # type: ignore
+                                        self.serral_build_order_timing["speed_upgrade_time"] = time_value  # type: ignore
                                         print(
                                             f"[SERRAL BUILD] [{int(b.time)}s] 30 Supply: Metabolic Boost (발업) - 주도권 확보!"
                                         )
