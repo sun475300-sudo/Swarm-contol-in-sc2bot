@@ -141,6 +141,10 @@ class TelemetryLogger:
 
     async def save_telemetry(self) -> None:
         """Save telemetry data to JSON and CSV files (Atomic Write)"""
+        # Initialize temp file variables to None for safe cleanup
+        temp_json = None
+        temp_csv = None
+        
         try:
             if not self.telemetry_data:
                 print("[TELEMETRY] No data to save")
@@ -158,16 +162,22 @@ class TelemetryLogger:
                 # 원자적 교체 (Windows 호환)
                 try:
                     temp_json.replace(json_path)
+                    temp_json = None  # Successfully replaced, no cleanup needed
                 except OSError:
                     # Windows: rename가 실패할 수 있으므로 copy + remove
                     shutil.copy2(temp_json, json_path)
                     temp_json.unlink()
+                    temp_json = None  # Cleanup done, no need to clean again
             except Exception as e:
-                if temp_json.exists():
-                    temp_json.unlink()
+                # Cleanup temp_json on error
+                if temp_json and temp_json.exists():
+                    try:
+                        temp_json.unlink()
+                    except Exception:
+                        pass  # Ignore cleanup errors
                 raise e
 
-            # Atomic write for CSV
+            # Atomic write for CSV (only if JSON succeeded)
             csv_file = json_path.with_suffix('.csv')
             temp_csv = csv_file.with_suffix(csv_file.suffix + '.tmp')
             
@@ -180,17 +190,32 @@ class TelemetryLogger:
                 # 원자적 교체
                 try:
                     temp_csv.replace(csv_file)
+                    temp_csv = None  # Successfully replaced, no cleanup needed
                 except OSError:
                     shutil.copy2(temp_csv, csv_file)
                     temp_csv.unlink()
+                    temp_csv = None  # Cleanup done, no need to clean again
             except Exception as e:
-                if temp_csv.exists():
-                    temp_csv.unlink()
+                # Cleanup temp_csv on error
+                if temp_csv and temp_csv.exists():
+                    try:
+                        temp_csv.unlink()
+                    except Exception:
+                        pass  # Ignore cleanup errors
                 raise e
 
             print(f"[TELEMETRY] Data saved (atomic): {self.telemetry_file}, {csv_file}")
 
         except Exception as e:
+            # Safe cleanup: only clean up files that were actually created
+            # This prevents NameError when temp_csv is not defined
+            for temp_file in [temp_json, temp_csv]:
+                if temp_file and temp_file.exists():
+                    try:
+                        temp_file.unlink()
+                    except Exception:
+                        pass  # Ignore cleanup errors to avoid masking original exception
+            
             print(f"[WARNING] Telemetry save error: {e}")
 
     def record_game_result(
