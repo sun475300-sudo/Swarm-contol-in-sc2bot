@@ -37,8 +37,13 @@ $sensitivePatterns = @(
     "secret\s*[:=]\s*['\""]?[^'\""\s]{8,}",    # secret: "value"
     "token\s*[:=]\s*['\""]?[^'\""\s]{20,}",     # token: "value"
     
-    # 실제 API 키 (이미 제거된 것으로 알려진 키)
+    # 실제 API 키 (이미 제거된 것으로 알려진 키) - 절대 커밋되면 안 됨
     "AIzaSyBDdPWJyXs56AxeCPmqZpySFOVPjjSt_CM",
+    
+    # 추가 패턴
+    "api[_-]?key\s*[:=]\s*['\""]?[A-Za-z0-9_-]{20,}",  # api_key: "value"
+    "apikey\s*[:=]\s*['\""]?[A-Za-z0-9_-]{20,}",       # apikey: "value"
+    "api[_-]?token\s*[:=]\s*['\""]?[A-Za-z0-9_-]{20,}", # api_token: "value"
 )
 
 # 검사할 파일 확장자

@@ -6,7 +6,13 @@ Manus Dashboard Client
 SC2 AI 봇의 데이터를 Manus 웹 호스팅 대시보드(tRPC API)로 전송하는 클라이언트
 """
 
-import requests
+try:
+    import requests
+except ImportError:
+    raise ImportError(
+        "The 'requests' package is required. Install it with: pip install requests>=2.31.0"
+    )
+
 import json
 import time
 import logging

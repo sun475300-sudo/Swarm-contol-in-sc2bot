@@ -138,25 +138,75 @@ class TelemetryLogger:
                 print(f"[WARNING] Telemetry logging error: {e}")
 
     async def save_telemetry(self) -> None:
-        """Save telemetry data to JSON and CSV files"""
+        """Save telemetry data to JSON and CSV files using atomic write"""
         try:
             if not self.telemetry_data:
                 print("[TELEMETRY] No data to save")
                 return
 
-            # Save as JSON
-            with open(self.telemetry_file, "w", encoding="utf-8") as f:
-                json.dump(self.telemetry_data, f, indent=2, ensure_ascii=False)
-
-            # Save as CSV
-            csv_file = self.telemetry_file.replace(".json", ".csv")
-            if self.telemetry_data:
-                with open(csv_file, "w", encoding="utf-8", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=self.telemetry_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(self.telemetry_data)
-
-            print(f"[TELEMETRY] Data saved: {self.telemetry_file}, {csv_file}")
+            # Import atomic write utilities
+            try:
+                from pathlib import Path
+                import tempfile
+                import shutil
+                
+                # Atomic write for JSON
+                json_path = Path(self.telemetry_file)
+                temp_json = json_path.with_suffix(json_path.suffix + '.tmp')
+                
+                try:
+                    # Write to temporary file
+                    with open(temp_json, "w", encoding="utf-8") as f:
+                        json.dump(self.telemetry_data, f, indent=2, ensure_ascii=False)
+                    
+                    # Atomic replace (rename on Unix, copy+remove on Windows)
+                    try:
+                        temp_json.replace(json_path)
+                    except OSError:
+                        # Windows fallback
+                        shutil.copy2(temp_json, json_path)
+                        temp_json.unlink()
+                    
+                    # Atomic write for CSV
+                    csv_file = json_path.with_suffix('.csv')
+                    temp_csv = csv_file.with_suffix('.csv.tmp')
+                    
+                    with open(temp_csv, "w", encoding="utf-8", newline="") as f:
+                        writer = csv.DictWriter(f, fieldnames=self.telemetry_data[0].keys())
+                        writer.writeheader()
+                        writer.writerows(self.telemetry_data)
+                    
+                    try:
+                        temp_csv.replace(csv_file)
+                    except OSError:
+                        shutil.copy2(temp_csv, csv_file)
+                        temp_csv.unlink()
+                    
+                    print(f"[TELEMETRY] Data saved (atomic): {self.telemetry_file}, {csv_file}")
+                    
+                except Exception as e:
+                    # Cleanup temp files on error
+                    for temp_file in [temp_json, temp_csv]:
+                        try:
+                            if temp_file.exists():
+                                temp_file.unlink()
+                        except Exception:
+                            pass
+                    raise e
+                    
+            except ImportError:
+                # Fallback to non-atomic write if pathlib not available
+                with open(self.telemetry_file, "w", encoding="utf-8") as f:
+                    json.dump(self.telemetry_data, f, indent=2, ensure_ascii=False)
+                
+                csv_file = self.telemetry_file.replace(".json", ".csv")
+                if self.telemetry_data:
+                    with open(csv_file, "w", encoding="utf-8", newline="") as f:
+                        writer = csv.DictWriter(f, fieldnames=self.telemetry_data[0].keys())
+                        writer.writeheader()
+                        writer.writerows(self.telemetry_data)
+                
+                print(f"[TELEMETRY] Data saved: {self.telemetry_file}, {csv_file}")
 
         except Exception as e:
             print(f"[WARNING] Telemetry save error: {e}")

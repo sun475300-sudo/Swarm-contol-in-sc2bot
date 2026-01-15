@@ -87,6 +87,11 @@ Write-Host "=" * 70 -ForegroundColor Cyan
 Write-Host ""
 Write-Host "이제 Git 커밋 시 자동으로 민감한 정보를 검사합니다." -ForegroundColor Green
 Write-Host ""
-Write-Host "수동 검사:" -ForegroundColor Yellow
-Write-Host "  .\tools\pre_commit_security_check.ps1" -ForegroundColor White
+Write-Host "수동 검사 (권장):" -ForegroundColor Yellow
+Write-Host "  .\tools\double_check_before_commit.ps1  (이중 검사 - 권장)" -ForegroundColor White
+Write-Host "  .\tools\pre_commit_security_check.ps1   (기본 검사)" -ForegroundColor White
 Write-Host ""
+
+if ($gitRoot) {
+    Pop-Location
+}
