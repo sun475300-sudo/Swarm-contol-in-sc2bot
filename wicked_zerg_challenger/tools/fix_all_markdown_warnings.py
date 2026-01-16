@@ -11,170 +11,170 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 def fix_markdown_content(content: str) -> tuple[str, int]:
     """Fix markdown content and return fixed content and number of fixes"""
-    original = content
-    fixes = 0
+ original = content
+ fixes = 0
     lines = content.split('\n')
-    new_lines = []
-    
-    i = 0
-    while i < len(lines):
-        line = lines[i]
+ new_lines = []
+ 
+ i = 0
+ while i < len(lines):
+ line = lines[i]
         prev_line = new_lines[-1] if new_lines else ""
         next_line = lines[i + 1] if i + 1 < len(lines) else ""
-        
-        # MD022: Çìµù ¾ÕµÚ ºó ÁÙ
+ 
+ # MD022: í—¤ë”© ì•ë’¤ ë¹ˆ ì¤„
         if re.match(r'^#{1,6}\s+', line):
-            # Çìµù ¾Õ¿¡ ºó ÁÙ
+ # í—¤ë”© ì•ì— ë¹ˆ ì¤„
             if new_lines and prev_line.strip() and prev_line != '':
                 new_lines.append('')
-                fixes += 1
-            new_lines.append(line)
-            # Çìµù µÚ¿¡ ºó ÁÙ
+ fixes += 1
+ new_lines.append(line)
+ # í—¤ë”© ë’¤ì— ë¹ˆ ì¤„
             if next_line.strip() and not re.match(r'^#{1,6}\s+', next_line) and next_line != '':
                 new_lines.append('')
-                fixes += 1
-        # MD032: ¸®½ºÆ® ¾ÕµÚ ºó ÁÙ
+ fixes += 1
+ # MD032: ë¦¬ìŠ¤íŠ¸ ì•ë’¤ ë¹ˆ ì¤„
         elif re.match(r'^[\s]*[-*+]\s+', line) or re.match(r'^[\s]*\d+\.\s+', line):
-            # ¸®½ºÆ® ¾Õ¿¡ ºó ÁÙ (ÀÌÀüÀÌ ÇìµùÀÌ³ª ¸®½ºÆ®°¡ ¾Æ´Ï¸é)
-            if new_lines and prev_line.strip():
+ # ë¦¬ìŠ¤íŠ¸ ì•ì— ë¹ˆ ì¤„ (ì´ì „ì´ í—¤ë”©ì´ë‚˜ ë¦¬ìŠ¤íŠ¸ê°€ ì•„ë‹ˆë©´)
+ if new_lines and prev_line.strip():
                 if not re.match(r'^#{1,6}\s+', prev_line) and not re.match(r'^[\s]*[-*+]\s+', prev_line) and not re.match(r'^[\s]*\d+\.\s+', prev_line):
                     if prev_line != '':
                         new_lines.append('')
-                        fixes += 1
-            new_lines.append(line)
-            # ¸®½ºÆ® µÚ¿¡ ºó ÁÙ (´ÙÀ½ÀÌ ¸®½ºÆ®³ª ÇìµùÀÌ ¾Æ´Ï¸é)
+ fixes += 1
+ new_lines.append(line)
+ # ë¦¬ìŠ¤íŠ¸ ë’¤ì— ë¹ˆ ì¤„ (ë‹¤ìŒì´ ë¦¬ìŠ¤íŠ¸ë‚˜ í—¤ë”©ì´ ì•„ë‹ˆë©´)
             if next_line.strip() and not re.match(r'^[\s]*[-*+]\s+', next_line) and not re.match(r'^[\s]*\d+\.\s+', next_line) and not re.match(r'^#{1,6}\s+', next_line):
                 if not next_line.strip().startswith('```'):
-                    # ´ÙÀ½ ÁÙÀÌ ÄÚµå ºí·ÏÀÌ ¾Æ´Ï¸é
+ # ë‹¤ìŒ ì¤„ì´ ì½”ë“œ ë¸”ë¡ì´ ì•„ë‹ˆë©´
                     if i + 2 < len(lines) and lines[i + 2].strip() and not lines[i + 2].strip().startswith('```'):
                         new_lines.append('')
-                        fixes += 1
-        # MD031: ÄÚµå ºí·Ï ¾ÕµÚ ºó ÁÙ
+ fixes += 1
+ # MD031: ì½”ë“œ ë¸”ë¡ ì•ë’¤ ë¹ˆ ì¤„
         elif line.strip().startswith('```'):
-            # ÄÚµå ºí·Ï ¾Õ¿¡ ºó ÁÙ
+ # ì½”ë“œ ë¸”ë¡ ì•ì— ë¹ˆ ì¤„
             if new_lines and prev_line.strip() and prev_line != '':
                 new_lines.append('')
-                fixes += 1
-            # MD040: ÄÚµå ºí·Ï ¾ğ¾î ÁöÁ¤
+ fixes += 1
+ # MD040: ì½”ë“œ ë¸”ë¡ ì–¸ì–´ ì§€ì •
             if line.strip() == '```':
-                # ´ÙÀ½ ¸î ÁÙ È®ÀÎÇÏ¿© ¾ğ¾î Ãß·Ğ
-                lang = None
-                for j in range(i + 1, min(i + 10, len(lines))):
+ # ë‹¤ìŒ ëª‡ ì¤„ í™•ì¸í•˜ì—¬ ì–¸ì–´ ì¶”ë¡ 
+ lang = None
+ for j in range(i + 1, min(i + 10, len(lines))):
                     if '```' in lines[j]:
-                        break
-                    check_line = lines[j].strip().lower()
+ break
+ check_line = lines[j].strip().lower()
                     if 'python' in check_line or 'import ' in lines[j] or 'def ' in lines[j] or 'class ' in lines[j]:
                         lang = 'python'
-                        break
+ break
                     elif 'bash' in check_line or check_line.startswith('$') or 'cd ' in check_line or 'git ' in check_line:
                         lang = 'bash'
-                        break
+ break
                     elif 'yaml' in check_line or lines[j].strip().startswith('-') or ':' in lines[j] and not 'http' in lines[j]:
                         lang = 'yaml'
-                        break
+ break
                     elif 'json' in check_line or lines[j].strip().startswith('{') or lines[j].strip().startswith('['):
                         lang = 'json'
-                        break
+ break
                     elif 'markdown' in check_line or lines[j].strip().startswith('#'):
                         lang = 'markdown'
-                        break
-                if lang:
+ break
+ if lang:
                     new_lines.append(f'```{lang}')
-                    fixes += 1
-                else:
-                    new_lines.append(line)
-            else:
-                new_lines.append(line)
-            # ÄÚµå ºí·Ï µÚ¿¡ ºó ÁÙ
+ fixes += 1
+ else:
+ new_lines.append(line)
+ else:
+ new_lines.append(line)
+ # ì½”ë“œ ë¸”ë¡ ë’¤ì— ë¹ˆ ì¤„
             if next_line.strip() and not next_line.strip().startswith('```'):
                 new_lines.append('')
-                fixes += 1
-        else:
-            new_lines.append(line)
-        
-        i += 1
-    
-    # ¿¬¼ÓµÈ ºó ÁÙ Á¦°Å (ÃÖ´ë 2°³)
-    result_lines = []
-    prev_empty = False
-    for line in new_lines:
+ fixes += 1
+ else:
+ new_lines.append(line)
+ 
+ i += 1
+ 
+ # ì—°ì†ëœ ë¹ˆ ì¤„ ì œê±° (ìµœëŒ€ 2ê°œ)
+ result_lines = []
+ prev_empty = False
+ for line in new_lines:
         if line == '':
-            if not prev_empty:
+ if not prev_empty:
                 result_lines.append('')
-                prev_empty = True
-        else:
-            result_lines.append(line)
-            prev_empty = False
-    
+ prev_empty = True
+ else:
+ result_lines.append(line)
+ prev_empty = False
+ 
     result = '\n'.join(result_lines)
-    
-    # ÆÄÀÏ ³¡¿¡ ºó ÁÙ Ãß°¡
+ 
+ # íŒŒì¼ ëì— ë¹ˆ ì¤„ ì¶”ê°€
     if result and not result.endswith('\n'):
         result += '\n'
-    
-    return result, fixes
+ 
+ return result, fixes
 
 
 def fix_file(file_path: Path) -> int:
     """Fix a single markdown file"""
-    try:
+ try:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            content = f.read()
-    except Exception as e:
+ content = f.read()
+ except Exception as e:
         print(f"  Error reading {file_path.name}: {e}")
-        return 0
-    
-    fixed_content, fixes = fix_markdown_content(content)
-    
-    if fixes > 0:
-        try:
+ return 0
+ 
+ fixed_content, fixes = fix_markdown_content(content)
+ 
+ if fixes > 0:
+ try:
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(fixed_content)
-            return fixes
-        except Exception as e:
+ f.write(fixed_content)
+ return fixes
+ except Exception as e:
             print(f"  Error writing {file_path.name}: {e}")
-            return 0
-    
-    return 0
+ return 0
+ 
+ return 0
 
 
 def main():
     """Main function"""
     print("=" * 70)
-    print("Markdown °æ°í ÀÚµ¿ ¼öÁ¤ µµ±¸")
+    print("Markdown ê²½ê³  ìë™ ìˆ˜ì • ë„êµ¬")
     print("=" * 70)
-    print()
-    
-    # ¸ğµç MD ÆÄÀÏ Ã£±â
+ print()
+ 
+ # ëª¨ë“  MD íŒŒì¼ ì°¾ê¸°
     md_files = list(PROJECT_ROOT.rglob("*.md"))
-    
-    # Á¦¿ÜÇÒ µğ·ºÅä¸®
+ 
+ # ì œì™¸í•  ë””ë ‰í† ë¦¬
     exclude_dirs = {'.git', '__pycache__', 'node_modules', '.venv', 'venv', 'backup_before_refactoring'}
-    
-    md_files = [f for f in md_files if not any(exclude in str(f) for exclude in exclude_dirs)]
-    
-    print(f"ÃÑ {len(md_files)}°³ MD ÆÄÀÏ ¹ß°ß")
-    print()
-    
-    total_fixes = 0
-    fixed_files = []
-    
-    for md_file in md_files:
-        rel_path = md_file.relative_to(PROJECT_ROOT)
-        fixes = fix_file(md_file)
-        if fixes > 0:
-            print(f"[FIXED] {rel_path} - {fixes}°³ ¼öÁ¤")
-            fixed_files.append((rel_path, fixes))
-            total_fixes += fixes
-    
-    print()
+ 
+ md_files = [f for f in md_files if not any(exclude in str(f) for exclude in exclude_dirs)]
+ 
+    print(f"ì´ {len(md_files)}ê°œ MD íŒŒì¼ ë°œê²¬")
+ print()
+ 
+ total_fixes = 0
+ fixed_files = []
+ 
+ for md_file in md_files:
+ rel_path = md_file.relative_to(PROJECT_ROOT)
+ fixes = fix_file(md_file)
+ if fixes > 0:
+            print(f"[FIXED] {rel_path} - {fixes}ê°œ ìˆ˜ì •")
+ fixed_files.append((rel_path, fixes))
+ total_fixes += fixes
+ 
+ print()
     print("=" * 70)
-    if total_fixes > 0:
-        print(f"ÃÑ {len(fixed_files)}°³ ÆÄÀÏ, {total_fixes}°³ ¼öÁ¤ ¿Ï·á!")
-    else:
-        print("¼öÁ¤ÇÒ ³»¿ëÀÌ ¾ø½À´Ï´Ù.")
+ if total_fixes > 0:
+        print(f"ì´ {len(fixed_files)}ê°œ íŒŒì¼, {total_fixes}ê°œ ìˆ˜ì • ì™„ë£Œ!")
+ else:
+        print("ìˆ˜ì •í•  ë‚´ìš©ì´ ì—†ìŠµë‹ˆë‹¤.")
     print("=" * 70)
 
 
 if __name__ == "__main__":
-    main()
+ main()

@@ -88,8 +88,9 @@ def initialize_system() -> Path:
         asyncio.set_event_loop(loop)
     if sys.platform == "win32":
         try:
-            if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
-                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            # WindowsSelectorEventLoopPolicy is deprecated in Python 3.12+
+            # Using default event loop policy
+            pass
         except:
             pass
     print("  ? 이벤트 루프 설정 완료")
@@ -99,6 +100,7 @@ def initialize_system() -> Path:
     print("=" * 70 + "\n")
 
     return project_dir
+
 
 def setup_sc2_path() -> Optional[str]:
     """SC2 경로 설정"""
@@ -144,7 +146,10 @@ def initialize_bot(project_dir: Path) -> Optional[Any]:
 
     print("\n[2.1] 봇 클래스 임포트...")
     try:
-        from wicked_zerg_bot_pro import WickedZergBotPro
+        # Ensure project directory is in sys.path for import resolution
+        if str(project_dir) not in sys.path:
+            sys.path.insert(0, str(project_dir))
+        from wicked_zerg_bot_pro import WickedZergBotPro  # type: ignore
         print("  ? WickedZergBotPro 클래스 로드 완료")
     except ImportError as e:
         print(f"  ? 봇 클래스 임포트 실패: {e}")
@@ -152,7 +157,7 @@ def initialize_bot(project_dir: Path) -> Optional[Any]:
 
     print("\n[2.2] 봇 인스턴스 생성...")
     try:
-        bot_instance = WickedZergBotPro(
+        bot_instance = WickedZergBotPro(  # type: ignore
             train_mode=True,
             instance_id=0,
             personality="serral",
@@ -160,9 +165,9 @@ def initialize_bot(project_dir: Path) -> Optional[Any]:
             game_count=0
         )
         print("  ? 봇 인스턴스 생성 완료")
-        print(f"     - Personality: {bot_instance.personality}")
-        print(f"     - Instance ID: {bot_instance.instance_id}")
-        print(f"     - Train Mode: {bot_instance.train_mode}")
+        print(f"     - Personality: {getattr(bot_instance, 'personality', 'unknown')}")
+        print(f"     - Instance ID: {getattr(bot_instance, 'instance_id', 0)}")
+        print(f"     - Train Mode: {getattr(bot_instance, 'train_mode', False)}")
     except Exception as e:
         print(f"  ? 봇 인스턴스 생성 실패: {e}")
         return None
@@ -176,7 +181,7 @@ def initialize_bot(project_dir: Path) -> Optional[Any]:
         ("Scouting System", "scout"),
         ("Micro Controller", "micro"),
         ("Queen Manager", "queen_manager"),
-    ]
+ ]
 
     for name, attr in managers:
         manager = getattr(bot_instance, attr, None)
@@ -209,10 +214,10 @@ def run_game(bot_instance: Any) -> bool:
 
     print("\n[3.1] SC2 라이브러리 임포트...")
     try:
-        from sc2.main import run_game as sc2_run_game
-        from sc2.player import Bot, Computer
-        from sc2.data import Race, Difficulty
-        from sc2 import maps
+        from sc2.main import run_game as sc2_run_game  # type: ignore
+        from sc2.player import Bot, Computer  # type: ignore
+        from sc2.data import Race, Difficulty  # type: ignore
+        from sc2 import maps  # type: ignore
         print("  ? SC2 라이브러리 로드 완료")
     except ImportError as e:
         print(f"  ? SC2 라이브러리 임포트 실패: {e}")
@@ -221,8 +226,8 @@ def run_game(bot_instance: Any) -> bool:
 
     print("\n[3.2] 게임 설정...")
     map_name = "AbyssalReefLE"
-    bot = Bot(Race.Zerg, bot_instance)
-    opponent = Computer(Race.Terran, Difficulty.VeryHard)
+    bot = Bot(Race.Zerg, bot_instance)  # type: ignore
+    opponent = Computer(Race.Terran, Difficulty.VeryHard)  # type: ignore
     print(f"  ? 맵: {map_name}")
     print(f"  ? 상대: Terran (VeryHard)")
 
@@ -233,8 +238,8 @@ def run_game(bot_instance: Any) -> bool:
     print()
 
     try:
-        sc2_run_game(
-            maps.get(map_name),
+        sc2_run_game(  # type: ignore
+            maps.get(map_name),  # type: ignore
             [bot, opponent],
             realtime=False
         )
@@ -328,6 +333,7 @@ def main():
 
     return 0
 
+
 if __name__ == "__main__":
- exit_code = main()
- sys.exit(exit_code)
+    exit_code = main()
+    sys.exit(exit_code)

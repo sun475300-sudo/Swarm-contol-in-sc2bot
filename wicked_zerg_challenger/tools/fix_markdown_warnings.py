@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Markdown ÆÄÀÏ °æ°í ÀÚµ¿ ¼öÁ¤ µµ±¸
+Markdown íŒŒì¼ ê²½ê³  ìë™ ìˆ˜ì • ë„êµ¬
 
-¸¶Å©´Ù¿î ½ºÅ¸ÀÏ °æ°í¸¦ ÀÚµ¿À¸·Î ¼öÁ¤ÇÕ´Ï´Ù.
+ë§ˆí¬ë‹¤ìš´ ìŠ¤íƒ€ì¼ ê²½ê³ ë¥¼ ìë™ìœ¼ë¡œ ìˆ˜ì •í•©ë‹ˆë‹¤.
 """
 
 import re
@@ -13,88 +13,88 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def fix_markdown_file(file_path: Path) -> List[str]:
-    """¸¶Å©´Ù¿î ÆÄÀÏÀÇ °æ°í¸¦ ¼öÁ¤"""
-    fixes = []
-    
-    try:
+    """ë§ˆí¬ë‹¤ìš´ íŒŒì¼ì˜ ê²½ê³ ë¥¼ ìˆ˜ì •"""
+ fixes = []
+ 
+ try:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            lines = f.readlines()
-    except Exception as e:
+ lines = f.readlines()
+ except Exception as e:
         return [f"Error reading file: {e}"]
-    
-    new_lines = []
-    i = 0
-    
-    while i < len(lines):
-        line = lines[i]
-        original_line = line
-        
-        # MD009: Trailing spaces Á¦°Å
-        if line.rstrip() != line and line.strip():
+ 
+ new_lines = []
+ i = 0
+ 
+ while i < len(lines):
+ line = lines[i]
+ original_line = line
+ 
+ # MD009: Trailing spaces ì œê±°
+ if line.rstrip() != line and line.strip():
             line = line.rstrip() + '\n'
-            if line != original_line:
+ if line != original_line:
                 fixes.append(f"Line {i+1}: Removed trailing spaces")
-        
-        # MD022: Çìµù ¾ÕµÚ ºó ÁÙ Ãß°¡
+ 
+ # MD022: í—¤ë”© ì•ë’¤ ë¹ˆ ì¤„ ì¶”ê°€
         if re.match(r'^#{1,6}\s+', line):
-            # Çìµù ¾Õ¿¡ ºó ÁÙ Ãß°¡ (ÀÌÀü ÁÙÀÌ ºñ¾îÀÖÁö ¾ÊÀ¸¸é)
+ # í—¤ë”© ì•ì— ë¹ˆ ì¤„ ì¶”ê°€ (ì´ì „ ì¤„ì´ ë¹„ì–´ìˆì§€ ì•Šìœ¼ë©´)
             if new_lines and new_lines[-1].strip() and new_lines[-1] != '\n':
                 new_lines.append('\n')
                 fixes.append(f"Line {i+1}: Added blank line before heading")
-            
-            new_lines.append(line)
-            
-            # Çìµù µÚ¿¡ ºó ÁÙ Ãß°¡ (´ÙÀ½ ÁÙÀÌ ºñ¾îÀÖÁö ¾ÊÀ¸¸é)
+ 
+ new_lines.append(line)
+ 
+ # í—¤ë”© ë’¤ì— ë¹ˆ ì¤„ ì¶”ê°€ (ë‹¤ìŒ ì¤„ì´ ë¹„ì–´ìˆì§€ ì•Šìœ¼ë©´)
             if i + 1 < len(lines) and lines[i + 1].strip() and lines[i + 1] != '\n':
                 new_lines.append('\n')
                 fixes.append(f"Line {i+1}: Added blank line after heading")
-        # MD032: ¸®½ºÆ® ¾ÕµÚ ºó ÁÙ Ãß°¡
+ # MD032: ë¦¬ìŠ¤íŠ¸ ì•ë’¤ ë¹ˆ ì¤„ ì¶”ê°€
         elif re.match(r'^[\s]*[-*+]\s+', line) or re.match(r'^[\s]*\d+\.\s+', line):
-            # ¸®½ºÆ® ¾Õ¿¡ ºó ÁÙ Ãß°¡
+ # ë¦¬ìŠ¤íŠ¸ ì•ì— ë¹ˆ ì¤„ ì¶”ê°€
             if new_lines and new_lines[-1].strip() and not re.match(r'^[\s]*[-*+]\s+', new_lines[-1]) and not re.match(r'^[\s]*\d+\.\s+', new_lines[-1]):
                 if new_lines[-1] != '\n':
                     new_lines.append('\n')
                     fixes.append(f"Line {i+1}: Added blank line before list")
-            
-            new_lines.append(line)
-            
-            # ¸®½ºÆ® µÚ¿¡ ºó ÁÙ Ãß°¡ (´ÙÀ½ ÁÙÀÌ ¸®½ºÆ®°¡ ¾Æ´Ï°í ºñ¾îÀÖÁö ¾ÊÀ¸¸é)
-            if i + 1 < len(lines):
-                next_line = lines[i + 1]
+ 
+ new_lines.append(line)
+ 
+ # ë¦¬ìŠ¤íŠ¸ ë’¤ì— ë¹ˆ ì¤„ ì¶”ê°€ (ë‹¤ìŒ ì¤„ì´ ë¦¬ìŠ¤íŠ¸ê°€ ì•„ë‹ˆê³  ë¹„ì–´ìˆì§€ ì•Šìœ¼ë©´)
+ if i + 1 < len(lines):
+ next_line = lines[i + 1]
                 if next_line.strip() and not re.match(r'^[\s]*[-*+]\s+', next_line) and not re.match(r'^[\s]*\d+\.\s+', next_line) and not re.match(r'^#{1,6}\s+', next_line):
                     if i + 2 >= len(lines) or lines[i + 2] != '\n':
-                        # ´ÙÀ½ ÁÙÀÌ ÄÚµå ºí·ÏÀÌ¸é ºó ÁÙ Ãß°¡ ¾È ÇÔ
+ # ë‹¤ìŒ ì¤„ì´ ì½”ë“œ ë¸”ë¡ì´ë©´ ë¹ˆ ì¤„ ì¶”ê°€ ì•ˆ í•¨
                         if not next_line.strip().startswith('```'):
                             new_lines.append('\n')
                             fixes.append(f"Line {i+1}: Added blank line after list")
-        # MD031: ÄÚµå ºí·Ï ¾ÕµÚ ºó ÁÙ Ãß°¡
+ # MD031: ì½”ë“œ ë¸”ë¡ ì•ë’¤ ë¹ˆ ì¤„ ì¶”ê°€
         elif line.strip().startswith('```'):
-            # ÄÚµå ºí·Ï ¾Õ¿¡ ºó ÁÙ Ãß°¡
+ # ì½”ë“œ ë¸”ë¡ ì•ì— ë¹ˆ ì¤„ ì¶”ê°€
             if new_lines and new_lines[-1].strip() and new_lines[-1] != '\n':
                 new_lines.append('\n')
                 fixes.append(f"Line {i+1}: Added blank line before code block")
-            
-            new_lines.append(line)
-            
-            # ÄÚµå ºí·Ï µÚ¿¡ ºó ÁÙ Ãß°¡
+ 
+ new_lines.append(line)
+ 
+ # ì½”ë“œ ë¸”ë¡ ë’¤ì— ë¹ˆ ì¤„ ì¶”ê°€
             if i + 1 < len(lines) and lines[i + 1].strip() and not lines[i + 1].strip().startswith('```'):
-                # ÄÚµå ºí·ÏÀÌ ³¡³ª´Â °æ¿ì
+ # ì½”ë“œ ë¸”ë¡ì´ ëë‚˜ëŠ” ê²½ìš°
                 if line.strip() == '```' or (line.strip().startswith('```') and len(line.strip()) > 3):
-                    # ´ÙÀ½ ÁÙÀÌ ÄÚµå ºí·ÏÀÌ ¾Æ´Ï¸é ºó ÁÙ Ãß°¡
+ # ë‹¤ìŒ ì¤„ì´ ì½”ë“œ ë¸”ë¡ì´ ì•„ë‹ˆë©´ ë¹ˆ ì¤„ ì¶”ê°€
                     if i + 1 < len(lines) and not lines[i + 1].strip().startswith('```'):
                         new_lines.append('\n')
                         fixes.append(f"Line {i+1}: Added blank line after code block")
-        # MD040: ÄÚµå ºí·Ï ¾ğ¾î ÁöÁ¤
+ # MD040: ì½”ë“œ ë¸”ë¡ ì–¸ì–´ ì§€ì •
         elif line.strip().startswith('```') and len(line.strip()) == 3:
-            # ¾ğ¾î°¡ ÁöÁ¤µÇÁö ¾ÊÀº ÄÚµå ºí·Ï
-            # ´ÙÀ½ ¸î ÁÙÀ» È®ÀÎÇÏ¿© ¾ğ¾î Ãß·Ğ ½Ãµµ
-            language = None
-            for j in range(i + 1, min(i + 5, len(lines))):
+ # ì–¸ì–´ê°€ ì§€ì •ë˜ì§€ ì•Šì€ ì½”ë“œ ë¸”ë¡
+ # ë‹¤ìŒ ëª‡ ì¤„ì„ í™•ì¸í•˜ì—¬ ì–¸ì–´ ì¶”ë¡  ì‹œë„
+ language = None
+ for j in range(i + 1, min(i + 5, len(lines))):
                 if lines[j].strip().startswith('```'):
-                    break
-                content = lines[j].strip()
-                if content:
-                    # °£´ÜÇÑ ¾ğ¾î Ãß·Ğ
+ break
+ content = lines[j].strip()
+ if content:
+ # ê°„ë‹¨í•œ ì–¸ì–´ ì¶”ë¡ 
                     if 'python' in content.lower() or 'import ' in content or 'def ' in content:
                         language = 'python'
                     elif 'bash' in content.lower() or content.startswith('$') or 'cd ' in content:
@@ -107,36 +107,36 @@ def fix_markdown_file(file_path: Path) -> List[str]:
                         language = 'json'
                     elif 'markdown' in content.lower() or content.startswith('#'):
                         language = 'markdown'
-                    break
-            
-            if language:
+ break
+ 
+ if language:
                 new_lines.append(f'```{language}\n')
                 fixes.append(f"Line {i+1}: Added language '{language}' to code block")
-            else:
-                new_lines.append(line)
-        else:
-            new_lines.append(line)
-        
-        i += 1
-    
-    # ÆÄÀÏ ÀúÀå
-    try:
+ else:
+ new_lines.append(line)
+ else:
+ new_lines.append(line)
+ 
+ i += 1
+ 
+ # íŒŒì¼ ì €ì¥
+ try:
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        return fixes
-    except Exception as e:
+ f.writelines(new_lines)
+ return fixes
+ except Exception as e:
         return [f"Error writing file: {e}"]
 
 
 def main():
-    """¸ŞÀÎ ÇÔ¼ö"""
+    """ë©”ì¸ í•¨ìˆ˜"""
     print("=" * 70)
-    print("Markdown °æ°í ÀÚµ¿ ¼öÁ¤ µµ±¸")
+    print("Markdown ê²½ê³  ìë™ ìˆ˜ì • ë„êµ¬")
     print("=" * 70)
-    print()
-    
-    # ÁÖ¿ä MD ÆÄÀÏ ¸ñ·Ï
-    md_files = [
+ print()
+ 
+ # ì£¼ìš” MD íŒŒì¼ ëª©ë¡
+ md_files = [
         "PRE_COMMIT_CHECKLIST.md",
         "FINAL_PRE_COMMIT_SUMMARY.md",
         "PROJECT_STRUCTURE_IMPROVEMENT_PLAN.md",
@@ -146,33 +146,33 @@ def main():
         "README_GITHUB_UPLOAD.md",
         "COMPLETE_RUN_SCRIPT_ERRORS_EXPLANATION.md",
         "MARKDOWN_WARNINGS_EXPLANATION.md",
-    ]
-    
-    total_fixes = 0
-    
-    for md_file in md_files:
-        file_path = PROJECT_ROOT / md_file
-        if not file_path.exists():
-            print(f"[SKIP] {md_file} - ÆÄÀÏÀÌ ¾ø½À´Ï´Ù.")
-            continue
-        
+ ]
+ 
+ total_fixes = 0
+ 
+ for md_file in md_files:
+ file_path = PROJECT_ROOT / md_file
+ if not file_path.exists():
+            print(f"[SKIP] {md_file} - íŒŒì¼ì´ ì—†ìŠµë‹ˆë‹¤.")
+ continue
+ 
         print(f"\n[FIXING] {md_file}...")
-        fixes = fix_markdown_file(file_path)
-        
-        if fixes:
-            print(f"  ¼öÁ¤ »çÇ×: {len(fixes)}°³")
-            for fix in fixes[:5]:  # Ã³À½ 5°³¸¸ Ç¥½Ã
+ fixes = fix_markdown_file(file_path)
+ 
+ if fixes:
+            print(f"  ìˆ˜ì • ì‚¬í•­: {len(fixes)}ê°œ")
+ for fix in fixes[:5]: # ì²˜ìŒ 5ê°œë§Œ í‘œì‹œ
                 print(f"    - {fix}")
-            if len(fixes) > 5:
-                print(f"    ... ¿Ü {len(fixes) - 5}°³")
-            total_fixes += len(fixes)
-        else:
-            print("  ¼öÁ¤ »çÇ× ¾øÀ½")
-    
+ if len(fixes) > 5:
+                print(f"    ... ì™¸ {len(fixes) - 5}ê°œ")
+ total_fixes += len(fixes)
+ else:
+            print("  ìˆ˜ì • ì‚¬í•­ ì—†ìŒ")
+ 
     print("\n" + "=" * 70)
-    print(f"ÃÑ {total_fixes}°³ ¼öÁ¤ ¿Ï·á!")
+    print(f"ì´ {total_fixes}ê°œ ìˆ˜ì • ì™„ë£Œ!")
     print("=" * 70)
 
 
 if __name__ == "__main__":
-    main()
+ main()

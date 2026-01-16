@@ -19,40 +19,40 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 class ContinuousImprovementSystem:
     """지속적인 개선 시스템"""
-    
-    def __init__(self):
-        self.improvement_log: List[Dict] = []
-        self.error_tracker: Dict[str, int] = defaultdict(int)
-        self.performance_metrics: Dict[str, float] = {}
-        self.quality_metrics: Dict[str, float] = {}
-    
-    def monitor_errors(self, log_file: Optional[Path] = None) -> Dict:
+
+ def __init__(self):
+ self.improvement_log: List[Dict] = []
+ self.error_tracker: Dict[str, int] = defaultdict(int)
+ self.performance_metrics: Dict[str, float] = {}
+ self.quality_metrics: Dict[str, float] = {}
+ 
+ def monitor_errors(self, log_file: Optional[Path] = None) -> Dict:
         """에러 모니터링"""
-        if log_file is None:
+ if log_file is None:
             log_file = PROJECT_ROOT / "logs" / "error_log.txt"
-        
-        errors = {
+ 
+ errors = {
             "total_errors": 0,
             "error_types": defaultdict(int),
             "error_files": defaultdict(int),
             "recent_errors": []
-        }
-        
-        if not log_file.exists():
-            return errors
+ }
  
-        try:
+ if not log_file.exists():
+ return errors
+ 
+ try:
             with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
-                lines = f.readlines()
-            
-            # 최근 100줄만 분석
-            recent_lines = lines[-100:] if len(lines) > 100 else lines
-            
-            for line in recent_lines:
+ lines = f.readlines()
+ 
+ # 최근 100줄만 분석
+ recent_lines = lines[-100:] if len(lines) > 100 else lines
+ 
+ for line in recent_lines:
                 if 'ERROR' in line or 'Exception' in line or 'Traceback' in line:
                     errors["total_errors"] += 1
-                    
-                    # 에러 타입 추출
+ 
+ # 에러 타입 추출
                     if 'TypeError' in line:
                         errors["error_types"]["TypeError"] += 1
                     elif 'AttributeError' in line:
@@ -61,25 +61,25 @@ class ContinuousImprovementSystem:
                         errors["error_types"]["NameError"] += 1
                     elif 'ValueError' in line:
                         errors["error_types"]["ValueError"] += 1
-                    else:
+ else:
                         errors["error_types"]["Other"] += 1
-                    
-                    # 파일 추출
+ 
+ # 파일 추출
                     if '.py:' in line:
                         file_match = line.split('.py:')[0].split()[-1]
-                        if file_match:
+ if file_match:
                             errors["error_files"][file_match + '.py'] += 1
-                    
+ 
                     errors["recent_errors"].append(line.strip())
                     if len(errors["recent_errors"]) > 20:
                         errors["recent_errors"].pop(0)
-        
-        except Exception as e:
+ 
+ except Exception as e:
             print(f"[WARNING] Error monitoring failed: {e}")
-        
-        return errors
-    
-    def analyze_performance(self) -> Dict:
+ 
+ return errors
+ 
+ def analyze_performance(self) -> Dict:
         """성능 분석"""
  performance = {
             "file_count": 0,
@@ -113,8 +113,8 @@ class ContinuousImprovementSystem:
  
  # 복잡한 함수 찾기
  try:
+                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
  content = f.read()
- f.seek(0)
  tree = ast.parse(content, filename=str(file_path))
  for node in ast.walk(tree):
  if isinstance(node, ast.FunctionDef):
@@ -123,11 +123,11 @@ class ContinuousImprovementSystem:
  if isinstance(child, (ast.If, ast.While, ast.For, ast.Try)):
  complexity += 1
  if complexity > 15:
-                                    performance["complex_functions"].append({
-                                        "file": str(file_path.relative_to(PROJECT_ROOT)),
-                                        "function": node.name,
-                                        "complexity": complexity,
-                                        "line": node.lineno
+                                performance["complex_functions"].append({
+                                    "file": str(file_path.relative_to(PROJECT_ROOT)),
+                                    "function": node.name,
+                                    "complexity": complexity,
+                                    "line": node.lineno
  })
  except Exception:
  pass

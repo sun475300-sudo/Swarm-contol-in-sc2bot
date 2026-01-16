@@ -11,68 +11,68 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 def fix_file(file_path: Path) -> int:
     """Fix markdown file"""
-    try:
+ try:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            content = f.read()
-    except Exception:
-        return 0
-    
-    original = content
-    fixes = 0
-    
-    # Fix: Çìµù µÚ ºó ÁÙ Ãß°¡
+ content = f.read()
+ except Exception:
+ return 0
+ 
+ original = content
+ fixes = 0
+ 
+ # Fix: í—¤ë”© ë’¤ ë¹ˆ ì¤„ ì¶”ê°€
     content = re.sub(r'(^#{1,6}\s+[^\n]+)\n([^\n#\s])', r'\1\n\n\2', content, flags=re.MULTILINE)
-    
-    # Fix: ¸®½ºÆ® ¾Õ ºó ÁÙ Ãß°¡ (ÇìµùÀÌ³ª ´Ù¸¥ ¸®½ºÆ®°¡ ¾Æ´Ñ °æ¿ì)
+ 
+ # Fix: ë¦¬ìŠ¤íŠ¸ ì• ë¹ˆ ì¤„ ì¶”ê°€ (í—¤ë”©ì´ë‚˜ ë‹¤ë¥¸ ë¦¬ìŠ¤íŠ¸ê°€ ì•„ë‹Œ ê²½ìš°)
     content = re.sub(r'(^[^\n-*+\d])\n([\s]*[-*+]\s)', r'\1\n\n\2', content, flags=re.MULTILINE)
     content = re.sub(r'(^[^\n-*+\d])\n([\s]*\d+\.\s)', r'\1\n\n\2', content, flags=re.MULTILINE)
-    
-    # Fix: ¸®½ºÆ® µÚ ºó ÁÙ Ãß°¡ (´ÙÀ½ ÁÙÀÌ ¸®½ºÆ®³ª ÇìµùÀÌ ¾Æ´Ñ °æ¿ì)
+ 
+ # Fix: ë¦¬ìŠ¤íŠ¸ ë’¤ ë¹ˆ ì¤„ ì¶”ê°€ (ë‹¤ìŒ ì¤„ì´ ë¦¬ìŠ¤íŠ¸ë‚˜ í—¤ë”©ì´ ì•„ë‹Œ ê²½ìš°)
     content = re.sub(r'([\s]*[-*+]\s[^\n]+)\n([^\n\s#-*+\d])', r'\1\n\n\2', content, flags=re.MULTILINE)
     content = re.sub(r'([\s]*\d+\.\s[^\n]+)\n([^\n\s#-*+\d])', r'\1\n\n\2', content, flags=re.MULTILINE)
-    
-    # Fix: ÄÚµå ºí·Ï ¾Õ ºó ÁÙ Ãß°¡
+ 
+ # Fix: ì½”ë“œ ë¸”ë¡ ì• ë¹ˆ ì¤„ ì¶”ê°€
     content = re.sub(r'([^\n])\n(```)', r'\1\n\n\2', content)
-    
-    # Fix: ÄÚµå ºí·Ï µÚ ºó ÁÙ Ãß°¡
+ 
+ # Fix: ì½”ë“œ ë¸”ë¡ ë’¤ ë¹ˆ ì¤„ ì¶”ê°€
     content = re.sub(r'(```)\n([^\n])', r'\1\n\n\2', content)
-    
-    # Fix: ºó ÄÚµå ºí·Ï¿¡ ¾ğ¾î Ãß°¡ (°£´ÜÇÑ Ãß·Ğ)
+ 
+ # Fix: ë¹ˆ ì½”ë“œ ë¸”ë¡ì— ì–¸ì–´ ì¶”ê°€ (ê°„ë‹¨í•œ ì¶”ë¡ )
     lines = content.split('\n')
-    new_lines = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
+ new_lines = []
+ i = 0
+ while i < len(lines):
+ line = lines[i]
         if line.strip() == '```' and i + 1 < len(lines):
-            # ´ÙÀ½ ¸î ÁÙ È®ÀÎ
-            for j in range(i + 1, min(i + 5, len(lines))):
+ # ë‹¤ìŒ ëª‡ ì¤„ í™•ì¸
+ for j in range(i + 1, min(i + 5, len(lines))):
                 if '```' in lines[j]:
-                    break
+ break
                 if 'python' in lines[j].lower() or 'import ' in lines[j] or 'def ' in lines[j]:
                     line = '```python'
-                    fixes += 1
-                    break
+ fixes += 1
+ break
                 elif 'bash' in lines[j].lower() or lines[j].strip().startswith('$') or 'cd ' in lines[j]:
                     line = '```bash'
-                    fixes += 1
-                    break
-        new_lines.append(line)
-        i += 1
+ fixes += 1
+ break
+ new_lines.append(line)
+ i += 1
     content = '\n'.join(new_lines)
-    
-    if content != original:
-        try:
+ 
+ if content != original:
+ try:
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            return fixes + 1
-        except Exception:
-            return 0
-    
-    return 0
+ f.write(content)
+ return fixes + 1
+ except Exception:
+ return 0
+ 
+ return 0
 
 
 def main():
-    files = [
+ files = [
         "PRE_COMMIT_CHECKLIST.md",
         "FINAL_PRE_COMMIT_SUMMARY.md",
         "PROJECT_STRUCTURE_IMPROVEMENT_PLAN.md",
@@ -80,19 +80,19 @@ def main():
         "GITHUB_UPLOAD_READY.md",
         "FINAL_STATUS.md",
         "README_GITHUB_UPLOAD.md",
-    ]
-    
-    total = 0
-    for fname in files:
-        path = PROJECT_ROOT / fname
-        if path.exists():
-            count = fix_file(path)
-            if count > 0:
+ ]
+ 
+ total = 0
+ for fname in files:
+ path = PROJECT_ROOT / fname
+ if path.exists():
+ count = fix_file(path)
+ if count > 0:
                 print(f"Fixed: {fname} ({count} changes)")
-                total += count
-    
+ total += count
+ 
     print(f"\nTotal: {total} files fixed")
 
 
 if __name__ == "__main__":
-    main()
+ main()

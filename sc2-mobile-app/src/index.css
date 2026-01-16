@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 0 0% 3%;
+    --foreground: 0 0% 98%;
+    --card: 217 33% 17%;
+    --card-foreground: 0 0% 98%;
+    --primary: 188 100% 50%;
+    --primary-foreground: 0 0% 3%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 188 100% 50%;
+    --accent-foreground: 0 0% 3%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 0 0% 60%;
+    --border: 217 33% 17%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto max-w-7xl px-4;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/90;
+  }
+
+  .card {
+    @apply rounded-lg border bg-card p-6 text-card-foreground shadow-sm;
+  }
+
+  .glass {
+    @apply rounded-lg border border-white/10 bg-white/5 backdrop-blur-md;
+  }
+}
+
+/* 모바일 최적화 */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  .container {
+    @apply px-3;
+  }
+}
+
+/* 다크 모드 글로우 효과 */
+@layer utilities {
+  .glow {
+    @apply shadow-lg shadow-cyan-500/20;
+  }
+
+  .glow-accent {
+    @apply shadow-lg shadow-cyan-500/30;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent;
+  }
+}

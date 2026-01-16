@@ -1,260 +1,68 @@
-# ===================================
-# Wicked Zerg Challenger - Git Ignore
-# ===================================
+# API Keys and Secrets
+**/api_keys/
+**/api_keys/**/*
+**/secrets/
+**/secrets/**/*
+**/*_api_key.txt
+**/*_api_key.*
+**/*api_key*.txt
+**/*api_key*.*
+**/*secret*.txt
+**/*secret*.*
+**/*password*.txt
+**/*password*.*
+**/*token*.txt
+**/*token*.*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/credentials.json
+**/.env
+**/.env.local
+**/.env.*.local
+**/config.local.*
+**/*config.local*
+monitoring/api_keys/
+secrets/
+*.key
+*.pem
+.env
+.env.local
 
 # Python
-# -------
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-*.pyc
-*.pyo
-*.pyd
 
 # Virtual Environment
-# -------------------
-.venv/
 venv/
 env/
 ENV/
-env.bak/
-venv.bak/
 
-# IDE & Editors
-# --------------
+# IDE
 .vscode/
 .idea/
-.cursor/
-.cursorignore
-.cursorrules
 *.swp
 *.swo
-*~
-.ruff_cache/
 
-# OS Files
-# --------
+# OS
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Logs & Monitoring
-# -----------------
+# Logs
 *.log
 logs/
-monitor_log.txt
-dashboard.log
-self_healing_logs/
-training_debug.log
-game_log.txt
-log.txt
 
-# Models & Checkpoints (AI/ML model files only)
-# ----------------------------------------------
-# Exclude AI model files, but NOT Android source code models folder
-*.pt
-*.pth
-*.h5
-*.ckpt
-*.pb
-*.onnx
-*.tflite
-# Exclude model directories (but allow Android source code)
-# IMPORTANT: Android source code models folder must be explicitly allowed
-# Exclude models/ but allow Android app source code
+# Models and Data
 models/
-# Allow Android source code models folder (override models/ rule)
-!monitoring/mobile_app_android/app/src/main/java/com/wickedzerg/mobilegcs/models/
-!monitoring/mobile_app_android/app/src/main/java/com/wickedzerg/mobilegcs/models/**
-!monitoring/mobile_app_android/app/src/main/kotlin/com/wickedzerg/mobilegcs/models/
-!monitoring/mobile_app_android/app/src/main/kotlin/com/wickedzerg/mobilegcs/models/**
+*.h5
+*.pth
+*.pt
 
-# Replays & Game Data
-# --------------------
-*.SC2Replay
-replays/
-
-# Stats & Telemetry
-# -----------------
-stats/
-telemetry_*.csv
-telemetry_*.json
-training_stats.json
-bug_report.json
-structures_state.json
-metrics_session_*.json
-performance_report.txt
-performance_summary.json
-map_performance.json
-evolution_report.json
-evolve_v1_report.json
-self_reflection_report.json
-kpi_data.csv
-
-# Build Artifacts
-# ---------------
-*.zip
-dist/
-build/
-*.egg-info/
-build_output.log
-app/.gradle/
-app/build/
-mobile_app/.gradle/
-mobile_app/build/
-mobile_app/app/build/
-.gradle/
-*.keystore
-keystore.properties
-mobile_app/keystore.properties
-mobile_app/signing/**
-!android.keystore
-
-# Temporary Files
-# ---------------
+# Temporary files
+*.bak
 *.tmp
 *.temp
-*.bak
-*.backup
-*~
-
-# Data Files (Runtime)
-# --------------------
-data/
-!data/.gitkeep
-
-# Debug Files
-# -----------
-debug_report_*.png
-*.png
-*.jpg
-*.jpeg
-
-# Backups
-# -------
-backups/
-backup_cleaned_*/
-old_backup/
-
-# Project Specific
-# ----------------
-wicked_zerg_challenger/
-
-# Credentials & Secrets
-# ---------------------
-*.json
-!pyrightconfig.json
-!requirements.json
-gcp-key.json
-*-key.json
-.env
-.env.local
-.env.*.local
-secrets/
-api_keys/
-monitoring/api_keys/
-monitoring/secrets/
-**/manus_api_key.txt
-**/api_key*.txt
-**/*_api_key.txt
-*.key
-*.pem
-
-# Config files with sensitive data
-# --------------------------------
-config/allowed_ips.txt
-config/allowed_domains.txt
-!config/*.example
-
-# Android local.properties (contains API keys and SDK paths)
-local.properties
-**/local.properties
-monitoring/mobile_app_android/local.properties
-
-# Auto-generated HTML
-# -------------------
-dashboard.html
-
-# Sensitive Documentation Files (민감한 정보 포함 문서)
-# --------------------------------------------------------
-# API 키가 포함된 문서 파일
-**/REMOVE_API_KEY_FROM_GIT_HISTORY.md
-**/NEW_API_KEY_SETUP.md
-**/API_KEY_*.md
-**/API_KEYS_*.md
-**/*API_KEY*.md
-**/GEMINI_API_KEY*.md
-**/MANUS_API_KEY*.md
-**/SECRET*.md
-**/PASSWORD*.md
-**/TOKEN*.md
-**/CREDENTIALS*.md
-**/SECURITY*.md
-**/CURRENT_API_KEY*.md
-**/CURRENT_KEY*.md
-**/ALL_API_KEYS*.md
-**/REQUIRED_API_KEYS*.md
-**/API_KEY_ROTATION*.md
-**/API_KEY_CLEANUP*.md
-**/API_KEY_UPDATE*.md
-**/API_KEY_MANAGEMENT*.md
-**/EMERGENCY_API_KEY*.md
-**/COMPLETE_KEY_REMOVAL*.md
-**/WHERE_IS_MY_API_KEY*.md
-**/GEMINI_API_KEY_FORMAT*.md
-**/CURRENT_KEY_EXPLANATION*.md
-**/ANDROID_KEY_RESTRICTION*.md
-**/SECURITY_SETUP*.md
-**/SECURITY_FOLDER*.md
-**/SECURITY_REVIEW*.md
-**/API_KEY_SECURITY*.md
-**/SECURITY_SETUP_COMPLETE*.md
-**/API_KEY_CLEANUP_COMPLETE*.md
-**/API_KEY_CLEANUP_SUMMARY*.md
-**/API_KEY_CLEANUP_GUIDE*.md
-**/API_KEYS_REMOVAL_STATUS*.md
-**/NEW_KEY_MIGRATION*.md
-**/API_KEY_UPDATE_LOG*.md
-**/API_KEY_UPDATE_FINAL*.md
-**/API_KEY_ROTATION_CHECKLIST*.md
-**/API_KEY_ROTATION_GUIDE*.md
-**/COMPLETE_KEY_REMOVAL_GUIDE*.md
-**/EMERGENCY_API_KEY_REMOVAL*.md
-**/ALL_API_KEYS_STATUS*.md
-**/ALL_API_KEYS_SUMMARY*.md
-**/CURRENT_API_KEY_INFO*.md
-**/REQUIRED_API_KEYS*.md
-**/API_KEYS_MANAGEMENT*.md
-**/API_KEY_FIX*.md
-**/WHERE_IS_MY_API_KEY*.md
-**/GEMINI_API_KEY_FORMAT*.md
-**/CURRENT_KEY_EXPLANATION*.md
-**/ANDROID_KEY_RESTRICTION*.md
-**/SECURITY_SETUP*.md
-**/SECURITY_FOLDER*.md
-**/SECURITY_REVIEW*.md
-**/API_KEY_SECURITY*.md
-**/SECURITY_SETUP_COMPLETE*.md
-**/API_KEY_CLEANUP_COMPLETE*.md
-**/API_KEY_CLEANUP_SUMMARY*.md
-**/API_KEY_CLEANUP_GUIDE*.md
-**/API_KEYS_REMOVAL_STATUS*.md
-**/NEW_KEY_MIGRATION*.md
-**/API_KEY_UPDATE_LOG*.md
-**/API_KEY_UPDATE_FINAL*.md
-**/API_KEY_ROTATION_CHECKLIST*.md
-**/API_KEY_ROTATION_GUIDE*.md
-**/COMPLETE_KEY_REMOVAL_GUIDE*.md
-**/EMERGENCY_API_KEY_REMOVAL*.md
-**/ALL_API_KEYS_STATUS*.md
-**/ALL_API_KEYS_SUMMARY*.md
-**/CURRENT_API_KEY_INFO*.md
-**/REQUIRED_API_KEYS*.md
-**/API_KEYS_MANAGEMENT*.md
-
-# Scripts containing API keys (API 키가 포함된 스크립트)
-**/remove_api_key_from_git_history.sh
-**/remove_api_key_from_git_history.ps1
-

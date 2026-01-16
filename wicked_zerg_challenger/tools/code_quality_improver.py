@@ -14,21 +14,19 @@ import re
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Tuple
-import subprocess
-import sys
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class CodeQualityImprover:
     """코드 품질 개선기"""
- 
- def __init__(self):
- self.unused_imports: Dict[str, List[str]] = {}
- self.duplicate_code: List[Dict] = []
- self.style_issues: Dict[str, List[str]] = {}
- 
- def remove_unused_imports(self, file_path: Path) -> Tuple[bool, List[str]]:
+
+    def __init__(self):
+        self.unused_imports: Dict[str, List[str]] = {}
+        self.duplicate_code: List[Dict] = []
+        self.style_issues: Dict[str, List[str]] = {}
+
+    def remove_unused_imports(self, file_path: Path) -> Tuple[bool, List[str]]:
         """사용하지 않는 import 제거"""
  try:
             with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
@@ -166,7 +164,7 @@ class CodeQualityImprover:
  for node in ast.walk(tree):
  if isinstance(node, ast.FunctionDef):
  # 함수 시그니처 생성
-                        sig = f"{node.name}({len(node.args.args)} args)"
+                            sig = f"{node.name}({len(node.args.args)} args)"
  function_signatures[sig].append((
  str(file_path.relative_to(PROJECT_ROOT)),
  node.lineno

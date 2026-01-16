@@ -1,110 +1,87 @@
-# 프로젝트 정리 및 코드 다이어트 완료 보고서
+# 불필요한 파일 정리 요약
 
-**작성 일시**: 2026-01-15  
-**상태**: ? **정리 완료**
+**작성일**: 2026-01-16
 
----
+## 발견된 불필요한 파일
 
-## ? 정리 요약
+### 1. 백업 파일 (.bak)
+- **개수**: 73개
+- **위치**: 프로젝트 전체
+- **예시**:
+  - `combat_manager.py.bak`
+  - `wicked_zerg_bot_pro.py.bak`
+  - `local_training/main_integrated.py.bak`
+  - `tools/comprehensive_optimizer.py.bak`
 
-### ? 제거 완료된 파일들
+### 2. 캐시 파일 (.pyc, .pyo)
+- **개수**: 12개
+- **위치**: `__pycache__` 디렉토리 내부
+- **예시**:
+  - `__pycache__/COMPLETE_RUN_SCRIPT.cpython-310.pyc`
+  - `tools/__pycache__/code_quality_improver.cpython-310.pyc`
 
-#### 1. 중복 파일 (1개)
-- ? `chat_manager_utf8.py` - `chat_manager.py`와 중복
+### 3. __pycache__ 디렉토리
+- **개수**: 3개
+- **위치**:
+  - `__pycache__/`
+  - `local_training/scripts/__pycache__/`
+  - `tools/__pycache__/`
 
-#### 2. 테스트 파일 (8개)
-- ? `monitoring/test_endpoints.py`
-- ? `monitoring/test_manus_simple.py`
-- ? `monitoring/test_mobile_app_data.py`
-- ? `scripts/test_build_system.py`
-- ? `scripts/test_endpoints.py`
-- ? `tools/test_logging_persona.py`
-- ? `tools/test_persona_end_to_end.py`
-- ? `tools/test_pro_config.py`
+### 4. 빈 디렉토리
+- **개수**: 확인 중
+- **실행**: `python tools/cleanup_files_fixed.py --empty-dirs`
 
-#### 3. 임시 파일 (3개)
-- ? `Untitled`
-- ? `training_debug.log`
-- ? `local_training/logs/training_log.log` (존재하는 경우)
+## 총 정리 대상
 
-#### 4. 사용되지 않는 유틸리티 스크립트 (14개)
-- ? `tools/fix_all_encoding.py`
-- ? `tools/fix_encoding_strong.py`
-- ? `tools/fix_main_encoding.py`
-- ? `tools/cleanup_and_organize.py`
-- ? `tools/code_diet_cleanup.py`
-- ? `tools/project_cleanup.py`
-- ? `tools/optimize_code.py`
-- ? `tools/quick_code_check.py`
-- ? `tools/code_quality_check.py`
-- ? `tools/replace_prints_with_logger.py`
-- ? `tools/run_code_optimization.py`
-- ? `tools/scan_unused_imports.py`
-- ? `tools/remove_duplicate_imports.py`
-- ? `tools/remove_all_duplicate_imports.py`
+- **총 파일/디렉토리**: 88개 이상
+- **예상 디스크 공간**: 수 MB ~ 수십 MB
 
-#### 5. 오래된 문서 파일 (4개)
-- ? `PROJECT_CLEANUP_COMPLETE.md`
-- ? `PROJECT_HISTORY_AND_ISSUES_RESOLVED.md`
-- ? `README_MOBILE_APP_FIX.md`
-- ? `README_PROJECT_HISTORY.md`
+## 실행 방법
 
-#### 6. 캐시 파일 (2개 디렉토리)
-- ? `local_training/scripts/__pycache__/`
-- ? `tools/__pycache__/`
+### 방법 1: Python 스크립트 (권장)
 
----
+**Dry-run (확인만)**:
+```bash
+cd wicked_zerg_challenger
+python tools/cleanup_files_fixed.py
+```
 
-## ? 정리 통계
+**실제 삭제**:
+```bash
+cd wicked_zerg_challenger
+python tools/cleanup_files_fixed.py --execute
+```
 
-- **총 제거된 파일**: 32개
-- **제거된 디렉토리**: 2개
-- **예상 디스크 공간 절약**: 약 5-10MB
+**옵션**:
+- `--backup-only`: 백업 파일만 삭제
+- `--cache-only`: 캐시 파일만 삭제
+- `--empty-dirs`: 빈 디렉토리도 삭제
 
----
+### 방법 2: 배치 파일
 
-## ? 코드 다이어트 분석
+```bash
+cd wicked_zerg_challenger
+bat\cleanup_unnecessary_files.bat
+```
 
-코드 다이어트 분석 도구가 생성되었습니다:
-- `tools/code_diet_analyzer.py` - 사용되지 않는 import와 데드 코드 분석
+## 주의사항
 
-### 다음 단계
+1. **백업 권장**: 삭제 전에 중요한 파일은 백업하세요.
+2. **Git 상태 확인**: 삭제 후 Git 상태를 확인하세요.
+3. **점진적 삭제**: 처음에는 `--backup-only`로 백업 파일만 삭제하는 것을 권장합니다.
 
-1. **코드 다이어트 분석 실행**:
-   ```bash
-   python tools/code_diet_analyzer.py
-   ```
+## 삭제 후 확인
 
-2. **사용되지 않는 import 제거**:
-   - 분석 결과를 검토하고
-   - 확인된 사용되지 않는 import 제거
+```bash
+# Git 상태 확인
+git status
 
-3. **데드 코드 제거**:
-   - 호출되지 않는 함수/클래스 식별
-   - 사용되지 않는 변수 제거
+# 디스크 공간 확인
+dir /s /-c
+```
 
----
+## 다음 단계
 
-## ? 개선 효과
-
-1. **프로젝트 구조 정리**: 불필요한 파일 제거로 프로젝트 구조 명확화
-2. **빌드 시간 단축**: 캐시 파일 제거로 빌드 시간 개선
-3. **유지보수성 향상**: 중복 및 사용되지 않는 코드 제거
-4. **디스크 공간 절약**: 약 5-10MB 공간 절약
-
----
-
-## ? 참고사항
-
-- 테스트 파일은 제거되었지만, `local_training/scripts/` 내의 테스트 파일은 유지되었습니다
-- 백업 파일(`.backup`)은 Git hooks 디렉토리에 남아있을 수 있습니다 (필요시 수동 제거)
-- 코드 다이어트 분석은 AST를 사용하여 정확도를 높였습니다
-
----
-
-## ? 다음 작업
-
-1. 코드 다이어트 분석 실행 및 결과 검토
-2. 사용되지 않는 import 제거
-3. 데드 코드 제거
-4. 코드 리팩토링 (필요시)
+1. Dry-run으로 확인
+2. 실제 삭제 실행
+3. Git에 커밋 (선택적)

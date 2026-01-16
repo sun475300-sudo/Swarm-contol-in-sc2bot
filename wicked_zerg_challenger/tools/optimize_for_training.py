@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-ÈÆ·Ã ÃÖÀûÈ­ µµ±¸
+í›ˆë ¨ ìµœì í™” ë„êµ¬
 
-ÈÆ·Ã¿¡ ÇÊ¿äÇÑ ÇÙ½É ÆÄÀÏ¸¸ ³²±â°í ºÒÇÊ¿äÇÑ ÆÄÀÏµéÀ» Á¤¸®ÇÕ´Ï´Ù.
+í›ˆë ¨ì— í•„ìš”í•œ í•µì‹¬ íŒŒì¼ë§Œ ë‚¨ê¸°ê³  ë¶ˆí•„ìš”í•œ íŒŒì¼ë“¤ì„ ì •ë¦¬í•©ë‹ˆë‹¤.
 """
 
 import os
@@ -12,38 +12,38 @@ from pathlib import Path
 from typing import List, Set, Dict
 import json
 
-# ÀÎÄÚµù ¼³Á¤
+# ì¸ì½”ë”© ì„¤ì •
 if sys.platform == "win32":
-    import locale
-    try:
+ import locale
+ try:
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
-    except AttributeError:
-        pass
+ except AttributeError:
+ pass
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TrainingOptimizer:
-    """ÈÆ·Ã ÃÖÀûÈ­±â"""
-    
-    def __init__(self, dry_run: bool = True):
-        self.dry_run = dry_run
-        self.files_to_keep: Set[Path] = set()
-        self.files_to_remove: List[Path] = []
-        self.dirs_to_remove: List[Path] = []
-        self.stats = {
+    """í›ˆë ¨ ìµœì í™”ê¸°"""
+ 
+ def __init__(self, dry_run: bool = True):
+ self.dry_run = dry_run
+ self.files_to_keep: Set[Path] = set()
+ self.files_to_remove: List[Path] = []
+ self.dirs_to_remove: List[Path] = []
+ self.stats = {
             "files_kept": 0,
             "files_removed": 0,
             "dirs_removed": 0,
             "space_freed_mb": 0
-        }
-    
-    def identify_essential_files(self):
-        """ÈÆ·Ã¿¡ ÇÊ¼öÀûÀÎ ÆÄÀÏ ½Äº°"""
-        
-        # 1. ÇÙ½É ½ÇÇà ÆÄÀÏ
-        essential_files = [
+ }
+ 
+ def identify_essential_files(self):
+        """í›ˆë ¨ì— í•„ìˆ˜ì ì¸ íŒŒì¼ ì‹ë³„"""
+ 
+ # 1. í•µì‹¬ ì‹¤í–‰ íŒŒì¼
+ essential_files = [
             "run.py",
             "run_with_training.py",
             "wicked_zerg_bot_pro.py",
@@ -52,10 +52,10 @@ class TrainingOptimizer:
             "requirements.txt",
             "LICENSE",
             "pyrightconfig.json",
-        ]
-        
-        # 2. ¸Å´ÏÀú ÆÄÀÏµé
-        manager_files = [
+ ]
+ 
+ # 2. ë§¤ë‹ˆì € íŒŒì¼ë“¤
+ manager_files = [
             "combat_manager.py",
             "economy_manager.py",
             "production_manager.py",
@@ -70,10 +70,10 @@ class TrainingOptimizer:
             "map_manager.py",
             "chat_manager.py",
             "genai_self_healing.py",
-        ]
-        
-        # 3. ÇÊ¼ö µğ·ºÅä¸®
-        essential_dirs = [
+ ]
+ 
+ # 3. í•„ìˆ˜ ë””ë ‰í† ë¦¬
+ essential_dirs = [
             "combat/",
             "core/",
             "sc2_env/",
@@ -83,10 +83,10 @@ class TrainingOptimizer:
             "models/",
             "data/",
             "bat/",
-        ]
-        
-        # 4. local_training ÇÊ¼ö ÆÄÀÏ
-        local_training_essential = [
+ ]
+ 
+ # 4. local_training í•„ìˆ˜ íŒŒì¼
+ local_training_essential = [
             "local_training/main_integrated.py",
             "local_training/curriculum_manager.py",
             "local_training/combat_tactics.py",
@@ -94,250 +94,250 @@ class TrainingOptimizer:
             "local_training/personality_manager.py",
             "local_training/strategy_audit.py",
             "local_training/scripts/",
-        ]
-        
-        # 5. tools ÇÊ¼ö ÆÄÀÏ (ÈÆ·Ã¿¡ »ç¿ëµÇ´Â °Í¸¸)
-        tools_essential = [
+ ]
+ 
+ # 5. tools í•„ìˆ˜ íŒŒì¼ (í›ˆë ¨ì— ì‚¬ìš©ë˜ëŠ” ê²ƒë§Œ)
+ tools_essential = [
             "tools/integrated_pipeline.py",
             "tools/hybrid_learning.py",
-        ]
-        
-        # ¸ğµç ÇÊ¼ö ÆÄÀÏ Ãß°¡
-        for file in essential_files + manager_files:
-            path = PROJECT_ROOT / file
-            if path.exists():
-                self.files_to_keep.add(path)
-        
-        for file in local_training_essential + tools_essential:
-            path = PROJECT_ROOT / file
-            if path.exists():
-                if path.is_dir():
-                    # µğ·ºÅä¸®¸é ³»ºÎ ÆÄÀÏµéµµ Ãß°¡
+ ]
+ 
+ # ëª¨ë“  í•„ìˆ˜ íŒŒì¼ ì¶”ê°€
+ for file in essential_files + manager_files:
+ path = PROJECT_ROOT / file
+ if path.exists():
+ self.files_to_keep.add(path)
+ 
+ for file in local_training_essential + tools_essential:
+ path = PROJECT_ROOT / file
+ if path.exists():
+ if path.is_dir():
+ # ë””ë ‰í† ë¦¬ë©´ ë‚´ë¶€ íŒŒì¼ë“¤ë„ ì¶”ê°€
                     for subfile in path.rglob("*"):
                         if subfile.is_file() and not subfile.name.endswith('.bak'):
-                            self.files_to_keep.add(subfile)
-                else:
-                    self.files_to_keep.add(path)
-        
-        # ÇÊ¼ö µğ·ºÅä¸® ³»ºÎ ÆÄÀÏµé Ãß°¡
-        for dir_path in essential_dirs:
-            full_path = PROJECT_ROOT / dir_path
-            if full_path.exists() and full_path.is_dir():
+ self.files_to_keep.add(subfile)
+ else:
+ self.files_to_keep.add(path)
+ 
+ # í•„ìˆ˜ ë””ë ‰í† ë¦¬ ë‚´ë¶€ íŒŒì¼ë“¤ ì¶”ê°€
+ for dir_path in essential_dirs:
+ full_path = PROJECT_ROOT / dir_path
+ if full_path.exists() and full_path.is_dir():
                 for file in full_path.rglob("*"):
                     if file.is_file() and not file.name.endswith('.bak'):
-                        self.files_to_keep.add(file)
-    
-    def scan_for_removal(self):
-        """Á¦°ÅÇÒ ÆÄÀÏ ½ºÄµ"""
-        
-        # 1. .bak ÆÄÀÏµé
+ self.files_to_keep.add(file)
+ 
+ def scan_for_removal(self):
+        """ì œê±°í•  íŒŒì¼ ìŠ¤ìº”"""
+ 
+ # 1. .bak íŒŒì¼ë“¤
         for bak_file in PROJECT_ROOT.rglob("*.bak"):
-            if bak_file not in self.files_to_keep:
-                self.files_to_remove.append(bak_file)
-        
-        # 2. ºÒÇÊ¿äÇÑ .md ÆÄÀÏµé (README´Â À¯Áö)
-        keep_md = {
-            "README.md", "README_BOT.md", "README_ko.md", "README_ÇÑ±¹¾î.md",
+ if bak_file not in self.files_to_keep:
+ self.files_to_remove.append(bak_file)
+ 
+ # 2. ë¶ˆí•„ìš”í•œ .md íŒŒì¼ë“¤ (READMEëŠ” ìœ ì§€)
+ keep_md = {
+            "README.md", "README_BOT.md", "README_ko.md", "README_í•œêµ­ì–´.md",
             "SETUP_GUIDE.md", "LICENSE"
-        }
-        
+ }
+ 
         for md_file in PROJECT_ROOT.rglob("*.md"):
-            if md_file.name not in keep_md and md_file not in self.files_to_keep:
-                # local_training/¼³¸í¼­´Â À¯Áö
-                if "local_training/¼³¸í¼­" not in str(md_file):
-                    self.files_to_remove.append(md_file)
-        
-        # 3. backup_before_refactoring Æú´õ
+ if md_file.name not in keep_md and md_file not in self.files_to_keep:
+ # local_training/ì„¤ëª…ì„œëŠ” ìœ ì§€
+                if "local_training/ì„¤ëª…ì„œ" not in str(md_file):
+ self.files_to_remove.append(md_file)
+ 
+ # 3. backup_before_refactoring í´ë”
         backup_dir = PROJECT_ROOT / "backup_before_refactoring"
-        if backup_dir.exists():
-            self.dirs_to_remove.append(backup_dir)
-        
-        # 4. monitoring Æú´õ (ÈÆ·Ã¿¡´Â ºÒÇÊ¿ä)
+ if backup_dir.exists():
+ self.dirs_to_remove.append(backup_dir)
+ 
+ # 4. monitoring í´ë” (í›ˆë ¨ì—ëŠ” ë¶ˆí•„ìš”)
         monitoring_dir = PROJECT_ROOT / "monitoring"
-        if monitoring_dir.exists():
-            self.dirs_to_remove.append(monitoring_dir)
-        
-        # 5. static, services Æú´õ (ÈÆ·Ã¿¡´Â ºÒÇÊ¿ä)
+ if monitoring_dir.exists():
+ self.dirs_to_remove.append(monitoring_dir)
+ 
+ # 5. static, services í´ë” (í›ˆë ¨ì—ëŠ” ë¶ˆí•„ìš”)
         for dir_name in ["static", "services"]:
-            dir_path = PROJECT_ROOT / dir_name
-            if dir_path.exists():
-                self.dirs_to_remove.append(dir_path)
-        
-        # 6. tools Æú´õ¿¡¼­ ÈÆ·Ã¿¡ ºÒÇÊ¿äÇÑ ÆÄÀÏµé
+ dir_path = PROJECT_ROOT / dir_name
+ if dir_path.exists():
+ self.dirs_to_remove.append(dir_path)
+ 
+ # 6. tools í´ë”ì—ì„œ í›ˆë ¨ì— ë¶ˆí•„ìš”í•œ íŒŒì¼ë“¤
         tools_dir = PROJECT_ROOT / "tools"
-        if tools_dir.exists():
-            for tool_file in tools_dir.iterdir():
-                if tool_file.is_file():
-                    # ÇÊ¼ö ÆÄÀÏÀÌ ¾Æ´Ï°í .bakÀÌ ¾Æ´Ï¸é Á¦°Å ´ë»ó
+ if tools_dir.exists():
+ for tool_file in tools_dir.iterdir():
+ if tool_file.is_file():
+ # í•„ìˆ˜ íŒŒì¼ì´ ì•„ë‹ˆê³  .bakì´ ì•„ë‹ˆë©´ ì œê±° ëŒ€ìƒ
                     if tool_file not in self.files_to_keep and not tool_file.name.endswith('.bak'):
-                        # ÀÏºÎ À¯¿ëÇÑ µµ±¸´Â À¯Áö
-                        keep_tools = {
+ # ì¼ë¶€ ìœ ìš©í•œ ë„êµ¬ëŠ” ìœ ì§€
+ keep_tools = {
                             "integrated_pipeline.py",
                             "hybrid_learning.py",
-                            "optimize_for_training.py",  # ÀÚ±â ÀÚ½Å
-                        }
-                        if tool_file.name not in keep_tools:
-                            self.files_to_remove.append(tool_file)
-        
-        # 7. ¼³¸í¼­ Æú´õ (ÀÏºÎ´Â À¯Áö)
-        ¼³¸í¼­_dir = PROJECT_ROOT / "¼³¸í¼­"
-        if ¼³¸í¼­_dir.exists():
-            for md_file in ¼³¸í¼­_dir.rglob("*.md"):
-                # FILE_STRUCTURE.md °°Àº Áß¿äÇÑ ¹®¼­´Â À¯Áö
+                            "optimize_for_training.py",  # ìê¸° ìì‹ 
+ }
+ if tool_file.name not in keep_tools:
+ self.files_to_remove.append(tool_file)
+ 
+ # 7. ì„¤ëª…ì„œ í´ë” (ì¼ë¶€ëŠ” ìœ ì§€)
+        ì„¤ëª…ì„œ_dir = PROJECT_ROOT / "ì„¤ëª…ì„œ"
+ if ì„¤ëª…ì„œ_dir.exists():
+            for md_file in ì„¤ëª…ì„œ_dir.rglob("*.md"):
+ # FILE_STRUCTURE.md ê°™ì€ ì¤‘ìš”í•œ ë¬¸ì„œëŠ” ìœ ì§€
                 keep_docs = {"FILE_STRUCTURE.md", "README.md"}
-                if md_file.name not in keep_docs:
-                    self.files_to_remove.append(md_file)
-        
-        # 8. docs Æú´õ (ÀÏºÎ´Â À¯Áö)
+ if md_file.name not in keep_docs:
+ self.files_to_remove.append(md_file)
+ 
+ # 8. docs í´ë” (ì¼ë¶€ëŠ” ìœ ì§€)
         docs_dir = PROJECT_ROOT / "docs"
-        if docs_dir.exists():
+ if docs_dir.exists():
             for doc_file in docs_dir.rglob("*"):
-                if doc_file.is_file():
-                    # API_DOCUMENTATION.md °°Àº Áß¿äÇÑ ¹®¼­´Â À¯Áö
+ if doc_file.is_file():
+ # API_DOCUMENTATION.md ê°™ì€ ì¤‘ìš”í•œ ë¬¸ì„œëŠ” ìœ ì§€
                     keep_docs = {"API_DOCUMENTATION.md", "README.md"}
-                    if doc_file.name not in keep_docs:
-                        self.files_to_remove.append(doc_file)
-    
-    def calculate_space(self) -> float:
-        """Á¦°ÅÇÒ ÆÄÀÏµéÀÇ ÃÑ Å©±â °è»ê (MB)"""
-        total_size = 0
-        
-        for file_path in self.files_to_remove:
-            try:
-                if file_path.exists():
-                    total_size += file_path.stat().st_size
-            except (OSError, PermissionError):
-                pass
-        
-        for dir_path in self.dirs_to_remove:
-            try:
-                if dir_path.exists():
+ if doc_file.name not in keep_docs:
+ self.files_to_remove.append(doc_file)
+ 
+ def calculate_space(self) -> float:
+        """ì œê±°í•  íŒŒì¼ë“¤ì˜ ì´ í¬ê¸° ê³„ì‚° (MB)"""
+ total_size = 0
+ 
+ for file_path in self.files_to_remove:
+ try:
+ if file_path.exists():
+ total_size += file_path.stat().st_size
+ except (OSError, PermissionError):
+ pass
+ 
+ for dir_path in self.dirs_to_remove:
+ try:
+ if dir_path.exists():
                     for file_path in dir_path.rglob("*"):
-                        try:
-                            if file_path.is_file():
-                                total_size += file_path.stat().st_size
-                        except (OSError, PermissionError):
-                            pass
-            except (OSError, PermissionError):
-                pass
-        
-        return total_size / (1024 * 1024)  # MB
-    
-    def generate_report(self) -> str:
-        """ÃÖÀûÈ­ ¸®Æ÷Æ® »ı¼º"""
-        report = []
+ try:
+ if file_path.is_file():
+ total_size += file_path.stat().st_size
+ except (OSError, PermissionError):
+ pass
+ except (OSError, PermissionError):
+ pass
+ 
+ return total_size / (1024 * 1024) # MB
+ 
+ def generate_report(self) -> str:
+        """ìµœì í™” ë¦¬í¬íŠ¸ ìƒì„±"""
+ report = []
         report.append("=" * 70)
-        report.append("ÈÆ·Ã ÃÖÀûÈ­ ¸®Æ÷Æ®")
+        report.append("í›ˆë ¨ ìµœì í™” ë¦¬í¬íŠ¸")
         report.append("=" * 70)
         report.append("")
-        
-        report.append(f"À¯ÁöÇÒ ÆÄÀÏ: {len(self.files_to_keep)}°³")
-        report.append(f"Á¦°ÅÇÒ ÆÄÀÏ: {len(self.files_to_remove)}°³")
-        report.append(f"Á¦°ÅÇÒ µğ·ºÅä¸®: {len(self.dirs_to_remove)}°³")
-        report.append(f"Àı¾àÇÒ °ø°£: {self.calculate_space():.2f} MB")
+ 
+        report.append(f"ìœ ì§€í•  íŒŒì¼: {len(self.files_to_keep)}ê°œ")
+        report.append(f"ì œê±°í•  íŒŒì¼: {len(self.files_to_remove)}ê°œ")
+        report.append(f"ì œê±°í•  ë””ë ‰í† ë¦¬: {len(self.dirs_to_remove)}ê°œ")
+        report.append(f"ì ˆì•½í•  ê³µê°„: {self.calculate_space():.2f} MB")
         report.append("")
-        
-        if self.files_to_remove:
-            report.append("Á¦°ÅÇÒ ÆÄÀÏ ¸ñ·Ï (»óÀ§ 20°³):")
-            for i, file_path in enumerate(self.files_to_remove[:20], 1):
-                try:
-                    rel_path = file_path.relative_to(PROJECT_ROOT)
-                    size_mb = file_path.stat().st_size / (1024 * 1024) if file_path.exists() else 0
+ 
+ if self.files_to_remove:
+            report.append("ì œê±°í•  íŒŒì¼ ëª©ë¡ (ìƒìœ„ 20ê°œ):")
+ for i, file_path in enumerate(self.files_to_remove[:20], 1):
+ try:
+ rel_path = file_path.relative_to(PROJECT_ROOT)
+ size_mb = file_path.stat().st_size / (1024 * 1024) if file_path.exists() else 0
                     report.append(f"  {i}. {rel_path} ({size_mb:.2f} MB)")
-                except (OSError, ValueError):
-                    report.append(f"  {i}. {file_path} (Å©±â È®ÀÎ ºÒ°¡)")
-            if len(self.files_to_remove) > 20:
-                report.append(f"  ... ¿Ü {len(self.files_to_remove) - 20}°³ ÆÄÀÏ")
+ except (OSError, ValueError):
+                    report.append(f"  {i}. {file_path} (í¬ê¸° í™•ì¸ ë¶ˆê°€)")
+ if len(self.files_to_remove) > 20:
+                report.append(f"  ... ì™¸ {len(self.files_to_remove) - 20}ê°œ íŒŒì¼")
             report.append("")
-        
-        if self.dirs_to_remove:
-            report.append("Á¦°ÅÇÒ µğ·ºÅä¸®:")
-            for dir_path in self.dirs_to_remove:
-                rel_path = dir_path.relative_to(PROJECT_ROOT)
+ 
+ if self.dirs_to_remove:
+            report.append("ì œê±°í•  ë””ë ‰í† ë¦¬:")
+ for dir_path in self.dirs_to_remove:
+ rel_path = dir_path.relative_to(PROJECT_ROOT)
                 report.append(f"  - {rel_path}")
             report.append("")
-        
+ 
         return "\n".join(report)
-    
-    def execute_optimization(self):
-        """ÃÖÀûÈ­ ½ÇÇà"""
-        if self.dry_run:
-            print("[DRY RUN] ÃÖÀûÈ­¸¦ ½ÇÇàÇÏÁö ¾Ê½À´Ï´Ù.")
-            return
-        
-        print("ÃÖÀûÈ­ ½ÇÇà Áß...")
-        
-        # ÆÄÀÏ Á¦°Å
-        for file_path in self.files_to_remove:
-            try:
-                if file_path.exists():
-                    size = file_path.stat().st_size
-                    file_path.unlink()
+ 
+ def execute_optimization(self):
+        """ìµœì í™” ì‹¤í–‰"""
+ if self.dry_run:
+            print("[DRY RUN] ìµœì í™”ë¥¼ ì‹¤í–‰í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.")
+ return
+ 
+        print("ìµœì í™” ì‹¤í–‰ ì¤‘...")
+ 
+ # íŒŒì¼ ì œê±°
+ for file_path in self.files_to_remove:
+ try:
+ if file_path.exists():
+ size = file_path.stat().st_size
+ file_path.unlink()
                     self.stats["files_removed"] += 1
                     self.stats["space_freed_mb"] += size / (1024 * 1024)
-            except (OSError, PermissionError) as e:
-                print(f"[WARNING] ÆÄÀÏ Á¦°Å ½ÇÆĞ: {file_path} - {e}")
-        
-        # µğ·ºÅä¸® Á¦°Å
-        for dir_path in self.dirs_to_remove:
-            try:
-                if dir_path.exists():
-                    # µğ·ºÅä¸® Å©±â °è»ê
-                    dir_size = sum(
+ except (OSError, PermissionError) as e:
+                print(f"[WARNING] íŒŒì¼ ì œê±° ì‹¤íŒ¨: {file_path} - {e}")
+ 
+ # ë””ë ‰í† ë¦¬ ì œê±°
+ for dir_path in self.dirs_to_remove:
+ try:
+ if dir_path.exists():
+ # ë””ë ‰í† ë¦¬ í¬ê¸° ê³„ì‚°
+ dir_size = sum(
                         f.stat().st_size for f in dir_path.rglob("*") if f.is_file()
-                    )
-                    shutil.rmtree(dir_path)
-                    self.dirs_to_remove.append(dir_path)
+ )
+ shutil.rmtree(dir_path)
+ self.dirs_to_remove.append(dir_path)
                     self.stats["dirs_removed"] += 1
                     self.stats["space_freed_mb"] += dir_size / (1024 * 1024)
-            except Exception as e:
-                print(f"[WARNING] µğ·ºÅä¸® Á¦°Å ½ÇÆĞ: {dir_path} - {e}")
-        
-        print(f"\nÃÖÀûÈ­ ¿Ï·á!")
-        print(f"  Á¦°ÅµÈ ÆÄÀÏ: {self.stats['files_removed']}°³")
-        print(f"  Á¦°ÅµÈ µğ·ºÅä¸®: {self.stats['dirs_removed']}°³")
-        print(f"  Àı¾àµÈ °ø°£: {self.stats['space_freed_mb']:.2f} MB")
+ except Exception as e:
+                print(f"[WARNING] ë””ë ‰í† ë¦¬ ì œê±° ì‹¤íŒ¨: {dir_path} - {e}")
+ 
+        print(f"\nìµœì í™” ì™„ë£Œ!")
+        print(f"  ì œê±°ëœ íŒŒì¼: {self.stats['files_removed']}ê°œ")
+        print(f"  ì œê±°ëœ ë””ë ‰í† ë¦¬: {self.stats['dirs_removed']}ê°œ")
+        print(f"  ì ˆì•½ëœ ê³µê°„: {self.stats['space_freed_mb']:.2f} MB")
 
 
 def main():
-    """¸ŞÀÎ ÇÔ¼ö"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="ÈÆ·Ã ÃÖÀûÈ­ µµ±¸")
-    parser.add_argument("--execute", action="store_true", help="½ÇÁ¦·Î ÃÖÀûÈ­ ½ÇÇà (±âº»°ª: dry-run)")
-    parser.add_argument("--report-only", action="store_true", help="¸®Æ÷Æ®¸¸ »ı¼º")
-    
-    args = parser.parse_args()
-    
-    optimizer = TrainingOptimizer(dry_run=not args.execute)
-    
-    print("ÈÆ·Ã ÇÊ¼ö ÆÄÀÏ ½Äº° Áß...")
-    optimizer.identify_essential_files()
-    
-    print("Á¦°Å ´ë»ó ÆÄÀÏ ½ºÄµ Áß...")
-    optimizer.scan_for_removal()
-    
-    # ¸®Æ÷Æ® »ı¼º
-    report = optimizer.generate_report()
-    print(report)
-    
-    # ¸®Æ÷Æ® ÆÄÀÏ·Î ÀúÀå
+    """ë©”ì¸ í•¨ìˆ˜"""
+ import argparse
+ 
+    parser = argparse.ArgumentParser(description="í›ˆë ¨ ìµœì í™” ë„êµ¬")
+    parser.add_argument("--execute", action="store_true", help="ì‹¤ì œë¡œ ìµœì í™” ì‹¤í–‰ (ê¸°ë³¸ê°’: dry-run)")
+    parser.add_argument("--report-only", action="store_true", help="ë¦¬í¬íŠ¸ë§Œ ìƒì„±")
+ 
+ args = parser.parse_args()
+ 
+ optimizer = TrainingOptimizer(dry_run=not args.execute)
+ 
+    print("í›ˆë ¨ í•„ìˆ˜ íŒŒì¼ ì‹ë³„ ì¤‘...")
+ optimizer.identify_essential_files()
+ 
+    print("ì œê±° ëŒ€ìƒ íŒŒì¼ ìŠ¤ìº” ì¤‘...")
+ optimizer.scan_for_removal()
+ 
+ # ë¦¬í¬íŠ¸ ìƒì„±
+ report = optimizer.generate_report()
+ print(report)
+ 
+ # ë¦¬í¬íŠ¸ íŒŒì¼ë¡œ ì €ì¥
     report_path = PROJECT_ROOT / "TRAINING_OPTIMIZATION_REPORT.md"
     with open(report_path, 'w', encoding='utf-8') as f:
-        f.write(report)
-    print(f"\n¸®Æ÷Æ® ÀúÀå: {report_path}")
-    
-    if args.execute and not args.report_only:
-        print("\nÃÖÀûÈ­¸¦ ½ÇÇàÇÏ½Ã°Ú½À´Ï±î? (y/N): ", end="")
-        response = input().strip().lower()
+ f.write(report)
+    print(f"\në¦¬í¬íŠ¸ ì €ì¥: {report_path}")
+ 
+ if args.execute and not args.report_only:
+        print("\nìµœì í™”ë¥¼ ì‹¤í–‰í•˜ì‹œê² ìŠµë‹ˆê¹Œ? (y/N): ", end="")
+ response = input().strip().lower()
         if response == 'y':
-            optimizer.dry_run = False
-            optimizer.execute_optimization()
-        else:
-            print("ÃÖÀûÈ­°¡ Ãë¼ÒµÇ¾ú½À´Ï´Ù.")
-    elif args.report_only:
-        print("\n[REPORT ONLY] ¸®Æ÷Æ®¸¸ »ı¼ºµÇ¾ú½À´Ï´Ù.")
+ optimizer.dry_run = False
+ optimizer.execute_optimization()
+ else:
+            print("ìµœì í™”ê°€ ì·¨ì†Œë˜ì—ˆìŠµë‹ˆë‹¤.")
+ elif args.report_only:
+        print("\n[REPORT ONLY] ë¦¬í¬íŠ¸ë§Œ ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤.")
 
 
 if __name__ == "__main__":
-    main()
+ main()

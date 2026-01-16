@@ -4,10 +4,10 @@ Telemetry Logger - Training statistics and data recording system
 Collects and stores gameplay data for performance analysis and learning improvement.
 
 Core features:
- 1. In-game telemetry data collection (every 100 frames)
- 2. Final statistics saving at game end
- 3. JSON/CSV format data export
- 4. Win rate and match history tracking
+1. In-game telemetry data collection (every 100 frames)
+2. Final statistics saving at game end
+3. JSON/CSV format data export
+4. Win rate and match history tracking
 """
 
 import csv
@@ -21,92 +21,92 @@ from typing import Any, Dict, List, Optional
 class TelemetryLogger:
     """Logger for training statistics and telemetry data"""
 
- def __init__(self, bot: Any, instance_id: int = 0):
+    def __init__(self, bot: Any, instance_id: int = 0):
         """
- Initialize TelemetryLogger
+Initialize TelemetryLogger
 
- Args:
- bot: WickedZergBotPro instance
- instance_id: Instance ID (for file naming)
+Args:
+bot: WickedZergBotPro instance
+instance_id: Instance ID (for file naming)
         """
- self.bot = bot
- self.instance_id = instance_id
+        self.bot = bot
+        self.instance_id = instance_id
 
- # Telemetry data storage
- self.telemetry_data: List[Dict[str, Any]] = []
+        # Telemetry data storage
+        self.telemetry_data: List[Dict[str, Any]] = []
         self.telemetry_file = f"telemetry_{self.instance_id}.json"
 
- # Game log
- self.game_log: List[Dict[str, Any]] = []
+        # Game log
+        self.game_log: List[Dict[str, Any]] = []
 
  # Statistics file
         self.stats_file = "training_stats.json"
 
  # Win/loss counter
- self.total_games = 0
- self.wins = 0
- self.losses = 0
+self.total_games = 0
+self.wins = 0
+self.losses = 0
 
         print(f"[TELEMETRY] Logger initialized: {self.telemetry_file}")
 
- def should_log_telemetry(self, iteration: int) -> bool:
+def should_log_telemetry(self, iteration: int) -> bool:
         """
- Determine if telemetry should be logged
+Determine if telemetry should be logged
 
- Args:
- iteration: Current game frame
+Args:
+iteration: Current game frame
 
- Returns:
- bool: Whether to log (every 100 frames)
+Returns:
+bool: Whether to log (every 100 frames)
         """
- return iteration % 100 == 0
+return iteration % 100 == 0
 
- def log_game_state(self, combat_unit_types: set) -> None:
+def log_game_state(self, combat_unit_types: set) -> None:
         """
- Log current game state to telemetry
+Log current game state to telemetry
 
- Args:
- combat_unit_types: Set of combat unit types
+Args:
+combat_unit_types: Set of combat unit types
         """
- try:
- bot = self.bot
+try:
+bot = self.bot
 
  # Calculate combat unit count (optimized: whitelist approach)
- army_units = bot.units.filter(lambda u: u.type_id in combat_unit_types)
+army_units = bot.units.filter(lambda u: u.type_id in combat_unit_types)
             army_count = army_units.amount if hasattr(army_units, "amount") else len(army_units)
 
  # Calculate enemy army count
             enemy_units = getattr(bot, "enemy_units", None)
- enemy_army_count = 0
- if enemy_units:
- enemy_army_count = sum(
- 1
- for u in enemy_units
+enemy_army_count = 0
+if enemy_units:
+enemy_army_count = sum(
+1
+for u in enemy_units
                     if hasattr(u, "can_attack")
- and u.can_attack
+and u.can_attack
                     and not getattr(u, "is_structure", False)
- )
+)
 
  # Worker count
- workers = bot.workers
+workers = bot.workers
             drone_count = workers.amount if hasattr(workers, "amount") else len(workers)
 
  # Larva count
- larvae = bot.units(UnitTypeId.LARVA)
+larvae = bot.units(UnitTypeId.LARVA)
             larva_count = larvae.amount if hasattr(larvae, "amount") else len(larvae)
 
  # Queen count and energy
- queens = bot.units(UnitTypeId.QUEEN)
+queens = bot.units(UnitTypeId.QUEEN)
             queen_count = queens.amount if hasattr(queens, "amount") else len(queens)
- queen_energy = (
+queen_energy = (
                 sum(q.energy for q in queens if hasattr(q, "energy")) if queen_count > 0 else 0
- )
+)
 
  # Swarm control metrics (for drone major portfolio analysis)
- swarm_metrics = self._calculate_swarm_metrics(bot, army_count, combat_unit_types)
+swarm_metrics = self._calculate_swarm_metrics(bot, army_count, combat_unit_types)
 
  # Telemetry entry
- log_entry = {
+log_entry = {
                 "time": int(bot.time),
                 "iteration": bot.iteration,
                 "minerals": bot.minerals,
@@ -123,92 +123,92 @@ class TelemetryLogger:
                 "supply_left": bot.supply_left,
                 "townhall_count": bot.townhalls.amount
                 if hasattr(bot.townhalls, "amount")
- else len(bot.townhalls),
+else len(bot.townhalls),
                 "game_phase": bot.game_phase.name
                 if hasattr(bot.game_phase, "name")
- else str(bot.game_phase),
+else str(bot.game_phase),
  # Swarm control metrics (for analysis)
- **swarm_metrics,
- }
+**swarm_metrics,
+}
 
- self.telemetry_data.append(log_entry)
+self.telemetry_data.append(log_entry)
 
  # Memory management: keep only last 1000 entries
- if len(self.telemetry_data) > 1000:
- self.telemetry_data = self.telemetry_data[-1000:]
+if len(self.telemetry_data) > 1000:
+self.telemetry_data = self.telemetry_data[-1000:]
 
- except Exception as e:
- if bot.iteration % 500 == 0:
+except Exception as e:
+if bot.iteration % 500 == 0:
                 print(f"[WARNING] Telemetry logging error: {e}")
 
- def _calculate_swarm_metrics(self, bot: Any, army_count: int, combat_unit_types: set) -> Dict[str, Any]:
+def _calculate_swarm_metrics(self, bot: Any, army_count: int, combat_unit_types: set) -> Dict[str, Any]:
         """
- Calculate swarm control algorithm performance metrics.
+Calculate swarm control algorithm performance metrics.
 
- This provides data to prove whether swarm control algorithms
- (Potential Field, Boids) are working as expected.
+This provides data to prove whether swarm control algorithms
+(Potential Field, Boids) are working as expected.
 
- Returns:
- Dict with swarm control metrics
+Returns:
+Dict with swarm control metrics
         """
- try:
- metrics = {
+try:
+metrics = {
                 "swarm_formation_score": 0.0,
                 "unit_spacing_avg": 0.0,
                 "swarm_cohesion": 0.0,
                 "obstacle_avoidance_active": False,
                 "micro_controller_active": False,
- }
+}
 
  # Check if MicroController is active
             if hasattr(bot, "micro") and bot.micro is not None:
                 metrics["micro_controller_active"] = True
 
  # Calculate unit spacing (simplified: based on army count and supply)
- if army_count > 0:
- army_supply = bot.supply_army
+if army_count > 0:
+army_supply = bot.supply_army
  # Ideal spacing: 1-2 supply per unit indicates good spread
- supply_per_unit = army_supply / army_count if army_count > 0 else 0
+supply_per_unit = army_supply / army_count if army_count > 0 else 0
                     metrics["unit_spacing_avg"] = supply_per_unit
 
  # Formation score: 1.0 if spacing is ideal (0.5-2.5), decreases outside range
- if 0.5 <= supply_per_unit <= 2.5:
+if 0.5 <= supply_per_unit <= 2.5:
                         metrics["swarm_formation_score"] = 1.0
- elif supply_per_unit < 0.5:
+elif supply_per_unit < 0.5:
  # Too clustered
                         metrics["swarm_formation_score"] = supply_per_unit / 0.5
- else:
+else:
  # Too spread out
                         metrics["swarm_formation_score"] = max(0.0, 1.0 - (supply_per_unit - 2.5) / 2.5)
 
  # Cohesion: based on army count vs enemy army ratio
                     enemy_army = getattr(bot, "enemy_units", None)
- enemy_count = 0
- if enemy_army:
- enemy_count = sum(
- 1 for u in enemy_army
+enemy_count = 0
+if enemy_army:
+enemy_count = sum(
+1 for u in enemy_army
                             if hasattr(u, "can_attack") and u.can_attack
                             and not getattr(u, "is_structure", False)
- )
+)
 
- if enemy_count > 0:
+if enemy_count > 0:
  # Cohesion: how well our army is grouped relative to enemy
  # Higher cohesion = better swarm control
- army_ratio = army_count / enemy_count if enemy_count > 0 else 0
+army_ratio = army_count / enemy_count if enemy_count > 0 else 0
                         metrics["swarm_cohesion"] = min(1.0, army_ratio / 2.0)  # Normalize to 0-1
- else:
+else:
                         metrics["swarm_cohesion"] = 0.5  # Neutral when no enemy visible
 
                     # Obstacle avoidance: check if we're avoiding enemy units
- if enemy_count > 0 and army_count > 0:
+if enemy_count > 0 and army_count > 0:
  # If we have army and enemy is present, assume obstacle avoidance is active
                         metrics["obstacle_avoidance_active"] = True
 
- return metrics
+return metrics
 
- except Exception as e:
+except Exception as e:
  # Return default metrics on error
- return {
+return {
  # TODO: 중복 코드 블록 - 공통 함수로 추출 검토
  # TODO: 중복 코드 블록 - 공통 함수로 추출 검토
                 "swarm_formation_score": 0.0,
@@ -216,66 +216,66 @@ class TelemetryLogger:
                 "swarm_cohesion": 0.0,
                 "obstacle_avoidance_active": False,
                 "micro_controller_active": False,
- }
+}
 
- async def save_telemetry(self) -> None:
+async def save_telemetry(self) -> None:
         """Save telemetry data to JSON and CSV files"""
- try:
- if not self.telemetry_data:
+try:
+if not self.telemetry_data:
                 print("[TELEMETRY] No data to save")
- return
+return
 
  # Save as JSON
             with open(self.telemetry_file, "w", encoding="utf-8") as f:
- json.dump(self.telemetry_data, f, indent = 2, ensure_ascii = False)
+json.dump(self.telemetry_data, f, indent = 2, ensure_ascii = False)
 
  # Save as CSV
             csv_file = self.telemetry_file.replace(".json", ".csv")
- if self.telemetry_data:
+if self.telemetry_data:
                 with open(csv_file, "w", encoding="utf-8", newline="") as f:
- writer = csv.DictWriter(f, fieldnames = self.telemetry_data[0].keys())
- writer.writeheader()
- writer.writerows(self.telemetry_data)
+writer = csv.DictWriter(f, fieldnames = self.telemetry_data[0].keys())
+writer.writeheader()
+writer.writerows(self.telemetry_data)
 
             print(f"[TELEMETRY] Data saved: {self.telemetry_file}, {csv_file}")
 
- except Exception as e:
+except Exception as e:
             print(f"[WARNING] Telemetry save error: {e}")
 
- def record_game_result(
- self, game_result: Result, loss_reason: str, loss_details: Dict[str, Any]
- ) -> None:
+def record_game_result(
+self, game_result: Result, loss_reason: str, loss_details: Dict[str, Any]
+) -> None:
         """
- Record game result to training_stats.json
+Record game result to training_stats.json
 
- Args:
- game_result: Game result (Victory/Defeat/Tie)
- loss_reason: Reason for loss
- loss_details: Detailed loss information
+Args:
+game_result: Game result (Victory/Defeat/Tie)
+loss_reason: Reason for loss
+loss_details: Detailed loss information
         """
- try:
- bot = self.bot
+try:
+bot = self.bot
 
  # Convert result to string
- result_str = str(game_result)
+result_str = str(game_result)
             if str(game_result) == "Victory":
                 result_str = "Victory"
- self.wins += 1
+self.wins += 1
             elif str(game_result) == "Defeat":
                 result_str = "Defeat"
- self.losses += 1
- else:
+self.losses += 1
+else:
                 result_str = "Tie"
 
- self.total_games += 1
+self.total_games += 1
 
  # Check opponent race
             opponent_race_str = "Unknown"
             if hasattr(bot, "opponent_race") and bot.opponent_race:
- opponent_race_str = str(bot.opponent_race)
+opponent_race_str = str(bot.opponent_race)
             elif hasattr(bot, "intel") and bot.intel and hasattr(bot.intel, "enemy"):
                 if hasattr(bot.intel.enemy, "race"):
- opponent_race_str = str(bot.intel.enemy.race)
+opponent_race_str = str(bot.intel.enemy.race)
 
  # Check persona
             personality = getattr(bot, "personality", "unknown")
@@ -284,25 +284,25 @@ class TelemetryLogger:
             map_name = "Unknown"
             if hasattr(bot, "game_info") and bot.game_info:
                 if hasattr(bot.game_info, "map_name"):
- map_name = bot.game_info.map_name
+map_name = bot.game_info.map_name
                 elif hasattr(bot.game_info, "map_name"):
- map_name = str(bot.game_info.map_name)
+map_name = str(bot.game_info.map_name)
 
  # Calculate units killed/lost (simplified)
             units_killed = loss_details.get("units_killed", 0)
             units_lost = loss_details.get("units_lost", 0)
 
  # If not provided, estimate from army count
- if units_killed == 0 and units_lost == 0:
+if units_killed == 0 and units_lost == 0:
                 army_count = loss_details.get("army_count", 0)
  # Rough estimate: assume some units were lost in battle
- units_lost = max(0, army_count // 3)
+units_lost = max(0, army_count // 3)
 
  # Calculate swarm control performance metrics from telemetry
- swarm_performance = self._analyze_swarm_performance_from_telemetry()
+swarm_performance = self._analyze_swarm_performance_from_telemetry()
 
  # Game data
- log_data = {
+log_data = {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "instance_id": self.instance_id,
                 "personality": personality,
@@ -319,8 +319,8 @@ class TelemetryLogger:
                 "units_killed": units_killed,
                 "units_lost": units_lost,
  # Swarm control performance (for analysis)
- **swarm_performance,
- }
+**swarm_performance,
+}
 
  # Append to training_stats.json (append mode)
             with open(self.stats_file, "a", encoding="utf-8") as f:
@@ -329,68 +329,68 @@ class TelemetryLogger:
             print(f"[STATS] {personality} ({self.instance_id}): {loss_reason} -> {self.stats_file}")
 
  # Send to Manus Dashboard (if enabled)
- try:
- manus_client = create_client_from_env()
+try:
+manus_client = create_client_from_env()
 
- if manus_client and manus_client.enabled:
- success = manus_client.create_game_session(
- map_name = map_name,
- enemy_race = opponent_race_str,
- final_minerals = bot.minerals,
- final_gas = bot.vespene,
- final_supply = bot.supply_used,
- units_killed = units_killed,
- units_lost = units_lost,
- duration = int(bot.time),
- result = result_str,
- personality = personality,
+if manus_client and manus_client.enabled:
+success = manus_client.create_game_session(
+map_name = map_name,
+enemy_race = opponent_race_str,
+final_minerals = bot.minerals,
+final_gas = bot.vespene,
+final_supply = bot.supply_used,
+units_killed = units_killed,
+units_lost = units_lost,
+duration = int(bot.time),
+result = result_str,
+personality = personality,
                         loss_reason = loss_reason if result_str == "Defeat" else None,
                         worker_count = loss_details.get("worker_count", 0),
                         townhall_count = loss_details.get("townhall_count", 0),
                         army_count = loss_details.get("army_count", 0),
- )
- if success:
+)
+if success:
                         print(f"[MANUS] Game result sent to dashboard: {result_str}")
- except ImportError:
+except ImportError:
  # Manus client not available, skip
- pass
- except Exception as e:
+pass
+except Exception as e:
                 print(f"[WARNING] Manus dashboard send failed: {e}")
 
- except Exception as e:
+except Exception as e:
             print(f"[WARNING] Failed to record statistics: {e}")
 
- def get_win_rate(self) -> float:
+def get_win_rate(self) -> float:
         """
- Calculate current win rate
+Calculate current win rate
 
- Returns:
- float: Win rate (0.0 ~ 1.0)
+Returns:
+float: Win rate (0.0 ~ 1.0)
         """
- if self.total_games == 0:
- return 0.0
- return self.wins / self.total_games
+if self.total_games == 0:
+return 0.0
+return self.wins / self.total_games
 
- def get_statistics_summary(self) -> Dict[str, Any]:
+def get_statistics_summary(self) -> Dict[str, Any]:
         """
- Get statistics summary
+Get statistics summary
 
- Returns:
- Dict: Statistics information
+Returns:
+Dict: Statistics information
         """
- win_rate = self.get_win_rate()
+win_rate = self.get_win_rate()
 
- return {
+return {
             "total_games": self.total_games,
             "wins": self.wins,
             "losses": self.losses,
             "win_rate": win_rate,
             "win_rate_percent": f"{win_rate * 100:.1f}%",
- }
+}
 
- def print_statistics(self) -> None:
+def print_statistics(self) -> None:
         """Print statistics information"""
- stats = self.get_statistics_summary()
+stats = self.get_statistics_summary()
 
         print("\n" + "=" * 70)
         print("Training Statistics")
@@ -400,35 +400,35 @@ class TelemetryLogger:
         print(f"Win rate: {stats['win_rate_percent']}")
         print("=" * 70 + "\n")
 
- def get_final_stats_dict(self) -> Optional[Dict[str, Any]]:
+def get_final_stats_dict(self) -> Optional[Dict[str, Any]]:
         """
- Create final statistics dictionary at game end
+Create final statistics dictionary at game end
 
- Returns:
- Dict: Final statistics (None if failed)
+Returns:
+Dict: Final statistics (None if failed)
         """
- try:
- bot = self.bot
+try:
+bot = self.bot
 
  # Calculate unit counts (optimized: use amount attribute)
- workers_count = (
+workers_count = (
                 bot.workers.amount if hasattr(bot.workers, "amount") else len(bot.workers)
- )
- townhalls_count = (
+)
+townhalls_count = (
                 bot.townhalls.amount if hasattr(bot.townhalls, "amount") else len(bot.townhalls)
- )
+)
 
- zerglings = bot.units(UnitTypeId.ZERGLING)
- hydras = bot.units(UnitTypeId.HYDRALISK)
- roaches = bot.units(UnitTypeId.ROACH)
- lurkers = bot.units(UnitTypeId.LURKER)
+zerglings = bot.units(UnitTypeId.ZERGLING)
+hydras = bot.units(UnitTypeId.HYDRALISK)
+roaches = bot.units(UnitTypeId.ROACH)
+lurkers = bot.units(UnitTypeId.LURKER)
 
             zerglings_count = zerglings.amount if hasattr(zerglings, "amount") else len(zerglings)
             hydras_count = hydras.amount if hasattr(hydras, "amount") else len(hydras)
             roaches_count = roaches.amount if hasattr(roaches, "amount") else len(roaches)
             lurkers_count = lurkers.amount if hasattr(lurkers, "amount") else len(lurkers)
 
- return {
+return {
                 "minerals": bot.minerals,
                 "vespene": bot.vespene,
                 "supply_used": bot.supply_used,
@@ -441,57 +441,57 @@ class TelemetryLogger:
                 "roaches": roaches_count,
                 "lurkers": lurkers_count,
                 "game_time": int(bot.time),
- }
+}
 
- except Exception as e:
+except Exception as e:
             print(f"[WARNING] Failed to create final statistics: {e}")
- return None
+return None
 
- def _analyze_swarm_performance_from_telemetry(self) -> Dict[str, Any]:
+def _analyze_swarm_performance_from_telemetry(self) -> Dict[str, Any]:
         """
- Analyze swarm control performance from collected telemetry data.
+Analyze swarm control performance from collected telemetry data.
 
- This provides evidence of whether swarm control algorithms worked correctly.
+This provides evidence of whether swarm control algorithms worked correctly.
 
- Returns:
- Dict with swarm performance metrics
+Returns:
+Dict with swarm performance metrics
         """
- if not self.telemetry_data:
- return {
+if not self.telemetry_data:
+return {
                 "avg_formation_score": 0.0,
                 "avg_cohesion": 0.0,
                 "micro_active_percentage": 0.0,
                 "obstacle_avoidance_percentage": 0.0,
- }
+}
 
  # Extract swarm metrics from telemetry
- formation_scores = []
- cohesion_scores = []
- micro_active_count = 0
- obstacle_avoidance_count = 0
+formation_scores = []
+cohesion_scores = []
+micro_active_count = 0
+obstacle_avoidance_count = 0
 
- for entry in self.telemetry_data:
+for entry in self.telemetry_data:
             if "swarm_formation_score" in entry:
                 formation_scores.append(entry["swarm_formation_score"])
             if "swarm_cohesion" in entry:
                 cohesion_scores.append(entry["swarm_cohesion"])
             if entry.get("micro_controller_active", False):
- micro_active_count += 1
+micro_active_count += 1
             if entry.get("obstacle_avoidance_active", False):
- obstacle_avoidance_count += 1
+obstacle_avoidance_count += 1
 
- total_entries = len(self.telemetry_data)
+total_entries = len(self.telemetry_data)
 
- return {
+return {
             "avg_formation_score": statistics.mean(formation_scores) if formation_scores else 0.0,
             "avg_cohesion": statistics.mean(cohesion_scores) if cohesion_scores else 0.0,
             "micro_active_percentage": (micro_active_count / total_entries * 100) if total_entries > 0 else 0.0,
             "obstacle_avoidance_percentage": (obstacle_avoidance_count / total_entries * 100) if total_entries > 0 else 0.0,
             "total_telemetry_entries": total_entries,
- }
+}
 
- def clear_telemetry(self) -> None:
+def clear_telemetry(self) -> None:
         """Clear telemetry data (at new game start)"""
- self.telemetry_data.clear()
- self.game_log.clear()
+self.telemetry_data.clear()
+self.game_log.clear()
         print(f"[TELEMETRY] Data cleared for new game")

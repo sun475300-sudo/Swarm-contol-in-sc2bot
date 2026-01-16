@@ -19,61 +19,61 @@ PROJECT_DIR = SCRIPT_DIR.parent
 def get_venv_dir() -> Path:
     """Get virtual environment directory from environment variable or use project default"""
     venv_dir = os.environ.get("VENV_DIR")
- if venv_dir and Path(venv_dir).exists():
- return Path(venv_dir)
- # Try common locations
- possible_paths = [
+    if venv_dir and Path(venv_dir).exists():
+        return Path(venv_dir)
+    # Try common locations
+    possible_paths = [
         PROJECT_DIR / ".venv",
         Path.home() / ".venv",
         Path(".venv"),
- ]
- for path in possible_paths:
- if path.exists():
- return path
- # Default fallback
+    ]
+    for path in possible_paths:
+        if path.exists():
+            return path
+    # Default fallback
     return PROJECT_DIR / ".venv"
 
 VENV_DIR = get_venv_dir()
 VENV_PYTHON = VENV_DIR / "Scripts" / "python.exe" if sys.platform == "win32" else VENV_DIR / "bin" / "python3"
 
 if str(SCRIPT_DIR) not in sys.path:
- sys.path.insert(0, str(SCRIPT_DIR))
+    sys.path.insert(0, str(SCRIPT_DIR))
 if str(PROJECT_DIR) not in sys.path:
- sys.path.insert(0, str(PROJECT_DIR))
+    sys.path.insert(0, str(PROJECT_DIR))
 if VENV_DIR.exists() and str(VENV_DIR / "Lib" / "site-packages") not in sys.path:
     sys.path.insert(0, str(VENV_DIR / "Lib" / "site-packages"))
 
 def get_sc2_path():
     if "SC2PATH" in os.environ:
         sc2_path = os.environ["SC2PATH"]
- if os.path.exists(sc2_path):
- return sc2_path
+        if os.path.exists(sc2_path):
+            return sc2_path
 
- default_paths = []
+    default_paths = []
     if sys.platform == "win32":
- default_paths = [
+        default_paths = [
             r"C:\Program Files (x86)\StarCraft II",
             r"C:\Program Files\StarCraft II",
- ]
+        ]
     elif sys.platform == "darwin":
- default_paths = [
+        default_paths = [
             os.path.expanduser("~/Library/Application Support/Blizzard/StarCraft II"),
             "/Applications/StarCraft II",
- ]
- else:
- default_paths = [
+        ]
+    else:
+        default_paths = [
             os.path.expanduser("~/StarCraft II"),
             "/opt/StarCraft II",
- ]
+        ]
 
- for path in default_paths:
- if os.path.exists(path):
+    for path in default_paths:
+        if os.path.exists(path):
             os.environ["SC2PATH"] = path
- return path
+            return path
 
     print(f"[WARNING] SC2 path not found. Please set SC2PATH environment variable.")
     print(f"[INFO] Tried paths: {default_paths}")
- return None
+    return None
 
 sc2_path = get_sc2_path()
 if sc2_path:
@@ -84,12 +84,12 @@ else:
 DRY_RUN_MODE = os.environ.get("DRY_RUN_MODE", "false").lower() == "true"
 
 try:
-
- logger.remove()
-    logger.add(sys.stderr, colorize = True, enqueue = True, catch = True, level="INFO")
+    from loguru import logger
+    logger.remove()
+    logger.add(sys.stderr, colorize=True, enqueue=True, catch=True, level="INFO")
     log_dir = Path("logs")
- log_dir.mkdir(exist_ok = True)
- logger.add(
+    log_dir.mkdir(exist_ok=True)
+    logger.add(
         str(log_dir / "training_log.log"),
         rotation="10 MB",
  enqueue = True,
@@ -99,7 +99,7 @@ try:
  )
     print("[OK] Loguru logger configured")
 except ImportError:
- logger = None
+    logger = None
     print("[WARNING] loguru not installed")
 except Exception as e:
  logger = None

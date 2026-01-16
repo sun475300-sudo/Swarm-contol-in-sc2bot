@@ -8,7 +8,7 @@ echo.
 
 cd /d "%~dp0\.."
 
-set NEW_KEY=AIzaSyBDdPWJyXs56AxeCPmqZpySFOVPjjSt_CM
+set NEW_KEY=YOUR_API_KEY_HERE
 
 echo ???? %NEW_KEY%
 echo.

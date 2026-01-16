@@ -22,65 +22,67 @@ if str(script_dir) not in sys.path:
  sys.path.insert(0, str(script_dir))
 
 try:
+    from local_training.scripts.replay_build_order_learner import ReplayBuildOrderExtractor
+    from tools.build_order_comparator import BuildOrderComparator
 except ImportError as e:
     print(f"[WARNING] Failed to import required modules: {e}")
- ReplayBuildOrderExtractor = None
- BuildOrderComparator = None
+    ReplayBuildOrderExtractor = None
+    BuildOrderComparator = None
 
 
 class ProVsTrainingComparator:
     """프로게이머 리플레이 vs 훈련 리플레이 비교 분석 클래스"""
- 
- def __init__(
- self,
- pro_replay_dir: Optional[Path] = None,
- training_data_dir: Optional[Path] = None
- ):
+
+    def __init__(
+        self,
+        pro_replay_dir: Optional[Path] = None,
+        training_data_dir: Optional[Path] = None
+    ):
         """
- Initialize ProVsTrainingComparator
- 
- Args:
- pro_replay_dir: Directory containing pro gamer replays (default: D:\replays\replays)
- training_data_dir: Directory containing training data (default: auto-detect)
+        Initialize ProVsTrainingComparator
+
+        Args:
+            pro_replay_dir: Directory containing pro gamer replays (default: D:\replays\replays)
+            training_data_dir: Directory containing training data (default: auto-detect)
         """
- # Pro replay directory
- if pro_replay_dir is None:
+        # Pro replay directory
+        if pro_replay_dir is None:
             pro_replay_dir = Path("D:/replays/replays")
- if not pro_replay_dir.exists():
- # Try alternative paths
- alt_paths = [
-                    Path(__file__).parent.parent / "replays_archive",
-                    Path.home() / "replays" / "replays",
- ]
- for path in alt_paths:
- if path.exists():
- pro_replay_dir = path
- break
+        if not pro_replay_dir.exists():
+            # Try alternative paths
+            alt_paths = [
+                Path(__file__).parent.parent / "replays_archive",
+                Path.home() / "replays" / "replays",
+            ]
+            for path in alt_paths:
+                if path.exists():
+                    pro_replay_dir = path
+                    break
+
+        self.pro_replay_dir = pro_replay_dir
+
+        # Training data directory
+        if training_data_dir is None:
+            training_data_dir = Path(__file__).parent.parent
+
+        self.training_data_dir = training_data_dir
  
- self.pro_replay_dir = pro_replay_dir
- 
- # Training data directory
- if training_data_dir is None:
- training_data_dir = Path(__file__).parent.parent
- 
- self.training_data_dir = training_data_dir
- 
- # Training data paths
+        # Training data paths
         self.training_stats_path = training_data_dir / "data" / "training_stats.json"
- if not self.training_stats_path.exists():
+        if not self.training_stats_path.exists():
             self.training_stats_path = training_data_dir / "training_stats.json"
- 
+
         self.comparison_history_path = training_data_dir / "local_training" / "scripts" / "build_order_comparison_history.json"
         self.learned_build_orders_path = training_data_dir / "local_training" / "scripts" / "learned_build_orders.json"
- 
- # Pro replay learned data paths
+
+        # Pro replay learned data paths
         self.pro_archive_dir = Path("D:/replays/archive")
- if not self.pro_archive_dir.exists():
+        if not self.pro_archive_dir.exists():
             self.pro_archive_dir = Path("D:/replays/archive")
- 
- # Output directory
+
+        # Output directory
         self.output_dir = training_data_dir / "local_training" / "comparison_reports"
- self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
  
         print(f"[COMPARATOR] Initialized")
         print(f"[COMPARATOR] Pro replay directory: {self.pro_replay_dir}")

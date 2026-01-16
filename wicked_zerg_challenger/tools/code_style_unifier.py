@@ -12,9 +12,9 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 class CodeStyleUnifier:
     """코드 스타일 통일기"""
- 
- def __init__(self):
- self.fixes_applied: List[Dict] = []
+
+    def __init__(self):
+        self.fixes_applied: List[Dict] = []
  
  def unify_indentation(self, content: str, file_path: Path) -> Tuple[str, int]:
         """들여쓰기 통일 (4 spaces)"""

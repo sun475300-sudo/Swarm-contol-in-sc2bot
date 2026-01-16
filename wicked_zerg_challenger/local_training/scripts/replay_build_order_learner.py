@@ -14,18 +14,19 @@ if str(script_dir) not in sys.path:
  sys.path.insert(0, str(script_dir))
 
 try:
- # pyright: reportMissingImports = false
- import sc2reader # type: ignore[import-untyped]
- SC2READER_AVAILABLE = True
+    # pyright: reportMissingImports = false
+    import sc2reader  # type: ignore[import-untyped]
+    SC2READER_AVAILABLE = True
 except ImportError:
- SC2READER_AVAILABLE = False
+    SC2READER_AVAILABLE = False
     print("[WARNING] sc2reader not installed. Install with: pip install sc2reader")
 
 try:
+    from loguru import logger
 except ImportError:
- import logging
- logger = logging.getLogger(__name__)
- logger.setLevel(logging.INFO)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
 
 # Pro player names to filter (Zerg players)
@@ -37,46 +38,46 @@ PRO_ZERG_PLAYERS = {
 
 
 class ReplayBuildOrderExtractor:
- def __init__(self, replay_dir: str = None):
- # IMPROVED: Use environment variable or flexible path detection
- # Priority 1: D:\replays\replays (all Zerg pro gamer replays)
- if replay_dir is None:
+    def __init__(self, replay_dir: str = None):
+        # IMPROVED: Use environment variable or flexible path detection
+        # Priority 1: D:\replays\replays (all Zerg pro gamer replays)
+        if replay_dir is None:
             replay_dir = os.environ.get("REPLAY_ARCHIVE_DIR")
- if not replay_dir or not os.path.exists(replay_dir):
- # Try common locations (priority: D:\replays\replays)
- possible_paths = [
+            if not replay_dir or not os.path.exists(replay_dir):
+                # Try common locations (priority: D:\replays\replays)
+                possible_paths = [
                     Path("D:/replays/replays"),  # All Zerg pro gamer replays (highest priority)
                     Path(__file__).parent.parent / "replays_archive",
                     Path.home() / "replays" / "replays",
                     Path.home() / "replays",
                     Path("replays_archive"),
- ]
- for path in possible_paths:
- if path.exists():
- replay_dir = str(path)
- break
- else:
+                ]
+                for path in possible_paths:
+                    if path.exists():
+                        replay_dir = str(path)
+                        break
+                else:
                     replay_dir = "D:/replays/replays"  # Default to Zerg pro gamer replays directory
- self.replay_dir = Path(replay_dir)
- self.build_orders: List[Dict] = []
- self.timing_stats: Dict[str, List[float]] = defaultdict(list)
+        self.replay_dir = Path(replay_dir)
+        self.build_orders: List[Dict] = []
+        self.timing_stats: Dict[str, List[float]] = defaultdict(list)
 
- # IMPROVED: Ensure replay directory exists
- self.replay_dir.mkdir(parents = True, exist_ok = True)
+        # IMPROVED: Ensure replay directory exists
+        self.replay_dir.mkdir(parents=True, exist_ok=True)
 
- def scan_replays(self) -> List[Path]:
+    def scan_replays(self) -> List[Path]:
         """Scan replay directory for valid replay files"""
- if not self.replay_dir.exists():
+        if not self.replay_dir.exists():
             logger.warning(f"Replay directory not found: {self.replay_dir}")
- return []
+            return []
 
         replay_files = list(self.replay_dir.glob("*.SC2Replay"))
         logger.info(f"Found {len(replay_files)} replay files in {self.replay_dir}")
- return replay_files
+        return replay_files
 
- def extract_build_order(self, replay_path: Path, phase_focus: Optional[Dict] = None) -> Optional[Dict]:
+    def extract_build_order(self, replay_path: Path, phase_focus: Optional[Dict] = None) -> Optional[Dict]:
         """Extract build order from a single replay file"""
- if not SC2READER_AVAILABLE:
+        if not SC2READER_AVAILABLE:
             logger.error("sc2reader not available. Cannot extract build orders.")
  return None
 
