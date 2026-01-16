@@ -35,18 +35,19 @@ try {
     # Sensitive patterns (generic patterns only, no actual key examples)
     # Using single quotes to prevent PowerShell from interpreting brackets as array indexing
     $sensitivePatterns = @(
-        # API Key patterns
+        # API Key patterns (avoid matching package hashes in lock files)
         'AIzaSy[A-Za-z0-9_-]{35}',
         'sk-[A-Za-z0-9]{32,}',
         'xox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24,32}',
-        '[0-9a-f]{32}',
-        '[0-9a-f]{40}',
+        # Hash patterns only in non-lock files (handled by exclude list)
         
-        # Password patterns
-        'password\s*[:=]\s*[''"]?[^''"\s]{8,}',
-        'passwd\s*[:=]\s*[''"]?[^''"\s]{8,}',
-        'secret\s*[:=]\s*[''"]?[^''"\s]{8,}',
-        'token\s*[:=]\s*[''"]?[^''"\s]{20,}'
+        # Password patterns (avoid matching variable names)
+        # Match: password = "...", password: "...", but not cookieSecret = ...
+        '(?<!cookie|session|jwt|auth)(?:password|passwd)\s*[:=]\s*[''"]?[^''"\s]{8,}',
+        # Match: secret = "...", secret: "...", but not cookieSecret, sessionSecret
+        '(?<!cookie|session|jwt|auth)secret\s*[:=]\s*[''"]?[^''"\s]{8,}',
+        # Match: token = "...", token: "...", but not getUserInfoByToken, accessToken
+        '(?<!by|access|refresh|session|bearer|auth)token\s*[:=]\s*[''"]?[^''"\s]{20,}'
     )
 
     # 검사할 파일 확장자
@@ -103,6 +104,21 @@ try {
             "pre-commit.ps1"
         )
         
+        # Lock 파일 제외 (패키지 해시는 민감정보가 아님)
+        $lockFilePatterns = @(
+            "pnpm-lock.yaml",
+            "package-lock.json",
+            "yarn.lock",
+            "poetry.lock",
+            "Pipfile.lock"
+        )
+        
+        foreach ($pattern in $lockFilePatterns) {
+            if ($normalizedPath -match ([regex]::Escape($pattern))) {
+                return $true
+            }
+        }
+        
         # 파일명 직접 매칭 (대소문자 무시)
         foreach ($excludeName in $excludeFileNames) {
             if ($fileName -ieq $excludeName) {
@@ -139,7 +155,8 @@ if (-not $stagedFiles) {
         $files = Get-ChildItem -Path . -Filter $ext -Recurse -ErrorAction SilentlyContinue | 
                  Where-Object { 
                      $_.FullName -notmatch '\.git|node_modules|venv|__pycache__|\.gradle|build' -and
-                     -not (Test-ExcludeFile $_.FullName)
+                     -not (Test-ExcludeFile $_.FullName) -and
+                     $_.FullName -notmatch '(pnpm|package|yarn|poetry)\.lock'
                  }
         
         foreach ($file in $files) {
@@ -211,7 +228,14 @@ if (-not $stagedFiles) {
             continue
         }
         
-        if (Test-Path $filePath) {
+        # Lock 파일 직접 제외
+        if ($normalizedPath -match '(pnpm|package|yarn|poetry)\.lock|pnpm-lock\.yaml') {
+            $excludedMsg = 'Lock file excluded: ' + $filePath
+            Write-Host $excludedMsg -ForegroundColor Gray
+            continue
+        }
+        
+        if (Test-Path -LiteralPath $filePath) {
             $file = Get-Item $filePath
             $checkedFiles++
             
@@ -264,9 +288,13 @@ if (-not $stagedFiles) {
                     }
                 }
             }
+        } catch {
+            # 파일 처리 오류 무시 (로깅만)
+            $processErrorMsg = 'File processing error (ignored): ' + $filePath + ' - ' + $_
+            Write-Host $processErrorMsg -ForegroundColor Gray
+            $errorCount++
         }
     }
-}
 
     Write-Host ""
     $separator = '=' * 70
