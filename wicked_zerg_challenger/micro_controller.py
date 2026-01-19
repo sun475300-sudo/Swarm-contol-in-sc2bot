@@ -268,26 +268,26 @@ def __init__(self, config: SwarmConfig = None, use_kd_tree: bool = False):
             self._use_kd_tree = False
 
 
-def calculate_boids_velocity(
-    self,
-    unit_position: Point2,
-    unit_velocity: Point2,
-    nearby_units: List[Tuple[Point2, Point2]] = None,  # (position, velocity)
-    all_units: List[Tuple[Point2, Point2]] = None  # For spatial partitioning
-) -> Point2:
-    """
-Calculate desired velocity using Boids algorithm.
-OPTIMIZED: Uses spatial partitioning for O(N^2) -> O(N) when all_units provided.
+    def calculate_boids_velocity(
+        self,
+        unit_position: Point2,
+        unit_velocity: Point2,
+        nearby_units: List[Tuple[Point2, Point2]] = None,  # (position, velocity)
+        all_units: List[Tuple[Point2, Point2]] = None  # For spatial partitioning
+    ) -> Point2:
+        """
+        Calculate desired velocity using Boids algorithm.
+        OPTIMIZED: Uses spatial partitioning for O(N^2) -> O(N) when all_units provided.
 
-Args:
-unit_position: Current position of the unit
-unit_velocity: Current velocity of the unit
-nearby_units: List of (position, velocity) tuples (optional, if not provided uses spatial partition)
-all_units: List of all (position, velocity) tuples for spatial partitioning optimization
+        Args:
+            unit_position: Current position of the unit
+            unit_velocity: Current velocity of the unit
+            nearby_units: List of (position, velocity) tuples (optional, if not provided uses spatial partition)
+            all_units: List of all (position, velocity) tuples for spatial partitioning optimization
 
-Returns:
-Desired velocity vector (Point2)
-    """
+        Returns:
+            Desired velocity vector (Point2)
+        """
         # OPTIMIZATION: Use spatial partitioning if available and all_units provided
         if all_units is not None and nearby_units is None:
             max_radius = max(
