@@ -21,6 +21,13 @@ except ImportError:
 def get_learned_parameter(parameter_name: str, default_value: Any = None) -> Any:
         return default_value
 
+try:
+    from local_training.economy_combat_balancer import EconomyCombatBalancer
+    BALANCER_AVAILABLE = True
+except ImportError:
+    BALANCER_AVAILABLE = False
+    EconomyCombatBalancer = None
+
 
 class ProductionResilience:
 
@@ -61,6 +68,16 @@ class ProductionResilience:
 def __init__(self, bot: Any) -> None:
         pass
     self.bot = bot
+
+    # Initialize Economy-Combat Balancer
+    if BALANCER_AVAILABLE and EconomyCombatBalancer:
+        try:
+            self.balancer = EconomyCombatBalancer(bot)
+        except Exception as e:
+            print(f"[WARNING] Failed to initialize EconomyCombatBalancer: {e}")
+            self.balancer = None
+    else:
+        self.balancer = None
 
     # Shared build reservation map to block duplicate construction across
     # managers
@@ -239,98 +256,102 @@ def _cleanup_build_reservations(self) -> None:
         print(f"[ERROR] Failed to emergency-build Spawning Pool: {e}")
     return  # Exit and wait for Spawning Pool to complete
 
-    # If Spawning Pool is ready, force Zergling production
+    # If Spawning Pool is ready, use balance system to decide drone vs army
     if spawning_pools_ready.exists:
-        # IMPROVED: Force ALL available larvae to produce Zerglings immediately
-    zergling_produced = 0
-    larvae_list = list(larvae) if larvae.exists else []
+        # Use Economy-Combat Balancer to decide production
+        if self.balancer:
+            await self._balanced_production(larvae)
+        else:
+            # Fallback: Original emergency logic
+            await self._emergency_zergling_production(larvae)
+        return  # Exit after production decision
 
-    # IMPROVED: ´õ Àû±ØÀûÀ¸·Î ¸ðµç ¶ó¹Ù »ç¿ë
-    for larva in larvae_list:
-        if not hasattr(larva, 'is_ready') or not larva.is_ready:
-            pass
-    continue
-
-    # IMPROVED: ÀÎ±¸¼ö Ã¼Å©¸¦ ¸ÕÀúÇÏ¿© ´ë±ºÁÖ »ý»ê ÇÊ¿ä ½Ã ¾Ë¸²
-    if b.supply_left < 1:
-        # ÀÎ±¸¼ö ºÎÁ· - ´ë±ºÁÖ »ý»ê ÇÊ¿ä
-    if b.can_afford(UnitTypeId.OVERLORD) and larvae_list:
-        pass
-    try:
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    if await self._safe_train(larvae_list[0], UnitTypeId.OVERLORD):
-        print(
-            f"[EXTREME EMERGENCY] Produced Overlord for supply (minerals: {int(b.minerals)})")
-    return
-    except Exception:
-        pass
-    pass
-    break  # ÀÎ±¸¼ö ºÎÁ·ÇÏ¸é Áß´Ü
-
-    if b.can_afford(UnitTypeId.ZERGLING):
-        pass
-    try:
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    pass
-
-    except Exception:
-        pass
-        pass
-    if await self._safe_train(larva, UnitTypeId.ZERGLING):
-        pass
-    zergling_produced += 1
-    except Exception as e:
-        pass
-    if b.iteration % 50 == 0:
-        print(f"[ERROR] Failed to force Zergling: {e}")
-    break  # ÇÑ ¸¶¸® ½ÇÆÐÇÏ¸é Áß´Ü
-    else:
-        # ÀÚ¿ø ºÎÁ·ÇÏ¸é Áß´Ü
-    break
-
-    if zergling_produced > 0:
-        print(
-            f"[EXTREME EMERGENCY] Produced {zergling_produced} Zerglings (M:{int(b.minerals)}, larvae:{len(larvae_list)})")
-    elif b.iteration % 50 == 0:
-        print(
-            f"[WARNING] No Zerglings produced: larvae={len(larvae_list)}, minerals={int(b.minerals)}, supply={b.supply_left}, can_afford={b.can_afford(UnitTypeId.ZERGLING)}")
-
-    if zergling_produced > 0:
-        pass
-    return  # Exit after emergency production
+    async def _balanced_production(self, larvae) -> None:
+        """
+        Use Economy-Combat Balancer to decide between drones and army units
+        """
+        b = self.bot
+        if not self.balancer:
+            return
+        
+        larvae_list = list(larvae) if larvae.exists else []
+        if not larvae_list:
+            return
+        
+        # Get current counts
+        drones = b.units(UnitTypeId.DRONE) if hasattr(b, "units") else []
+        drone_count = drones.amount if hasattr(drones, "amount") else len(list(drones))
+        
+        # Get balance state
+        state = self.balancer.get_balance_state()
+        target_drones = self.balancer.get_target_drone_count()
+        
+        # Log balance decision periodically
+        if b.iteration % 100 == 0:
+            print(f"[BALANCE] Mode: {state.mode.value}, Drone: {state.drone_ratio:.1%}, "
+                  f"Army: {state.army_ratio:.1%}, Threat: {state.threat_level:.1%}, "
+                  f"Economy: {state.economy_score:.1%}, Current: {drone_count}, Target: {target_drones}")
+        
+        drones_produced = 0
+        army_produced = 0
+        
+        # Process each larva based on balance ratio
+        for larva in larvae_list:
+            if not hasattr(larva, 'is_ready') or not larva.is_ready:
+                continue
+            
+            # Check supply first
+            if b.supply_left < 1:
+                if b.can_afford(UnitTypeId.OVERLORD):
+                    if await self._safe_train(larva, UnitTypeId.OVERLORD):
+                        print(f"[BALANCE] Produced Overlord for supply")
+                    break
+                continue
+            
+            # Decide: drone or army?
+            should_make_drone = self.balancer.should_make_drone()
+            
+            if should_make_drone and drone_count < target_drones:
+                # Make drone
+                if b.can_afford(UnitTypeId.DRONE):
+                    if await self._safe_train(larva, UnitTypeId.DRONE):
+                        drones_produced += 1
+                        drone_count += 1
+                        continue
+            
+            # Make army unit (Zergling)
+            if b.can_afford(UnitTypeId.ZERGLING):
+                if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                    army_produced += 1
+        
+        if drones_produced > 0 or army_produced > 0:
+            if b.iteration % 50 == 0:
+                print(f"[BALANCE] Produced {drones_produced} drones, {army_produced} army units "
+                      f"(Total drones: {drone_count}, Target: {target_drones})")
+    
+    async def _emergency_zergling_production(self, larvae) -> None:
+        """Fallback emergency zergling production (original logic)"""
+        b = self.bot
+        zergling_produced = 0
+        larvae_list = list(larvae) if larvae.exists else []
+        
+        for larva in larvae_list:
+            if not hasattr(larva, 'is_ready') or not larva.is_ready:
+                continue
+            
+            if b.supply_left < 1:
+                if b.can_afford(UnitTypeId.OVERLORD) and larvae_list:
+                    if await self._safe_train(larvae_list[0], UnitTypeId.OVERLORD):
+                        print(f"[EMERGENCY] Produced Overlord for supply")
+                    break
+            
+            if b.can_afford(UnitTypeId.ZERGLING):
+                if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                    zergling_produced += 1
+                    break
+        
+        if zergling_produced > 0:
+            print(f"[EMERGENCY] Produced {zergling_produced} Zerglings")
 
     # Gas extraction: Build at pro baseline supply (17-18)
     supply_used = getattr(b, "supply_used", 0)
