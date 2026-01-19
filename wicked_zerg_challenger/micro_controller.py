@@ -267,7 +267,6 @@ def __init__(self, config: SwarmConfig = None, use_kd_tree: bool = False):
             self._use_spatial_partition = False
             self._use_kd_tree = False
 
-
     def calculate_boids_velocity(
         self,
         unit_position: Point2,

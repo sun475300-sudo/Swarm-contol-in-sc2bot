@@ -10,7 +10,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Union, Any
 
 def check_processes():
     """Check running processes"""
@@ -21,7 +21,9 @@ def check_processes():
             try:
                 proc_info = proc.info
                 name = proc_info['name'].lower()
-                cmdline_list = proc_info.get('cmdline', [])
+                cmdline_list: List[str] = proc_info.get('cmdline', []) or []
+                # Ensure all elements are strings
+                cmdline_list = [str(c) for c in cmdline_list if c is not None]
                 cmdline = ' '.join(cmdline_list) if cmdline_list else ''
                 
                 # Check Python processes

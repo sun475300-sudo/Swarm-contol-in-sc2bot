@@ -5,13 +5,14 @@ Build Order Learner and Executor
 
 This module provides:
 1. BuildOrderLearner: Loads and manages build orders from JSON files
-from typing import Dict, List, Optional, Tuple, Set, Any, Union
 2. BuildOrderExecutor: Executes build orders in-game with adaptive logic
 """
 
 import json
 import re
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Set, Any, Union
+from dataclasses import dataclass
 
 try:
     SC2_AVAILABLE = True

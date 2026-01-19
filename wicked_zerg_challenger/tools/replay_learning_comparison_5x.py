@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 
 def run_command(cmd: list, cwd: Path, description: str, timeout: int = 1800) -> Tuple[bool, str]:
     """Run a command and return success status and output"""
