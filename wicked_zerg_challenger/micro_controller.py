@@ -288,8 +288,8 @@ all_units: List of all (position, velocity) tuples for spatial partitioning opti
 Returns:
 Desired velocity vector (Point2)
     """
-    # OPTIMIZATION: Use spatial partitioning if available and all_units provided
-    if all_units is not None and nearby_units is None:
+        # OPTIMIZATION: Use spatial partitioning if available and all_units provided
+        if all_units is not None and nearby_units is None:
             max_radius = max(
                 self.config.separation_distance,
                 self.config.cohesion_radius,
