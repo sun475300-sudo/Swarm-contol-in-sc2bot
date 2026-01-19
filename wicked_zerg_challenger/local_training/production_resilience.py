@@ -35,6 +35,14 @@ except ImportError:
     RESOURCE_MANAGER_AVAILABLE = False
     ResourceManager = None
 
+try:
+    from local_training.opening_strategy_manager import OpeningStrategyManager, OpeningStrategy
+    STRATEGY_MANAGER_AVAILABLE = True
+except ImportError:
+    STRATEGY_MANAGER_AVAILABLE = False
+    OpeningStrategyManager = None
+    OpeningStrategy = None
+
 
 class ProductionResilience:
 
@@ -95,6 +103,17 @@ def __init__(self, bot: Any) -> None:
             self.resource_manager = None
     else:
         self.resource_manager = None
+
+    # Initialize Opening Strategy Manager
+    if STRATEGY_MANAGER_AVAILABLE and OpeningStrategyManager:
+        try:
+            # Select random strategy for variety
+            self.strategy_manager = OpeningStrategyManager(bot, OpeningStrategy.RANDOM if OpeningStrategy else None)
+        except Exception as e:
+            print(f"[WARNING] Failed to initialize OpeningStrategyManager: {e}")
+            self.strategy_manager = None
+    else:
+        self.strategy_manager = None
 
     # Shared build reservation map to block duplicate construction across
     # managers
@@ -334,7 +353,15 @@ def _cleanup_build_reservations(self) -> None:
                 continue
             
             # Decide: drone or army?
-            should_make_drone = self.balancer.should_make_drone()
+            # Consider strategy preference
+            if self.strategy_manager and self.strategy_manager.should_prioritize_drones():
+                # Strategy prefers drones, but still check balancer
+                should_make_drone = self.balancer.should_make_drone() or (drone_count < target_drones)
+            elif self.strategy_manager and self.strategy_manager.should_early_aggression():
+                # Strategy prefers early army
+                should_make_drone = False
+            else:
+                should_make_drone = self.balancer.should_make_drone()
             
             if should_make_drone and drone_count < target_drones:
                 # Make drone
@@ -407,8 +434,11 @@ def _cleanup_build_reservations(self) -> None:
     except Exception:
         pass
 
-    # Spawning Pool: Build at pro baseline supply (17)
-    spawning_pool_supply = get_learned_parameter("spawning_pool_supply", 17.0)
+    # Spawning Pool: Use strategy-specific timing or learned parameter
+    if self.strategy_manager:
+        spawning_pool_supply = self.strategy_manager.get_pool_supply()
+    else:
+        spawning_pool_supply = get_learned_parameter("spawning_pool_supply", 17.0)
     if (
         not b.units(UnitTypeId.SPAWNINGPOOL).exists
         and b.already_pending(UnitTypeId.SPAWNINGPOOL) == 0
@@ -434,9 +464,13 @@ def _cleanup_build_reservations(self) -> None:
                     except Exception as e:
                         if b.iteration % 100 == 0:
                             print(f"[TECH BUILD] [{int(b.time)}s] Failed to build Spawning Pool: {e}")
-    # Natural Expansion: Build at pro baseline supply (30-32)
-    natural_expansion_supply = get_learned_parameter("natural_expansion_supply", 30.0)
-    natural_expansion_supply_max = natural_expansion_supply + 2.0  # Allow up to 32 (30-32 range)
+    # Natural Expansion: Use strategy-specific timing or learned parameter
+    if self.strategy_manager:
+        natural_expansion_supply = self.strategy_manager.get_expansion_supply()
+        natural_expansion_supply_max = natural_expansion_supply + 2.0 if natural_expansion_supply > 0 else 0.0
+    else:
+        natural_expansion_supply = get_learned_parameter("natural_expansion_supply", 30.0)
+        natural_expansion_supply_max = natural_expansion_supply + 2.0  # Allow up to 32 (30-32 range)
     
     larvae = b.units(UnitTypeId.LARVA)
     if not larvae.exists:
