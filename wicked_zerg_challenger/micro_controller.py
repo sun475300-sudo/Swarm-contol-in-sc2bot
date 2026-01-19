@@ -290,51 +290,51 @@ Desired velocity vector (Point2)
     """
     # OPTIMIZATION: Use spatial partitioning if available and all_units provided
     if all_units is not None and nearby_units is None:
-        max_radius = max(
-            self.config.separation_distance,
-            self.config.cohesion_radius,
-            self.config.alignment_radius or 10.0
-        )
+            max_radius = max(
+                self.config.separation_distance,
+                self.config.cohesion_radius,
+                self.config.alignment_radius or 10.0
+            )
+            
+            # Option 1: K-D Tree (O(N log N) for sparse distributions)
+            if self._use_kd_tree and self.kd_tree:
+                self.kd_tree.build(all_units)
+                nearby_units = self.kd_tree.query_radius(unit_position, max_radius)
+            # Option 2: Grid-based (O(N) for dense distributions)
+            elif self._use_spatial_partition and self.spatial_partition:
+                self.spatial_partition.add_units(all_units)
+                nearby_units = self.spatial_partition.query_nearby(unit_position, max_radius)
         
-        # Option 1: K-D Tree (O(N log N) for sparse distributions)
-        if self._use_kd_tree and self.kd_tree:
-            self.kd_tree.build(all_units)
-            nearby_units = self.kd_tree.query_radius(unit_position, max_radius)
-        # Option 2: Grid-based (O(N) for dense distributions)
-        elif self._use_spatial_partition and self.spatial_partition:
-            self.spatial_partition.add_units(all_units)
-            nearby_units = self.spatial_partition.query_nearby(unit_position, max_radius)
-    
-    # Fallback to provided nearby_units if spatial partition not available
-    if nearby_units is None:
-        nearby_units = []
-    
-    if not nearby_units:
-        return unit_velocity
+        # Fallback to provided nearby_units if spatial partition not available
+        if nearby_units is None:
+            nearby_units = []
+        
+        if not nearby_units:
+            return unit_velocity
 
-    # Separation: Steer away from nearby units
-    separation = self._calculate_separation(unit_position, nearby_units)
+        # Separation: Steer away from nearby units
+        separation = self._calculate_separation(unit_position, nearby_units)
 
-    # Alignment: Steer toward average velocity of nearby units
-    alignment = self._calculate_alignment(unit_velocity, nearby_units)
+        # Alignment: Steer toward average velocity of nearby units
+        alignment = self._calculate_alignment(unit_velocity, nearby_units)
 
-# Cohesion: Steer toward average position of nearby units
-cohesion = self._calculate_cohesion(unit_position, nearby_units)
+        # Cohesion: Steer toward average position of nearby units
+        cohesion = self._calculate_cohesion(unit_position, nearby_units)
 
-# Combine behaviors with weights
-desired_velocity = Point2((
-    unit_velocity.x
-    + separation.x * self.config.separation_weight
-    + alignment.x * self.config.alignment_weight
-    + cohesion.x * self.config.cohesion_weight,
-    unit_velocity.y
-    + separation.y * self.config.separation_weight
-    + alignment.y * self.config.alignment_weight
-    + cohesion.y * self.config.cohesion_weight
-))
+        # Combine behaviors with weights
+        desired_velocity = Point2((
+            unit_velocity.x
+            + separation.x * self.config.separation_weight
+            + alignment.x * self.config.alignment_weight
+            + cohesion.x * self.config.cohesion_weight,
+            unit_velocity.y
+            + separation.y * self.config.separation_weight
+            + alignment.y * self.config.alignment_weight
+            + cohesion.y * self.config.cohesion_weight
+        ))
 
-# Limit speed
-return _normalize(desired_velocity, self.config.max_speed)
+        # Limit speed
+        return _normalize(desired_velocity, self.config.max_speed)
 
 
     def _calculate_separation(
@@ -405,16 +405,15 @@ return _normalize(desired_velocity, self.config.max_speed)
             if _distance(unit_position, neighbor_pos) < self.config.cohesion_radius
         ]
 
-if not neighbor_positions:
-    pass
-return _zero_point()
+        if not neighbor_positions:
+            return _zero_point()
 
-avg_position = _average_points(neighbor_positions)
-# Steer toward average position
-return Point2((
-    avg_position.x - unit_position.x,
-    avg_position.y - unit_position.y
-))
+        avg_position = _average_points(neighbor_positions)
+        # Steer toward average position
+        return Point2((
+            avg_position.x - unit_position.x,
+            avg_position.y - unit_position.y
+        ))
 
 
 class MicroController:
