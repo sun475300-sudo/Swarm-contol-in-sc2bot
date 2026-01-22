@@ -12,7 +12,12 @@
       "Bash(for:*)",
       "Bash(xxd:*)",
       "Bash(ls:*)",
-      "Bash(do echo \"=== $f ===\")"
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(ping:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

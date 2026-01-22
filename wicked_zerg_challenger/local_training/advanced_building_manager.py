@@ -390,10 +390,16 @@ class AdvancedBuildingManager:
             return {}
         
         results = {}
-        
+
+        # SPAM FIX: Cooldown for aggressive tech building
+        game_time = getattr(self.bot, "time", 0)
+        last_aggressive_tech = getattr(self, "_last_aggressive_tech_time", 0)
+        if game_time - last_aggressive_tech < 30:  # 30 second cooldown
+            return results
+
         # 자원이 많이 적체되었을 때 건설할 테크 건물 우선순위
         tech_buildings = []
-        
+
         # 가스가 많이 적체되었을 때: 고테크 건물 우선
         if gas_surplus > 200:
             # 가시지옥 굴 (Lurker Den) - Check exists AND pending
@@ -435,6 +441,7 @@ class AdvancedBuildingManager:
                         
                         if result:
                             results[tech_type] = True
+                            self._last_aggressive_tech_time = game_time
                             print(f"[AGGRESSIVE TECH] Built {tech_type} "
                                   f"(surplus: M:{int(mineral_surplus)}+ G:{int(gas_surplus)}+)")
                             # 한 번에 하나씩만 건설

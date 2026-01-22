@@ -73,6 +73,13 @@ class CombatManager:
         # Task cooldowns
         self._task_cooldowns = {}
 
+        # === RALLY POINT SYSTEM ===
+        # Rally point for army units to gather before attacking
+        self._rally_point = None
+        self._last_rally_update = 0
+        self._rally_update_interval = 30  # Update rally point every 30 seconds
+        self._min_army_for_attack = 15  # Minimum supply before attacking
+
         # 매니저 초기화
         self._initialize_managers()
     
@@ -396,14 +403,29 @@ class CombatManager:
         """
         선제 공격 로직 - 적 유닛이 보이지 않을 때 적 기지 공격
 
+        Uses rally point system:
+        1. Army gathers at rally point until minimum supply reached
+        2. Once enough army, attack enemy base together
+        3. Rally point is between our natural and center of map
+
         Args:
             army_units: 아군 유닛들
             iteration: 현재 반복 횟수
         """
         try:
-            # 최소 군대 서플라이 확인 (30 이상이면 공격)
+            # Update rally point periodically
+            game_time = getattr(self.bot, "time", 0)
+            if game_time - self._last_rally_update > self._rally_update_interval:
+                self._update_rally_point()
+                self._last_rally_update = game_time
+
+            # 최소 군대 서플라이 확인
             army_supply = sum(getattr(u, "supply_cost", 1) for u in army_units)
-            if army_supply < 30:
+
+            # If army is small, gather at rally point
+            if army_supply < self._min_army_for_attack:
+                if self._rally_point:
+                    await self._gather_at_rally_point(army_units, iteration)
                 return
 
             # 적 시작 위치로 공격
@@ -412,6 +434,11 @@ class CombatManager:
                 enemy_start = self.bot.enemy_start_locations[0]
 
             if not enemy_start:
+                return
+
+            # Check if army is gathered (most units near rally point)
+            if self._rally_point and not self._is_army_gathered(army_units):
+                await self._gather_at_rally_point(army_units, iteration)
                 return
 
             # 매 50 프레임마다 공격 명령 갱신
@@ -434,6 +461,87 @@ class CombatManager:
         except Exception as e:
             if iteration % 200 == 0:
                 print(f"[WARNING] Offensive attack error: {e}")
+
+    def _update_rally_point(self):
+        """
+        Update the rally point for army gathering.
+
+        Rally point is positioned:
+        - Between our natural expansion and map center
+        - On our side of the map for safety
+        - Away from enemy attack routes
+        """
+        if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.exists:
+            return
+
+        try:
+            our_base = self.bot.townhalls.first.position
+            map_center = self.bot.game_info.map_center if hasattr(self.bot, "game_info") else our_base
+
+            # Rally point is 30% of the way from our base to map center
+            rally_x = our_base.x + (map_center.x - our_base.x) * 0.3
+            rally_y = our_base.y + (map_center.y - our_base.y) * 0.3
+
+            if hasattr(self.bot, "Point2"):
+                self._rally_point = self.bot.Point2((rally_x, rally_y))
+            else:
+                from sc2.position import Point2
+                self._rally_point = Point2((rally_x, rally_y))
+
+        except Exception:
+            # Fallback to main base position
+            if hasattr(self.bot, "start_location"):
+                self._rally_point = self.bot.start_location
+
+    async def _gather_at_rally_point(self, army_units, iteration: int):
+        """
+        Gather army units at the rally point.
+
+        Only sends idle or wandering units to rally point.
+        """
+        if not self._rally_point:
+            return
+
+        if iteration % 22 != 0:  # Only update every ~1 second
+            return
+
+        for unit in army_units:
+            try:
+                # Only send idle units or units far from rally point
+                is_idle = getattr(unit, "is_idle", False)
+                distance_to_rally = unit.distance_to(self._rally_point)
+
+                if is_idle and distance_to_rally > 5:
+                    await self.bot.do(unit.move(self._rally_point))
+                elif distance_to_rally > 20:  # Very far from rally
+                    await self.bot.do(unit.move(self._rally_point))
+            except Exception:
+                continue
+
+    def _is_army_gathered(self, army_units) -> bool:
+        """
+        Check if army is gathered at rally point.
+
+        Returns True if at least 70% of units are near rally point.
+        """
+        if not self._rally_point or not army_units:
+            return True  # No rally point = consider gathered
+
+        near_count = 0
+        total = 0
+
+        for unit in army_units:
+            total += 1
+            try:
+                if unit.distance_to(self._rally_point) < 15:
+                    near_count += 1
+            except Exception:
+                continue
+
+        if total == 0:
+            return True
+
+        return (near_count / total) >= 0.7
 
     def _filter_army_units(self, units):
         return self._filter_units_by_type(

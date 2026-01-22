@@ -68,33 +68,63 @@ class EvolutionUpgradeManager:
         """
         Get upgrade priority based on:
         1. Game time (early = armor for survivability)
-        2. Unit composition (melee vs ranged)
+        2. Unit composition (melee vs ranged vs air)
         3. Enemy race and units
         4. Specific threats (siege tanks, banelings, etc.)
+        5. Actual unit counts (prioritize upgrades for units we have)
         """
         composition = self._get_unit_composition()
         enemy_race = self._normalize_enemy_race(getattr(self.bot, "enemy_race", ""))
         enemy_units = getattr(self.bot, "enemy_units", [])
         game_time = getattr(self.bot, "time", 0)
 
-        total = max(1, composition["melee"] + composition["ranged"])
+        # Get actual unit counts
+        zergling_count = composition.get("zergling", 0)
+        roach_count = composition.get("roach", 0)
+        hydra_count = composition.get("hydralisk", 0)
+        mutalisk_count = composition.get("mutalisk", 0)
+
+        total = max(1, composition["melee"] + composition["ranged"] + mutalisk_count)
         melee_ratio = composition["melee"] / total
         ranged_ratio = composition["ranged"] / total
-        zergling_ratio = composition.get("zergling", 0) / total
-        hydra_ratio = composition.get("hydralisk", 0) / total
-        roach_ratio = composition.get("roach", 0) / total
+        zergling_ratio = zergling_count / total
+        hydra_ratio = hydra_count / total
+        roach_ratio = roach_count / total
+        mutalisk_ratio = mutalisk_count / total
 
         melee_bias = melee_ratio >= 0.7 or zergling_ratio >= 0.7
         ranged_bias = ranged_ratio >= 0.6 or hydra_ratio >= 0.45 or roach_ratio >= 0.5
+        air_bias = mutalisk_ratio >= 0.3 or mutalisk_count >= 8
 
-        # Default priorities based on composition
+        # === DYNAMIC PRIORITY BASED ON ACTUAL UNITS ===
+        # Prioritize upgrades for units we actually have
         priorities = []
-        if melee_bias:
-            priorities = ["melee", "armor", "missile"]
-        elif ranged_bias:
-            priorities = ["missile", "armor", "melee"]
-        else:
-            priorities = ["armor", "melee", "missile"]
+
+        # Count-based priority (upgrade what we use most)
+        if zergling_count >= 20:
+            priorities.append("melee")
+        if roach_count >= 5 or hydra_count >= 5:
+            priorities.append("missile")
+        if mutalisk_count >= 5:
+            priorities.append("air_attack")
+            priorities.append("air_armor")
+
+        # Fill in missing priorities
+        if "armor" not in priorities:
+            priorities.append("armor")
+        if "melee" not in priorities:
+            priorities.append("melee")
+        if "missile" not in priorities:
+            priorities.append("missile")
+
+        # Default if no units yet
+        if not priorities:
+            if melee_bias:
+                priorities = ["melee", "armor", "missile"]
+            elif ranged_bias:
+                priorities = ["missile", "armor", "melee"]
+            else:
+                priorities = ["armor", "melee", "missile"]
 
         # === SITUATIONAL ADJUSTMENTS ===
 
@@ -105,9 +135,9 @@ class EvolutionUpgradeManager:
         # vs Terran: Armor is crucial against Marines/Marauders
         if "terran" in enemy_race:
             priorities = ["armor"] + [p for p in priorities if p != "armor"]
-            # If they have Siege Tanks, even more armor
-            if self._has_unit(enemy_units, ["SIEGETANK", "SIEGETANKSIEGED"]):
-                priorities = ["armor"] + [p for p in priorities if p != "armor"]
+            # If they have Siege Tanks, air attack becomes valuable
+            if self._has_unit(enemy_units, ["SIEGETANK", "SIEGETANKSIEGED"]) and mutalisk_count > 0:
+                priorities = ["air_attack"] + [p for p in priorities if p != "air_attack"]
 
         # vs Protoss: Missile for Roaches/Hydras against Stalkers/Immortals
         elif "protoss" in enemy_race:
@@ -140,6 +170,8 @@ class EvolutionUpgradeManager:
             "zergling": 0,
             "hydralisk": 0,
             "roach": 0,
+            "mutalisk": 0,
+            "corruptor": 0,
         }
         if not hasattr(self.bot, "units"):
             return counts
@@ -156,6 +188,11 @@ class EvolutionUpgradeManager:
                     counts["hydralisk"] += 1
                 if unit.type_id == UnitTypeId.ROACH:
                     counts["roach"] += 1
+            elif unit.type_id in self._air_unit_types():
+                if unit.type_id == UnitTypeId.MUTALISK:
+                    counts["mutalisk"] += 1
+                if unit.type_id == UnitTypeId.CORRUPTOR:
+                    counts["corruptor"] += 1
 
         return counts
 
@@ -201,6 +238,17 @@ class EvolutionUpgradeManager:
             UnitTypeId.LURKER,
         ]
 
+    @staticmethod
+    def _air_unit_types() -> List[object]:
+        if not UnitTypeId:
+            return []
+        return [
+            UnitTypeId.MUTALISK,
+            UnitTypeId.CORRUPTOR,
+            UnitTypeId.BROODLORD,
+            UnitTypeId.VIPER,
+        ]
+
     def _next_upgrade(self, lane: str) -> Optional[object]:
         upgrade_paths = {
             "melee": [
@@ -217,6 +265,16 @@ class EvolutionUpgradeManager:
                 getattr(UpgradeId, "ZERGGROUNDARMORSLEVEL1", None),
                 getattr(UpgradeId, "ZERGGROUNDARMORSLEVEL2", None),
                 getattr(UpgradeId, "ZERGGROUNDARMORSLEVEL3", None),
+            ],
+            "air_attack": [
+                getattr(UpgradeId, "ZERGFLYERWEAPONSLEVEL1", None),
+                getattr(UpgradeId, "ZERGFLYERWEAPONSLEVEL2", None),
+                getattr(UpgradeId, "ZERGFLYERWEAPONSLEVEL3", None),
+            ],
+            "air_armor": [
+                getattr(UpgradeId, "ZERGFLYERARMORSLEVEL1", None),
+                getattr(UpgradeId, "ZERGFLYERARMORSLEVEL2", None),
+                getattr(UpgradeId, "ZERGFLYERARMORSLEVEL3", None),
             ],
         }
 

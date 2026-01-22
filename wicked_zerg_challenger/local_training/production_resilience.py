@@ -279,6 +279,10 @@ class ProductionResilience:
         if b.vespene > 1500:
             await self._spend_excess_gas()
 
+        # === MINERAL OVERFLOW PREVENTION: Spend minerals when > 200 ===
+        if b.minerals > 200:
+            await self._spend_excess_minerals()
+
         # === AGGRESSIVE EXPANSION: When minerals > 400, prioritize expansion ===
         # Zerg needs expansions for macro advantage
         if b.minerals > 400 and b.already_pending(UnitTypeId.HATCHERY) == 0:
@@ -1184,17 +1188,8 @@ class ProductionResilience:
                     s for s in b.units(UnitTypeId.SPAWNINGPOOL).structure if s.is_ready]
                 if spawning_pools:
                     await b.build(UnitTypeId.BANELINGNEST, near=spawning_pools[0])
-        roach_warrens = [
-            s for s in b.units(UnitTypeId.ROACHWARREN).structure if s.is_ready]
-        if not roach_warrens and b.already_pending(UnitTypeId.ROACHWARREN) == 0 and b.time > 180 and b.can_afford(UnitTypeId.ROACHWARREN):
-            # CRITICAL: Check for duplicate construction before building
-            if not b.structures(UnitTypeId.ROACHWARREN).exists:
-                if b.townhalls.exists:
-                    townhalls_list = list(b.townhalls)
-                    if townhalls_list:
-                        await b.build(UnitTypeId.ROACHWARREN, near=townhalls_list[0])
-                else:
-                    await b.build(UnitTypeId.ROACHWARREN, near=b.game_info.map_center)
+        # NOTE: Roach Warren building is now handled by _auto_build_tech_structures()
+        # Removed duplicate code to prevent building spam
 
     async def _auto_build_tech_structures(self) -> None:
         """
@@ -1539,15 +1534,8 @@ class ProductionResilience:
                         await b.build(UnitTypeId.HYDRALISKDEN, near=townhalls_list[0])
                 else:
                     await b.build(UnitTypeId.HYDRALISKDEN, near=b.game_info.map_center)
-        roach_warrens = [
-            s for s in b.units(UnitTypeId.ROACHWARREN).structure if s.is_ready]
-        if not roach_warrens and b.already_pending(UnitTypeId.ROACHWARREN) == 0 and b.time > 180 and b.can_afford(UnitTypeId.ROACHWARREN):
-            if b.townhalls.exists:
-                townhalls_list = list(b.townhalls)
-                if townhalls_list:
-                    await b.build(UnitTypeId.ROACHWARREN, near=townhalls_list[0])
-            else:
-                await b.build(UnitTypeId.ROACHWARREN, near=b.game_info.map_center)
+        # NOTE: Roach Warren building is now handled by _auto_build_tech_structures()
+        # Removed duplicate code to prevent building spam
 
     async def build_zerg_counters(self) -> None:
         """Build counter units against Zerg opponents.
@@ -1990,6 +1978,115 @@ class ProductionResilience:
 
         # Priority 4: Build gas-heavy tech buildings if no units produced
         await self._build_gas_heavy_tech()
+
+    async def _spend_excess_minerals(self) -> None:
+        """
+        Spend excess minerals to keep bank below 200.
+
+        Priority for mineral spending:
+        1. Drones (if under saturation)
+        2. Overlords (if supply blocked)
+        3. Zerglings (cheap, fast to produce)
+        4. Queens (inject larvae)
+        5. Expansions (more income)
+        6. Macro hatcheries (more larvae)
+        """
+        b = self.bot
+        minerals = b.minerals
+
+        if minerals <= 200:
+            return
+
+        # Calculate how much to spend
+        excess = minerals - 200
+
+        larvae = b.units(UnitTypeId.LARVA)
+        if not larvae.exists:
+            # No larvae - try to build hatchery or queens
+            await self._spend_minerals_without_larvae()
+            return
+
+        larvae_list = list(larvae.ready) if hasattr(larvae, 'ready') else list(larvae)
+        total_produced = 0
+
+        # Priority 1: Overlords if supply blocked
+        if b.supply_left < 4:
+            for larva in larvae_list[:3]:
+                if b.minerals < 100:
+                    break
+                if b.can_afford(UnitTypeId.OVERLORD):
+                    if await self._safe_train(larva, UnitTypeId.OVERLORD):
+                        total_produced += 1
+                        larvae_list = [l for l in larvae_list if l.tag != larva.tag]
+
+        # Priority 2: Drones if under saturation
+        if b.minerals > 150:
+            drone_count = b.workers.amount if hasattr(b, "workers") else 0
+            base_count = b.townhalls.amount if hasattr(b, "townhalls") else 1
+            target_drones = base_count * 16  # 16 mineral workers per base
+
+            if drone_count < target_drones:
+                drones_to_make = min(5, target_drones - drone_count)
+                for larva in larvae_list[:drones_to_make]:
+                    if b.minerals < 50 or b.supply_left < 1:
+                        break
+                    if b.can_afford(UnitTypeId.DRONE):
+                        if await self._safe_train(larva, UnitTypeId.DRONE):
+                            total_produced += 1
+                            larvae_list = [l for l in larvae_list if l.tag != larva.tag]
+
+        # Priority 3: Zerglings (25 minerals each, very cost-effective)
+        if b.minerals > 200 and b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
+            zerglings_to_make = min(10, (b.minerals - 150) // 25)  # Leave 150 buffer
+            for larva in larvae_list[:zerglings_to_make]:
+                if b.minerals < 50 or b.supply_left < 1:
+                    break
+                if b.can_afford(UnitTypeId.ZERGLING):
+                    if await self._safe_train(larva, UnitTypeId.ZERGLING):
+                        total_produced += 1
+                        larvae_list = [l for l in larvae_list if l.tag != larva.tag]
+
+        if total_produced > 0 and b.iteration % 100 == 0:
+            print(f"[MINERAL SINK] Produced {total_produced} units (M: {int(minerals)} -> {int(b.minerals)})")
+
+    async def _spend_minerals_without_larvae(self) -> None:
+        """Spend minerals when no larvae available."""
+        b = self.bot
+
+        if b.minerals <= 200:
+            return
+
+        # Build Queens (150 minerals each, provides larvae inject)
+        queen_count = b.units(UnitTypeId.QUEEN).amount if hasattr(b, "units") else 0
+        base_count = b.townhalls.amount if hasattr(b, "townhalls") else 1
+
+        if queen_count < base_count and b.minerals >= 150:
+            idle_hatcheries = b.townhalls.ready.idle
+            if idle_hatcheries.exists:
+                for hatch in idle_hatcheries:
+                    if b.can_afford(UnitTypeId.QUEEN):
+                        try:
+                            await b.do(hatch.train(UnitTypeId.QUEEN))
+                            return
+                        except Exception:
+                            pass
+
+        # Build expansion if minerals > 300
+        if b.minerals > 300 and b.already_pending(UnitTypeId.HATCHERY) == 0:
+            try:
+                if await self._try_expand():
+                    return
+            except Exception:
+                pass
+
+        # Build macro hatchery if minerals > 400
+        if b.minerals > 400 and b.townhalls.exists:
+            # Check if we don't have too many hatcheries already
+            if b.townhalls.amount < 5:
+                try:
+                    await b.build(UnitTypeId.HATCHERY, near=b.townhalls.first.position)
+                except Exception:
+                    pass
 
     async def _build_gas_heavy_tech(self) -> None:
         """
