@@ -19,10 +19,74 @@ class UnitFactory:
         self.bot = bot
         self.min_gas_reserve = 100
         self.min_mineral_reserve_for_gas = 150
-        self.gas_unit_ratio_target = 0.35
+        self.gas_unit_ratio_target = 0.35  # 기본값, 동적으로 조정됨
         self.larva_gas_ratio = 0.4
         self.larva_pressure_threshold = 6
         self.max_larva_spend_per_step = 3
+
+        # 종족별 가스 유닛 비율 (Strategy Manager와 연동)
+        self.race_gas_ratios = {
+            "Terran": 0.40,    # 대 테란: 뮤탈/히드라 비중 높음
+            "Protoss": 0.45,   # 대 프로토스: 히드라 비중 매우 높음
+            "Zerg": 0.30,      # 대 저그: 저글링/맹독충 비중 높음
+            "Unknown": 0.35,
+        }
+
+    def _should_save_larva(self) -> bool:
+        """
+        Rogue Tactics의 라바 세이빙 모드 확인.
+
+        맹독충 드랍 등 전술을 위해 라바를 아껴야 하는지 체크합니다.
+
+        Returns:
+            라바를 아껴야 하면 True
+        """
+        # Strategy Manager 체크
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if strategy and hasattr(strategy, "should_save_larva"):
+            if strategy.should_save_larva():
+                return True
+
+        # Rogue Tactics Manager 직접 체크
+        rogue = getattr(self.bot, "rogue_tactics", None)
+        if rogue:
+            if getattr(rogue, "larva_saving_active", False):
+                return True
+            if getattr(rogue, "preparing_baneling_drop", False):
+                return True
+
+        return False
+
+    def _update_gas_ratio_target(self) -> None:
+        """
+        상대 종족에 따라 가스 유닛 비율 동적 조정.
+        """
+        # Strategy Manager에서 종족 정보 가져오기
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if strategy:
+            race = getattr(strategy, "detected_enemy_race", None)
+            if race:
+                race_name = race.value if hasattr(race, "value") else str(race)
+                self.gas_unit_ratio_target = self.race_gas_ratios.get(
+                    race_name, self.race_gas_ratios["Unknown"]
+                )
+                return
+
+        # 직접 종족 확인
+        enemy_race = getattr(self.bot, "enemy_race", None)
+        if enemy_race:
+            race_str = str(enemy_race)
+            for race_name in self.race_gas_ratios:
+                if race_name in race_str:
+                    self.gas_unit_ratio_target = self.race_gas_ratios[race_name]
+                    return
+
+    def _is_emergency_mode(self) -> bool:
+        """Emergency Mode 확인 - 드론 대신 군대 우선"""
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if strategy:
+            return getattr(strategy, "emergency_active", False)
+        return False
 
     async def on_step(self, iteration: int) -> None:
         if not UnitTypeId or not hasattr(self.bot, "larva"):
@@ -34,6 +98,22 @@ class UnitFactory:
 
         if hasattr(self.bot, "supply_left") and self.bot.supply_left <= 0:
             return
+
+        # Rogue Tactics 라바 세이빙 체크
+        if self._should_save_larva():
+            # 라바 세이빙 모드: 최소 라바만 사용 (오버로드 등 필수 유닛만)
+            if iteration % 100 == 0:
+                print("[UNIT_FACTORY] Larva saving mode - minimal production")
+            # 오버로드가 필요하면 생산, 아니면 스킵
+            if self.bot.supply_left < 2 and self.bot.can_afford(UnitTypeId.OVERLORD):
+                try:
+                    await self.bot.do(larva.first.train(UnitTypeId.OVERLORD))
+                except Exception:
+                    pass
+            return
+
+        # 종족별 가스 비율 업데이트
+        self._update_gas_ratio_target()
 
         minerals = getattr(self.bot, "minerals", 0)
         vespene = getattr(self.bot, "vespene", 0)

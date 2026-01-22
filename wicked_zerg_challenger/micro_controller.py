@@ -40,14 +40,16 @@ class BoidsController:
     - Splash threat response
     - Concave formation generation
     - Burrow ability management
+    - K-D Tree / Spatial Grid for O(N log N) proximity queries
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot, use_kd_tree: bool = False):
         """
         Initialize the micro controller with all sub-components.
 
         Args:
             bot: The main bot instance
+            use_kd_tree: True for K-D Tree (sparse), False for Spatial Grid (dense)
         """
         self.bot = bot
 
@@ -68,6 +70,26 @@ class BoidsController:
 
         # Performance: limit units processed per frame
         self.max_units_per_frame = 30
+
+        # Spatial optimization settings
+        self.use_kd_tree = use_kd_tree
+        self._spatial_index = None
+        self._spatial_available = False
+        self._last_spatial_build = 0
+        self._spatial_build_interval = 4  # Rebuild every 4 frames
+
+        # Try to import spatial utilities
+        try:
+            from utils.kd_tree import KDTree, build_unit_kdtree
+            from utils.spatial_partition import SpatialGrid, build_unit_grid
+
+            self._KDTree = KDTree
+            self._build_unit_kdtree = build_unit_kdtree
+            self._SpatialGrid = SpatialGrid
+            self._build_unit_grid = build_unit_grid
+            self._spatial_available = True
+        except ImportError:
+            self._spatial_available = False
 
         # Combat unit types for filtering
         self.combat_unit_types: Set = set()
@@ -106,6 +128,9 @@ class BoidsController:
         units = self._get_combat_units()
         if not units:
             return
+
+        # Build spatial index for optimized proximity queries
+        self._build_spatial_index(units, iteration)
 
         enemy_units = getattr(self.bot, "enemy_units", [])
 
@@ -272,13 +297,64 @@ class BoidsController:
 
         await self._do_actions(actions)
 
+    def _build_spatial_index(self, units, iteration: int) -> None:
+        """
+        Build spatial index for fast proximity queries.
+
+        Args:
+            units: Units to index
+            iteration: Current iteration for caching
+        """
+        if not self._spatial_available:
+            return
+
+        # Only rebuild periodically
+        if iteration - self._last_spatial_build < self._spatial_build_interval:
+            return
+
+        self._last_spatial_build = iteration
+
+        try:
+            if self.use_kd_tree:
+                self._spatial_index = self._build_unit_kdtree(units)
+            else:
+                self._spatial_index = self._build_unit_grid(units, cell_size=6.0)
+        except Exception:
+            self._spatial_index = None
+
     def _nearby_units(self, units, unit, radius: float):
-        """Get units within given radius."""
+        """
+        Get units within given radius using spatial optimization.
+
+        Uses K-D Tree or Spatial Grid if available for O(log N) or O(1) queries
+        instead of O(N) brute force.
+
+        Args:
+            units: All units to search
+            unit: Center unit
+            radius: Search radius
+
+        Returns:
+            List of nearby units
+        """
+        # Try spatial index first (O(log N) or O(1))
+        if self._spatial_index and self._spatial_available:
+            try:
+                pos = (unit.position.x, unit.position.y)
+                results = self._spatial_index.query_radius(pos, radius, exclude_data=unit)
+                # results: List of ((x, y), unit, distance)
+                return [r[1] for r in results if r[1].tag != unit.tag]
+            except Exception:
+                pass  # Fall through to standard methods
+
+        # Try SC2 built-in method (faster than manual iteration)
         if hasattr(units, "closer_than"):
             try:
                 return units.closer_than(radius, unit.position)
             except Exception:
                 pass
+
+        # Fallback: brute force O(N)
         return [
             u for u in units if u.tag != unit.tag and unit.distance_to(u) <= radius
         ]
