@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Queen Manager - production, inject, and creep spread.
+Queen Manager - Unified queen production, injection, and creep control.
 
-Focused on keeping queen output reliable without unnecessary gas checks.
+Consolidated version combining features from original and improved versions:
+- Robust queen production without gas checks (queens cost minerals only)
+- Efficient larva injection with cooldown tracking
+- Aggressive creep spread with dedicated forward queens
+- Better error handling and distance-based reassignment
 """
 
 from typing import Dict, Optional, Set
@@ -10,13 +14,16 @@ from typing import Dict, Optional, Set
 try:
     from sc2.ids.ability_id import AbilityId
     from sc2.ids.unit_typeid import UnitTypeId
-except ImportError:  # Fallbacks for tooling environments
+except ImportError:
 
     class UnitTypeId:
         QUEEN = "QUEEN"
         HATCHERY = "HATCHERY"
         LAIR = "LAIR"
         HIVE = "HIVE"
+        SPAWNINGPOOL = "SPAWNINGPOOL"
+        CREEPTUMOR = "CREEPTUMOR"
+        CREEPTUMORBURROWED = "CREEPTUMORBURROWED"
 
     class AbilityId:
         EFFECT_INJECTLARVA = "EFFECT_INJECTLARVA"
@@ -25,47 +32,83 @@ except ImportError:  # Fallbacks for tooling environments
 
 class QueenManager:
     """
-    Controls queen production and support abilities.
+    Unified queen controller for production and support abilities.
 
     Features:
-    - Auto-inject larva on all hatcheries
+    - Auto-inject larva on all hatcheries with cooldown tracking
     - Dedicated creep queens for aggressive map control
     - Dynamic queen production based on base count
+    - Distance-based queen reassignment for efficiency
+    - Robust error handling with iteration-based logging
     """
 
     def __init__(self, bot):
+        """
+        Initialize queen manager.
+
+        Args:
+            bot: The main bot instance
+        """
         self.bot = bot
+
+        # Injection settings
         self.inject_energy_threshold = 25
+        self.inject_cooldown = 29.0  # Inject ability cooldown
+        self.max_inject_distance = 4.0
+        self.max_queen_travel_distance = 10.0
+
+        # Creep settings
         self.creep_energy_threshold = 25
-        self.creep_spread_cooldown = 20.0  # Reduced from 30 for faster spread
+        self.creep_spread_cooldown = 20.0
+
+        # Queen production
         self.max_queens_per_base = 1
-        self.last_creep_time: Dict[int, float] = {}
-        # Increased creep queen bonus for aggressive creep spread
-        self.creep_queen_bonus = 2  # 2 dedicated creep queens
-        self.inject_assignments: Dict[int, int] = {}
+        self.creep_queen_bonus = 2  # Dedicated creep queens
+
+        # Tracking
+        self.inject_assignments: Dict[int, int] = {}  # hatchery_tag -> queen_tag
+        self.last_inject_time: Dict[int, float] = {}  # hatchery_tag -> time
+        self.last_creep_time: Dict[int, float] = {}  # queen_tag -> time
         self.assigned_queen_tags: Set[int] = set()
-        self.dedicated_creep_queens: Set[int] = set()  # Track dedicated creep queens
+        self.dedicated_creep_queens: Set[int] = set()
 
     async def on_step(self, iteration: int) -> None:
-        """Main queen management loop."""
+        """
+        Main queen management loop.
+
+        Args:
+            iteration: Current game iteration
+        """
         if not hasattr(self.bot, "time"):
             return
 
-        await self._train_queens()
+        try:
+            await self._train_queens(iteration)
 
-        queens = (
-            self.bot.units(UnitTypeId.QUEEN).ready if hasattr(self.bot, "units") else []
-        )
-        hatcheries = self.bot.townhalls.ready if hasattr(self.bot, "townhalls") else []
-        if not queens or not hatcheries:
-            return
+            queens = (
+                self.bot.units(UnitTypeId.QUEEN).ready
+                if hasattr(self.bot, "units")
+                else []
+            )
+            hatcheries = (
+                self.bot.townhalls.ready if hasattr(self.bot, "townhalls") else []
+            )
 
-        self._assign_queen_roles(queens, hatcheries)
-        await self._inject_larva(hatcheries, queens)
-        creep_queens = [q for q in queens if q.tag not in self.assigned_queen_tags]
-        await self._spread_creep(creep_queens)
+            if not queens or not hatcheries:
+                return
 
-    async def _train_queens(self) -> None:
+            self._assign_queen_roles(queens, hatcheries)
+            await self._inject_larva(hatcheries, queens)
+
+            creep_queens = [q for q in queens if q.tag not in self.assigned_queen_tags]
+            await self._spread_creep(creep_queens, iteration)
+
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] Queen manager error: {e}")
+
+    async def _train_queens(self, iteration: int) -> None:
+        """Train queens based on base count and need."""
         if not hasattr(self.bot, "townhalls"):
             return
 
@@ -73,9 +116,18 @@ class QueenManager:
         if not hatcheries:
             return
 
+        # Check spawning pool
+        if hasattr(self.bot, "structures"):
+            pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+            if not pools.exists:
+                return
+
         queens = (
-            self.bot.units(UnitTypeId.QUEEN).ready if hasattr(self.bot, "units") else []
+            self.bot.units(UnitTypeId.QUEEN).ready
+            if hasattr(self.bot, "units")
+            else []
         )
+
         creep_bonus = self.creep_queen_bonus if hatcheries.amount >= 2 else 0
         desired = max(1, hatcheries.amount * self.max_queens_per_base + creep_bonus)
 
@@ -87,33 +139,45 @@ class QueenManager:
             if hasattr(self.bot, "already_pending")
             else 0
         )
+
         for hatch in hatcheries:
             if len(queens) + pending >= desired:
                 break
 
+            # Check if hatchery is idle
+            if hasattr(hatch, "is_idle") and not hatch.is_idle:
+                continue
             if hasattr(hatch, "noqueue") and not hatch.noqueue:
                 continue
 
-            # Queens cost minerals only; no gas gate needed.
-            if not self.bot.can_afford(UnitTypeId.QUEEN):
+            # Queens cost minerals only - no gas check needed
+            if self.bot.minerals < 150:
+                break
+
+            # Check supply
+            if hasattr(self.bot, "supply_left") and self.bot.supply_left < 2:
                 break
 
             try:
-                await self.bot.do(hatch.train(UnitTypeId.QUEEN))
-                pending += 1
-            except Exception:
+                if await self._safe_train(hatch, UnitTypeId.QUEEN):
+                    pending += 1
+            except Exception as e:
+                if iteration % 200 == 0:
+                    print(f"[WARNING] Queen train error: {e}")
                 continue
 
     def _assign_queen_roles(self, queens, hatcheries) -> None:
         """
-        Assign queen roles:
-        - Inject queens (1 per hatchery)
-        - Dedicated creep queens (2 for map control)
+        Assign queen roles - inject queens and dedicated creep queens.
+
+        Priority:
+        1. Inject queens (1 per hatchery)
+        2. Dedicated creep queens for map control
         """
         current_queen_tags = {q.tag for q in queens}
         current_hatch_tags = {h.tag for h in hatcheries}
 
-        # Clean up old assignments
+        # Clean up stale assignments
         self.inject_assignments = {
             hatch_tag: queen_tag
             for hatch_tag, queen_tag in self.inject_assignments.items()
@@ -124,11 +188,24 @@ class QueenManager:
             tag for tag in self.dedicated_creep_queens if tag in current_queen_tags
         }
 
-        # Assign inject queens first (highest priority)
+        # Assign inject queens
         assigned_queens = set(self.inject_assignments.values())
         for hatch in hatcheries:
             if hatch.tag in self.inject_assignments:
-                continue
+                # Check if assigned queen is too far
+                queen_tag = self.inject_assignments[hatch.tag]
+                queen = self._find_queen_by_tag(queens, queen_tag)
+                if queen:
+                    try:
+                        dist = queen.distance_to(hatch.position)
+                        if dist > self.max_queen_travel_distance:
+                            # Reassign if too far
+                            del self.inject_assignments[hatch.tag]
+                            assigned_queens.discard(queen_tag)
+                        else:
+                            continue
+                    except Exception:
+                        continue
 
             candidate = self._find_closest_queen(
                 hatch.position, queens, assigned_queens
@@ -137,11 +214,10 @@ class QueenManager:
                 self.inject_assignments[hatch.tag] = candidate.tag
                 assigned_queens.add(candidate.tag)
 
-        # Assign dedicated creep queens (secondary priority)
+        # Assign dedicated creep queens
         unassigned = [q for q in queens if q.tag not in assigned_queens]
         target_creep_queens = min(self.creep_queen_bonus, len(unassigned))
 
-        # Prefer queens near the front line for creep spreading
         if target_creep_queens > 0 and hasattr(self.bot, "enemy_start_locations"):
             enemy_start = (
                 self.bot.enemy_start_locations[0]
@@ -153,9 +229,11 @@ class QueenManager:
                 # Sort by distance to enemy (closer = better for creep)
                 unassigned_sorted = sorted(
                     unassigned,
-                    key=lambda q: q.position.distance_to(enemy_start)
-                    if hasattr(q, "position")
-                    else 999,
+                    key=lambda q: (
+                        q.position.distance_to(enemy_start)
+                        if hasattr(q, "position")
+                        else 999
+                    ),
                 )
 
                 for queen in unassigned_sorted[:target_creep_queens]:
@@ -164,36 +242,42 @@ class QueenManager:
 
         self.assigned_queen_tags = assigned_queens
 
-    @staticmethod
-    def _find_closest_queen(position, queens, excluded_tags: Set[int]):
-        candidates = [q for q in queens if q.tag not in excluded_tags]
-        if not candidates:
-            return None
-        try:
-            return min(candidates, key=lambda q: q.distance_to(position))
-        except Exception:
-            return candidates[0]
-
-    @staticmethod
-    def _find_queen_by_tag(queens, queen_tag: Optional[int]):
-        if queen_tag is None:
-            return None
-        for queen in queens:
-            if queen.tag == queen_tag:
-                return queen
-        return None
-
     async def _inject_larva(self, hatcheries, queens) -> None:
+        """
+        Inject larva on hatcheries with cooldown tracking.
+
+        Improved efficiency with distance checks and reassignment.
+        """
+        current_time = getattr(self.bot, "time", 0.0)
+
         for hatch in hatcheries:
             if not hatch:
                 continue
 
+            hatch_tag = hatch.tag
+
+            # Check inject cooldown
+            last_inject = self.last_inject_time.get(hatch_tag, 0.0)
+            if current_time - last_inject < self.inject_cooldown:
+                continue
+
+            # Find assigned queen
             queen = self._find_queen_by_tag(
-                queens, self.inject_assignments.get(hatch.tag)
+                queens, self.inject_assignments.get(hatch_tag)
             )
+
+            # Fallback to closest queen if no assignment
             if not queen:
                 try:
-                    queen = queens.closest_to(hatch.position)
+                    nearby = [
+                        q
+                        for q in queens
+                        if q.distance_to(hatch.position) < self.max_queen_travel_distance
+                    ]
+                    if nearby:
+                        queen = min(
+                            nearby, key=lambda q: q.distance_to(hatch.position)
+                        )
                 except Exception:
                     continue
 
@@ -203,23 +287,31 @@ class QueenManager:
             if getattr(queen, "energy", 0) < self.inject_energy_threshold:
                 continue
 
-            if hasattr(queen, "distance_to") and queen.distance_to(hatch) > 4:
+            # Check distance
+            try:
+                dist = queen.distance_to(hatch)
+                if dist > self.max_inject_distance:
+                    continue
+            except Exception:
                 continue
 
+            # Execute inject
             try:
                 if hasattr(queen, "can_cast"):
                     if queen.can_cast(AbilityId.EFFECT_INJECTLARVA):
                         await self.bot.do(queen(AbilityId.EFFECT_INJECTLARVA, hatch))
+                        self.last_inject_time[hatch_tag] = current_time
                 else:
                     await self.bot.do(queen(AbilityId.EFFECT_INJECTLARVA, hatch))
+                    self.last_inject_time[hatch_tag] = current_time
             except Exception:
                 continue
 
-    async def _spread_creep(self, creep_queens) -> None:
+    async def _spread_creep(self, creep_queens, iteration: int) -> None:
         """
         Spread creep with dedicated queens.
-        - Dedicated creep queens move toward enemy and spread aggressively
-        - Other queens spread near their bases
+
+        Dedicated creep queens move toward enemy for aggressive spread.
         """
         current_time = getattr(self.bot, "time", 0.0)
         enemy_start = None
@@ -239,7 +331,6 @@ class QueenManager:
             if getattr(queen, "energy", 0) < self.creep_energy_threshold:
                 continue
 
-            # Dedicated creep queens: move forward even when not idle
             is_dedicated = queen.tag in self.dedicated_creep_queens
             if not is_dedicated:
                 if hasattr(queen, "is_idle") and not queen.is_idle:
@@ -261,13 +352,14 @@ class QueenManager:
                 else:
                     await self.bot.do(queen(AbilityId.BUILD_CREEPTUMOR_QUEEN, target))
                     self.last_creep_time[queen.tag] = current_time
-            except Exception:
+            except Exception as e:
+                if iteration % 200 == 0:
+                    print(f"[WARNING] Creep spread error: {e}")
                 continue
 
     async def _position_creep_queen_forward(self, queen, enemy_start) -> None:
-        """Move dedicated creep queen toward enemy base for forward creep spread."""
+        """Move dedicated creep queen toward enemy for forward creep spread."""
         try:
-            # Find farthest creep tumor from our base
             farthest_tumor = None
             max_dist = 0
 
@@ -279,21 +371,23 @@ class QueenManager:
                     return
 
                 for structure in self.bot.structures:
-                    if structure.type_id in {
+                    if hasattr(structure, "type_id") and structure.type_id in {
                         UnitTypeId.CREEPTUMOR,
                         UnitTypeId.CREEPTUMORBURROWED,
                     }:
-                        dist = structure.position.distance_to(enemy_start)
-                        if dist > max_dist:
-                            max_dist = dist
-                            farthest_tumor = structure
+                        try:
+                            dist = structure.position.distance_to(enemy_start)
+                            if dist > max_dist:
+                                max_dist = dist
+                                farthest_tumor = structure
+                        except Exception:
+                            continue
 
             # Move queen toward farthest tumor or enemy base
             if farthest_tumor and hasattr(queen, "distance_to"):
                 if queen.distance_to(farthest_tumor) > 8:
                     await self.bot.do(queen.move(farthest_tumor.position))
             elif hasattr(queen, "distance_to") and queen.distance_to(enemy_start) > 15:
-                # Move closer to enemy if too far
                 forward_pos = queen.position.towards(enemy_start, 10)
                 await self.bot.do(queen.move(forward_pos))
         except Exception:
@@ -323,7 +417,9 @@ class QueenManager:
         if direction_target and candidates:
             best = max(
                 candidates,
-                key=lambda pos: self._score_creep_target(origin, pos, direction_target),
+                key=lambda pos: self._score_creep_target(
+                    origin, pos, direction_target
+                ),
             )
             return best
 
@@ -333,6 +429,7 @@ class QueenManager:
         return origin.towards(origin, 3)
 
     def _collect_creep_targets(self):
+        """Collect potential creep target positions."""
         positions = []
         scout = getattr(self.bot, "scout", None)
         if scout:
@@ -348,6 +445,7 @@ class QueenManager:
 
     @staticmethod
     def _score_creep_target(origin, candidate, direction_target) -> float:
+        """Score a creep target by distance and direction alignment."""
         dx = candidate.x - origin.x
         dy = candidate.y - origin.y
         dist = (dx * dx + dy * dy) ** 0.5
@@ -361,3 +459,40 @@ class QueenManager:
         dir_y /= dir_len
         projection = dx * dir_x + dy * dir_y
         return projection + dist * 0.25
+
+    @staticmethod
+    def _find_closest_queen(position, queens, excluded_tags: Set[int]):
+        """Find closest queen not in excluded set."""
+        candidates = [q for q in queens if q.tag not in excluded_tags]
+        if not candidates:
+            return None
+        try:
+            return min(candidates, key=lambda q: q.distance_to(position))
+        except Exception:
+            return candidates[0] if candidates else None
+
+    @staticmethod
+    def _find_queen_by_tag(queens, queen_tag: Optional[int]):
+        """Find queen by tag."""
+        if queen_tag is None:
+            return None
+        for queen in queens:
+            if queen.tag == queen_tag:
+                return queen
+        return None
+
+    async def _safe_train(self, building, unit_type) -> bool:
+        """Safely train a unit with async/sync handling."""
+        try:
+            result = building.train(unit_type)
+            if hasattr(result, "__await__"):
+                await result
+            else:
+                await self.bot.do(result)
+            return True
+        except Exception:
+            return False
+
+
+# Backward compatibility alias
+QueenManagerImproved = QueenManager

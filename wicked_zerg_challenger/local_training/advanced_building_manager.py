@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Advanced Building Manager - °Ç¼³ ·ÎÁ÷ °íµµÈ­ ¸ğµâ
+Advanced Building Manager - ê±´ì„¤ ë¡œì§ ê³ ë„í™” ëª¨ë“ˆ
 
-°³¼± »çÇ×:
-1. Áßº¹ ÄÚµå ºí·Ï °øÅë ÇÔ¼öÈ­ (°¡½ÃÁö¿Á ±¼, ¸Íµ¶Ãæ º¯ÅÂ ·ÎÁ÷)
-2. ¹æ¾î Å¸¿ö °Ç¼³ À§Ä¡ °³¼± (Àû °ø°İ °æ·Î ºĞ¼®ÇÏ¿© ±æ¸ñ¿¡ °Ç¼³)
-3. ÀÚ¿ø ÀûÃ¼ ½Ã(3000+) Å×Å© °Ç¹° °ø°İÀû °Ç¼³ ·ÎÁ÷
+ê°œì„  ì‚¬í•­:
+1. ì¤‘ë³µ ì½”ë“œ ë¸”ë¡ ê³µí†µ í•¨ìˆ˜í™” (ê°€ì‹œì§€ì˜¥ êµ´, ë§¹ë…ì¶© ë³€íƒœ ë¡œì§)
+2. ë°©ì–´ íƒ€ì›Œ ê±´ì„¤ ìœ„ì¹˜ ê°œì„  (ì  ê³µê²© ê²½ë¡œ ë¶„ì„í•˜ì—¬ ê¸¸ëª©ì— ê±´ì„¤)
+3. ìì› ì ì²´ ì‹œ(3000+) í…Œí¬ ê±´ë¬¼ ê³µê²©ì  ê±´ì„¤ ë¡œì§
 """
 
 from typing import Optional, List, Tuple, Dict, Callable
@@ -41,24 +41,24 @@ except ImportError:
 
 class AdvancedBuildingManager:
     """
-    °íµµÈ­µÈ °Ç¼³ °ü¸®ÀÚ
+    ê³ ë„í™”ëœ ê±´ì„¤ ê´€ë¦¬ì
     
-    ±â´É:
-    1. Áßº¹ ÄÚµå Á¦°Å: °¡½ÃÁö¿Á ±¼, ¸Íµ¶Ãæ º¯ÅÂ ·ÎÁ÷ °øÅëÈ­
-    2. ¹æ¾î °Ç¹° À§Ä¡ ÃÖÀûÈ­: Àû °ø°İ °æ·Î ºĞ¼®
-    3. ÀÚ¿ø ÀûÃ¼ ½Ã Å×Å© °Ç¹° °ø°İÀû °Ç¼³
+    ê¸°ëŠ¥:
+    1. ì¤‘ë³µ ì½”ë“œ ì œê±°: ê°€ì‹œì§€ì˜¥ êµ´, ë§¹ë…ì¶© ë³€íƒœ ë¡œì§ ê³µí†µí™”
+    2. ë°©ì–´ ê±´ë¬¼ ìœ„ì¹˜ ìµœì í™”: ì  ê³µê²© ê²½ë¡œ ë¶„ì„
+    3. ìì› ì ì²´ ì‹œ í…Œí¬ ê±´ë¬¼ ê³µê²©ì  ê±´ì„¤
     """
     
     def __init__(self, bot):
         self.bot = bot
-        # ÀÚ¿ø ÀûÃ¼ ±âÁØ°ª
-        self.resource_surplus_threshold = 3000  # ¹Ì³×¶ö 3000 ÀÌ»ó
-        self.gas_surplus_threshold = 500         # °¡½º 500 ÀÌ»ó
+        # ìì› ì ì²´ ê¸°ì¤€ê°’
+        self.resource_surplus_threshold = 3000  # ë¯¸ë„¤ë„ 3000 ì´ìƒ
+        self.gas_surplus_threshold = 500         # ê°€ìŠ¤ 500 ì´ìƒ
         
-        # ¹æ¾î °Ç¹° °Ç¼³ °ü·Ã
-        self.defense_buildings_cache = {}  # Ä³½ÃµÈ ¹æ¾î °Ç¹° À§Ä¡
+        # ë°©ì–´ ê±´ë¬¼ ê±´ì„¤ ê´€ë ¨
+        self.defense_buildings_cache = {}  # ìºì‹œëœ ë°©ì–´ ê±´ë¬¼ ìœ„ì¹˜
         
-    # ==================== 1. Áßº¹ ÄÚµå Á¦°Å: °øÅë º¯ÅÂ ·ÎÁ÷ ====================
+    # ==================== 1. ì¤‘ë³µ ì½”ë“œ ì œê±°: ê³µí†µ ë³€íƒœ ë¡œì§ ====================
     
     async def morph_unit_safely(
         self,
@@ -70,35 +70,35 @@ class AdvancedBuildingManager:
         max_units: Optional[int] = None
     ) -> int:
         """
-        °øÅë º¯ÅÂ ·ÎÁ÷ (°¡½ÃÁö¿Á, ¸Íµ¶Ãæ µî)
+        ê³µí†µ ë³€íƒœ ë¡œì§ (ê°€ì‹œì§€ì˜¥, ë§¹ë…ì¶© ë“±)
         
         Args:
-            source_units: º¯ÅÂÇÒ À¯´Ö ¸®½ºÆ®
-            target_unit_type: º¯ÅÂÇÒ À¯´Ö Å¸ÀÔ
-            morph_ability: º¯ÅÂ ´É·Â ID
-            required_building: ÇÊ¿äÇÑ °Ç¹° Å¸ÀÔ
-            min_units: ÃÖ¼Ò º¯ÅÂÇÒ À¯´Ö ¼ö
-            max_units: ÃÖ´ë º¯ÅÂÇÒ À¯´Ö ¼ö (NoneÀÌ¸é Á¦ÇÑ ¾øÀ½)
+            source_units: ë³€íƒœí•  ìœ ë‹› ë¦¬ìŠ¤íŠ¸
+            target_unit_type: ë³€íƒœí•  ìœ ë‹› íƒ€ì…
+            morph_ability: ë³€íƒœ ëŠ¥ë ¥ ID
+            required_building: í•„ìš”í•œ ê±´ë¬¼ íƒ€ì…
+            min_units: ìµœì†Œ ë³€íƒœí•  ìœ ë‹› ìˆ˜
+            max_units: ìµœëŒ€ ë³€íƒœí•  ìœ ë‹› ìˆ˜ (Noneì´ë©´ ì œí•œ ì—†ìŒ)
             
         Returns:
-            º¯ÅÂ ¼º°øÇÑ À¯´Ö ¼ö
+            ë³€íƒœ ì„±ê³µí•œ ìœ ë‹› ìˆ˜
         """
         if not source_units:
             return 0
         
-        # ÇÊ¼ö °Ç¹° È®ÀÎ
+        # í•„ìˆ˜ ê±´ë¬¼ í™•ì¸
         if hasattr(self.bot, "structures"):
             required_buildings = self.bot.structures(required_building)
             if not required_buildings.ready.exists:
                 return 0
         
-        # ÀÌ¹Ì º¯ÅÂµÈ À¯´Ö Á¦¿Ü
+        # ì´ë¯¸ ë³€íƒœëœ ìœ ë‹› ì œì™¸
         ready_units = [u for u in source_units if u.is_ready and not u.is_morphing]
         
         if len(ready_units) < min_units:
             return 0
         
-        # ÃÖ´ë º¯ÅÂ ¼ö Á¦ÇÑ
+        # ìµœëŒ€ ë³€íƒœ ìˆ˜ ì œí•œ
         if max_units is not None:
             ready_units = ready_units[:max_units]
         
@@ -106,18 +106,18 @@ class AdvancedBuildingManager:
         
         for unit in ready_units:
             try:
-                # º¯ÅÂ °¡´É ¿©ºÎ È®ÀÎ
+                # ë³€íƒœ ê°€ëŠ¥ ì—¬ë¶€ í™•ì¸
                 if hasattr(unit, 'can_morph') and not unit.can_morph:
                     continue
                 
-                # º¯ÅÂ ½ÇÇà
+                # ë³€íƒœ ì‹¤í–‰
                 result = self.bot.do(unit(morph_ability))
                 if hasattr(result, '__await__'):
                     await result
                 
                 morphed_count += 1
                 
-                # ÇÑ ¹ø¿¡ ÇÏ³ª¾¿¸¸ º¯ÅÂ (¾ÈÁ¤¼º)
+                # í•œ ë²ˆì— í•˜ë‚˜ì”©ë§Œ ë³€íƒœ (ì•ˆì •ì„±)
                 if morphed_count >= min_units:
                     break
                     
@@ -130,13 +130,13 @@ class AdvancedBuildingManager:
     
     async def morph_lurkers(self, max_count: Optional[int] = None) -> int:
         """
-        °¡½ÃÁö¿Á º¯ÅÂ (°øÅë ÇÔ¼ö »ç¿ë)
+        ê°€ì‹œì§€ì˜¥ ë³€íƒœ (ê³µí†µ í•¨ìˆ˜ ì‚¬ìš©)
         
         Args:
-            max_count: ÃÖ´ë º¯ÅÂÇÒ ¼ö (NoneÀÌ¸é Á¦ÇÑ ¾øÀ½)
+            max_count: ìµœëŒ€ ë³€íƒœí•  ìˆ˜ (Noneì´ë©´ ì œí•œ ì—†ìŒ)
             
         Returns:
-            º¯ÅÂ ¼º°øÇÑ °¡½ÃÁö¿Á ¼ö
+            ë³€íƒœ ì„±ê³µí•œ ê°€ì‹œì§€ì˜¥ ìˆ˜
         """
         hydralisks = self.bot.units(UnitTypeId.HYDRA).ready
         if not hydralisks.exists:
@@ -153,13 +153,13 @@ class AdvancedBuildingManager:
     
     async def morph_banelings(self, max_count: Optional[int] = None) -> int:
         """
-        ¸Íµ¶Ãæ º¯ÅÂ (°øÅë ÇÔ¼ö »ç¿ë)
+        ë§¹ë…ì¶© ë³€íƒœ (ê³µí†µ í•¨ìˆ˜ ì‚¬ìš©)
         
         Args:
-            max_count: ÃÖ´ë º¯ÅÂÇÒ ¼ö (NoneÀÌ¸é Á¦ÇÑ ¾øÀ½)
+            max_count: ìµœëŒ€ ë³€íƒœí•  ìˆ˜ (Noneì´ë©´ ì œí•œ ì—†ìŒ)
             
         Returns:
-            º¯ÅÂ ¼º°øÇÑ ¸Íµ¶Ãæ ¼ö
+            ë³€íƒœ ì„±ê³µí•œ ë§¹ë…ì¶© ìˆ˜
         """
         zerglings = self.bot.units(UnitTypeId.ZERGLING).ready
         if not zerglings.exists:
@@ -174,14 +174,14 @@ class AdvancedBuildingManager:
             max_units=max_count
         )
     
-    # ==================== 2. ¹æ¾î °Ç¹° À§Ä¡ ÃÖÀûÈ­ ====================
+    # ==================== 2. ë°©ì–´ ê±´ë¬¼ ìœ„ì¹˜ ìµœì í™” ====================
     
     def analyze_enemy_attack_paths(self) -> List[Point2]:
         """
-        ÀûÀÇ °ø°İ °æ·Î ºĞ¼®
+        ì ì˜ ê³µê²© ê²½ë¡œ ë¶„ì„
         
         Returns:
-            ÀûÀÌ ÀÚÁÖ Áö³ª°¡´Â ±æ¸ñ À§Ä¡ ¸®½ºÆ®
+            ì ì´ ìì£¼ ì§€ë‚˜ê°€ëŠ” ê¸¸ëª© ìœ„ì¹˜ ë¦¬ìŠ¤íŠ¸
         """
         if not hasattr(self.bot, "enemy_units"):
             return []
@@ -190,14 +190,14 @@ class AdvancedBuildingManager:
         if not enemy_units:
             return []
         
-        # º»Áø À§Ä¡
+        # ë³¸ì§„ ìœ„ì¹˜
         if not self.bot.townhalls.exists:
             return []
         
         main_base = self.bot.townhalls.first
         base_position = main_base.position
         
-        # Àû À¯´ÖµéÀÇ À§Ä¡¸¦ ºĞ¼®ÇÏ¿© °ø°İ °æ·Î ÃßÁ¤
+        # ì  ìœ ë‹›ë“¤ì˜ ìœ„ì¹˜ë¥¼ ë¶„ì„í•˜ì—¬ ê³µê²© ê²½ë¡œ ì¶”ì •
         enemy_positions = []
         for enemy in enemy_units:
             if hasattr(enemy, 'position'):
@@ -206,39 +206,39 @@ class AdvancedBuildingManager:
         if not enemy_positions:
             return []
         
-        # Àû À¯´ÖµéÀÌ ¸ğÀÌ´Â ÁöÁ¡ Ã£±â (±æ¸ñ)
+        # ì  ìœ ë‹›ë“¤ì´ ëª¨ì´ëŠ” ì§€ì  ì°¾ê¸° (ê¸¸ëª©)
         chokepoints = self._find_chokepoints(enemy_positions, base_position)
         
         return chokepoints
     
     def _find_chokepoints(self, enemy_positions: List[Point2], base_position: Point2) -> List[Point2]:
         """
-        Àû À¯´ÖµéÀÇ À§Ä¡¸¦ ºĞ¼®ÇÏ¿© ±æ¸ñ Ã£±â
+        ì  ìœ ë‹›ë“¤ì˜ ìœ„ì¹˜ë¥¼ ë¶„ì„í•˜ì—¬ ê¸¸ëª© ì°¾ê¸°
         
         Args:
-            enemy_positions: Àû À¯´Ö À§Ä¡ ¸®½ºÆ®
-            base_position: º»Áø À§Ä¡
+            enemy_positions: ì  ìœ ë‹› ìœ„ì¹˜ ë¦¬ìŠ¤íŠ¸
+            base_position: ë³¸ì§„ ìœ„ì¹˜
             
         Returns:
-            ±æ¸ñ À§Ä¡ ¸®½ºÆ®
+            ê¸¸ëª© ìœ„ì¹˜ ë¦¬ìŠ¤íŠ¸
         """
         if len(enemy_positions) < 2:
             return []
         
-        # Àû À¯´ÖµéÀÇ Áß½ÉÁ¡ °è»ê
+        # ì  ìœ ë‹›ë“¤ì˜ ì¤‘ì‹¬ì  ê³„ì‚°
         center_x = sum(p.x for p in enemy_positions) / len(enemy_positions)
         center_y = sum(p.y for p in enemy_positions) / len(enemy_positions)
         enemy_center = Point2((center_x, center_y))
         
-        # º»Áø°ú Àû Áß½ÉÁ¡ »çÀÌÀÇ Áß°£ ÁöÁ¡µé (±æ¸ñ ÈÄº¸)
+        # ë³¸ì§„ê³¼ ì  ì¤‘ì‹¬ì  ì‚¬ì´ì˜ ì¤‘ê°„ ì§€ì ë“¤ (ê¸¸ëª© í›„ë³´)
         chokepoints = []
         
-        # º»Áø¿¡¼­ Àû Áß½ÉÁ¡ ¹æÇâÀ¸·Î ¿©·¯ ÁöÁ¡ »ı¼º
+        # ë³¸ì§„ì—ì„œ ì  ì¤‘ì‹¬ì  ë°©í–¥ìœ¼ë¡œ ì—¬ëŸ¬ ì§€ì  ìƒì„±
         direction = enemy_center - base_position
         distance = math.sqrt(direction.x**2 + direction.y**2)
         
         if distance > 0:
-            # º»Áø¿¡¼­ 30%, 50%, 70% ÁöÁ¡À» ±æ¸ñ ÈÄº¸·Î
+            # ë³¸ì§„ì—ì„œ 30%, 50%, 70% ì§€ì ì„ ê¸¸ëª© í›„ë³´ë¡œ
             for ratio in [0.3, 0.5, 0.7]:
                 chokepoint = base_position + Point2((
                     direction.x * ratio,
@@ -256,16 +256,16 @@ class AdvancedBuildingManager:
         max_distance_from_base: float = 15.0
     ) -> bool:
         """
-        ±æ¸ñ¿¡ ¹æ¾î °Ç¹° °Ç¼³
+        ê¸¸ëª©ì— ë°©ì–´ ê±´ë¬¼ ê±´ì„¤
         
         Args:
-            building_type: °Ç¼³ÇÒ °Ç¹° Å¸ÀÔ
-            chokepoint: ±æ¸ñ À§Ä¡
-            min_distance_from_base: º»ÁøÀ¸·ÎºÎÅÍ ÃÖ¼Ò °Å¸®
-            max_distance_from_base: º»ÁøÀ¸·ÎºÎÅÍ ÃÖ´ë °Å¸®
+            building_type: ê±´ì„¤í•  ê±´ë¬¼ íƒ€ì…
+            chokepoint: ê¸¸ëª© ìœ„ì¹˜
+            min_distance_from_base: ë³¸ì§„ìœ¼ë¡œë¶€í„° ìµœì†Œ ê±°ë¦¬
+            max_distance_from_base: ë³¸ì§„ìœ¼ë¡œë¶€í„° ìµœëŒ€ ê±°ë¦¬
             
         Returns:
-            °Ç¼³ ¼º°ø ¿©ºÎ
+            ê±´ì„¤ ì„±ê³µ ì—¬ë¶€
         """
         if not self.bot.townhalls.exists:
             return False
@@ -273,7 +273,7 @@ class AdvancedBuildingManager:
         main_base = self.bot.townhalls.first
         base_position = main_base.position
         
-        # ±æ¸ñ°ú º»Áø »çÀÌÀÇ °Å¸® È®ÀÎ
+        # ê¸¸ëª©ê³¼ ë³¸ì§„ ì‚¬ì´ì˜ ê±°ë¦¬ í™•ì¸
         distance = math.sqrt(
             (chokepoint.x - base_position.x)**2 + 
             (chokepoint.y - base_position.y)**2
@@ -282,20 +282,20 @@ class AdvancedBuildingManager:
         if distance < min_distance_from_base or distance > max_distance_from_base:
             return False
         
-        # ÀÌ¹Ì °Ç¼³µÈ °Ç¹° È®ÀÎ
+        # ì´ë¯¸ ê±´ì„¤ëœ ê±´ë¬¼ í™•ì¸
         if hasattr(self.bot, "structures"):
             existing = self.bot.structures(building_type)
             if existing.exists:
-                # ±âÁ¸ °Ç¹°ÀÌ ±æ¸ñ ±ÙÃ³¿¡ ÀÖ´ÂÁö È®ÀÎ
+                # ê¸°ì¡´ ê±´ë¬¼ì´ ê¸¸ëª© ê·¼ì²˜ì— ìˆëŠ”ì§€ í™•ì¸
                 for building in existing:
                     if building.distance_to(chokepoint) < 5.0:
-                        return False  # ÀÌ¹Ì ±ÙÃ³¿¡ ÀÖÀ½
+                        return False  # ì´ë¯¸ ê·¼ì²˜ì— ìˆìŒ
         
-        # °Ç¼³ °¡´É ¿©ºÎ È®ÀÎ
+        # ê±´ì„¤ ê°€ëŠ¥ ì—¬ë¶€ í™•ì¸
         if not self.bot.can_afford(building_type):
             return False
         
-        # °Ç¼³ ½ÇÇà
+        # ê±´ì„¤ ì‹¤í–‰
         try:
             result = await self.bot.build(building_type, near=chokepoint)
             if result:
@@ -310,18 +310,18 @@ class AdvancedBuildingManager:
     
     async def build_defense_buildings_optimally(self) -> Dict[UnitTypeId, int]:
         """
-        Àû °ø°İ °æ·Î¸¦ ºĞ¼®ÇÏ¿© ÃÖÀû À§Ä¡¿¡ ¹æ¾î °Ç¹° °Ç¼³
+        ì  ê³µê²© ê²½ë¡œë¥¼ ë¶„ì„í•˜ì—¬ ìµœì  ìœ„ì¹˜ì— ë°©ì–´ ê±´ë¬¼ ê±´ì„¤
         
         Returns:
-            {building_type: built_count} µñ¼Å³Ê¸®
+            {building_type: built_count} ë”•ì…”ë„ˆë¦¬
         """
         results = {}
         
-        # Àû °ø°İ °æ·Î ºĞ¼®
+        # ì  ê³µê²© ê²½ë¡œ ë¶„ì„
         chokepoints = self.analyze_enemy_attack_paths()
         
         if not chokepoints:
-            # ÀûÀÌ º¸ÀÌÁö ¾ÊÀ¸¸é º»Áø ±ÙÃ³¿¡ °Ç¼³ (±âº» ·ÎÁ÷)
+            # ì ì´ ë³´ì´ì§€ ì•Šìœ¼ë©´ ë³¸ì§„ ê·¼ì²˜ì— ê±´ì„¤ (ê¸°ë³¸ ë¡œì§)
             if self.bot.townhalls.exists:
                 main_base = self.bot.townhalls.first
                 for building_type in [UnitTypeId.SPINECRAWLER, UnitTypeId.SPORECRAWLER]:
@@ -340,11 +340,11 @@ class AdvancedBuildingManager:
                             pass
             return results
         
-        # ±æ¸ñ¿¡ ¹æ¾î °Ç¹° °Ç¼³
-        for chokepoint in chokepoints[:3]:  # ÃÖ´ë 3°³ ±æ¸ñ
+        # ê¸¸ëª©ì— ë°©ì–´ ê±´ë¬¼ ê±´ì„¤
+        for chokepoint in chokepoints[:3]:  # ìµœëŒ€ 3ê°œ ê¸¸ëª©
             for building_type in [UnitTypeId.SPINECRAWLER, UnitTypeId.SPORECRAWLER]:
                 if building_type in results:
-                    continue  # ÀÌ¹Ì °Ç¼³µÊ
+                    continue  # ì´ë¯¸ ê±´ì„¤ë¨
                 
                 if self.bot.can_afford(building_type):
                     success = await self.build_defense_building_at_chokepoint(
@@ -353,15 +353,15 @@ class AdvancedBuildingManager:
                     )
                     if success:
                         results[building_type] = 1
-                        break  # ÇÑ ¹ø¿¡ ÇÏ³ª¾¿¸¸
+                        break  # í•œ ë²ˆì— í•˜ë‚˜ì”©ë§Œ
         
         return results
     
-    # ==================== 3. ÀÚ¿ø ÀûÃ¼ ½Ã Å×Å© °Ç¹° °ø°İÀû °Ç¼³ ====================
+    # ==================== 3. ìì› ì ì²´ ì‹œ í…Œí¬ ê±´ë¬¼ ê³µê²©ì  ê±´ì„¤ ====================
     
     def has_resource_surplus(self) -> Tuple[bool, float, float]:
         """
-        ÀÚ¿øÀÌ ÀûÃ¼µÇ¾ú´ÂÁö È®ÀÎ (3000+ ¹Ì³×¶ö, 500+ °¡½º)
+        ìì›ì´ ì ì²´ë˜ì—ˆëŠ”ì§€ í™•ì¸ (3000+ ë¯¸ë„¤ë„, 500+ ê°€ìŠ¤)
         
         Returns:
             (has_surplus, mineral_surplus, gas_surplus)
@@ -379,10 +379,10 @@ class AdvancedBuildingManager:
     
     async def build_tech_buildings_aggressively(self) -> Dict[UnitTypeId, bool]:
         """
-        ÀÚ¿øÀÌ ÀûÃ¼µÇ¾úÀ» ¶§ Å×Å© °Ç¹°À» °ø°İÀûÀ¸·Î °Ç¼³
+        ìì›ì´ ì ì²´ë˜ì—ˆì„ ë•Œ í…Œí¬ ê±´ë¬¼ì„ ê³µê²©ì ìœ¼ë¡œ ê±´ì„¤
         
         Returns:
-            {tech_type: success} µñ¼Å³Ê¸®
+            {tech_type: success} ë”•ì…”ë„ˆë¦¬
         """
         has_surplus, mineral_surplus, gas_surplus = self.has_resource_surplus()
         
@@ -391,31 +391,31 @@ class AdvancedBuildingManager:
         
         results = {}
         
-        # ÀÚ¿øÀÌ ¸¹ÀÌ ÀûÃ¼µÇ¾úÀ» ¶§ °Ç¼³ÇÒ Å×Å© °Ç¹° ¿ì¼±¼øÀ§
+        # ìì›ì´ ë§ì´ ì ì²´ë˜ì—ˆì„ ë•Œ ê±´ì„¤í•  í…Œí¬ ê±´ë¬¼ ìš°ì„ ìˆœìœ„
         tech_buildings = []
         
-        # °¡½º°¡ ¸¹ÀÌ ÀûÃ¼µÇ¾úÀ» ¶§: °íÅ×Å© °Ç¹° ¿ì¼±
+        # ê°€ìŠ¤ê°€ ë§ì´ ì ì²´ë˜ì—ˆì„ ë•Œ: ê³ í…Œí¬ ê±´ë¬¼ ìš°ì„ 
         if gas_surplus > 200:
-            # °¡½ÃÁö¿Á ±¼ (Lurker Den)
+            # ê°€ì‹œì§€ì˜¥ êµ´ (Lurker Den)
             if not self.bot.structures(UnitTypeId.LURKERDENMP).exists:
                 tech_buildings.append((UnitTypeId.LURKERDENMP, 100, 200, 1))
             
-            # ¿ïÆ®¶ó¸®½ºÅ© µ¿±¼
+            # ìš¸íŠ¸ë¼ë¦¬ìŠ¤í¬ ë™êµ´
             if (self.bot.structures(UnitTypeId.HIVE).ready.exists and
                 not self.bot.structures(UnitTypeId.ULTRALISKCAVERN).exists):
                 tech_buildings.append((UnitTypeId.ULTRALISKCAVERN, 300, 200, 2))
         
-        # ¹Ì³×¶öÀÌ ¸¹ÀÌ ÀûÃ¼µÇ¾úÀ» ¶§: Áß°£ Å×Å© °Ç¹°
+        # ë¯¸ë„¤ë„ì´ ë§ì´ ì ì²´ë˜ì—ˆì„ ë•Œ: ì¤‘ê°„ í…Œí¬ ê±´ë¬¼
         if mineral_surplus > 500:
-            # ¸Íµ¶Ãæ µÕÁö
+            # ë§¹ë…ì¶© ë‘¥ì§€
             if (self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready.exists and
                 not self.bot.structures(UnitTypeId.BANELINGNEST).exists):
                 tech_buildings.append((UnitTypeId.BANELINGNEST, 100, 50, 3))
         
-        # ¿ì¼±¼øÀ§ ¼øÀ¸·Î Á¤·Ä
+        # ìš°ì„ ìˆœìœ„ ìˆœìœ¼ë¡œ ì •ë ¬
         tech_buildings.sort(key=lambda x: x[3])
         
-        # °Ç¼³ ½ÇÇà
+        # ê±´ì„¤ ì‹¤í–‰
         for tech_type, mineral_cost, gas_cost, priority in tech_buildings:
             if (self.bot.minerals >= mineral_cost and 
                 self.bot.vespene >= gas_cost):
@@ -434,7 +434,7 @@ class AdvancedBuildingManager:
                             results[tech_type] = True
                             print(f"[AGGRESSIVE TECH] Built {tech_type} "
                                   f"(surplus: M:{int(mineral_surplus)}+ G:{int(gas_surplus)}+)")
-                            # ÇÑ ¹ø¿¡ ÇÏ³ª¾¿¸¸ °Ç¼³
+                            # í•œ ë²ˆì— í•˜ë‚˜ì”©ë§Œ ê±´ì„¤
                             break
                 except Exception as e:
                     if self.bot.iteration % 100 == 0:
@@ -445,10 +445,10 @@ class AdvancedBuildingManager:
     
     async def handle_resource_surplus(self) -> Dict[str, int]:
         """
-        ÀÚ¿ø ÀûÃ¼ ½Ã Á¾ÇÕ Ã³¸® (Å×Å© °Ç¹° °Ç¼³ + À¯´Ö º¯ÅÂ)
+        ìì› ì ì²´ ì‹œ ì¢…í•© ì²˜ë¦¬ (í…Œí¬ ê±´ë¬¼ ê±´ì„¤ + ìœ ë‹› ë³€íƒœ)
         
         Returns:
-            Ã³¸® °á°ú µñ¼Å³Ê¸®
+            ì²˜ë¦¬ ê²°ê³¼ ë”•ì…”ë„ˆë¦¬
         """
         has_surplus, mineral_surplus, gas_surplus = self.has_resource_surplus()
         
@@ -461,16 +461,16 @@ class AdvancedBuildingManager:
             "banelings_morphed": 0
         }
         
-        # 1. Å×Å© °Ç¹° °Ç¼³
+        # 1. í…Œí¬ ê±´ë¬¼ ê±´ì„¤
         tech_results = await self.build_tech_buildings_aggressively()
         results["tech_buildings_built"] = sum(1 for v in tech_results.values() if v)
         
-        # 2. °¡½ÃÁö¿Á º¯ÅÂ (°¡½º°¡ ¸¹ÀÌ ÀûÃ¼µÇ¾úÀ» ¶§)
+        # 2. ê°€ì‹œì§€ì˜¥ ë³€íƒœ (ê°€ìŠ¤ê°€ ë§ì´ ì ì²´ë˜ì—ˆì„ ë•Œ)
         if gas_surplus > 200:
             lurkers = await self.morph_lurkers(max_count=5)
             results["lurkers_morphed"] = lurkers
         
-        # 3. ¸Íµ¶Ãæ º¯ÅÂ (¹Ì³×¶öÀÌ ¸¹ÀÌ ÀûÃ¼µÇ¾úÀ» ¶§)
+        # 3. ë§¹ë…ì¶© ë³€íƒœ (ë¯¸ë„¤ë„ì´ ë§ì´ ì ì²´ë˜ì—ˆì„ ë•Œ)
         if mineral_surplus > 500:
             banelings = await self.morph_banelings(max_count=10)
             results["banelings_morphed"] = banelings

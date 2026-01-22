@@ -56,7 +56,6 @@ def run_epochs(
         except Exception as exc:
             print(f"[WARNING] Failed to update latest manifest: {exc}")
 
-<<<<<<< Current (Your changes)
         # CRITICAL IMPROVEMENT: 배치 학습 수행
         try:
             from batch_trainer import train_from_manifest
@@ -79,10 +78,8 @@ def run_epochs(
             print(f"[WARNING] Batch training failed: {e}")
             import traceback
             traceback.print_exc()
-=======
         print(f"[EPOCH {epoch}/{epochs}] Selected {count} replays -> {epoch_manifest}")
         print(f"[EPOCH {epoch}/{epochs}] Latest manifest -> {latest_manifest}")
->>>>>>> Incoming (Background Agent changes)
 
 
 def main() -> None:

@@ -1,5 +1,3 @@
-<<<<<<< Current (Your changes)
-=======
 # -*- coding: utf-8 -*-
 """
 Zerg Specialized Reward System (Reward Shaping)
@@ -416,4 +414,4 @@ async def on_end(self, game_result):
     # ���� ���� �� ���� �ý��� �ʱ�ȭ
     reward_system.reset()
 """
->>>>>>> Incoming (Background Agent changes)
+

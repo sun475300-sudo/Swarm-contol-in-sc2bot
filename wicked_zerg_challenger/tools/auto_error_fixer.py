@@ -1,5 +1,3 @@
-<<<<<<< Current (Your changes)
-=======
 # -*- coding: utf-8 -*-
 """
 자동 에러 수정 도구
@@ -175,4 +173,3 @@ def main():
 
 if __name__ == "__main__":
     main()
->>>>>>> Incoming (Background Agent changes)

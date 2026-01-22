@@ -1,5 +1,3 @@
-<<<<<<< Current (Your changes)
-=======
 # -*- coding: utf-8 -*-
 """
 Run bot with neural network training enabled.
@@ -649,4 +647,4 @@ def main():
 
 if __name__ == "__main__":
     main()
->>>>>>> Incoming (Background Agent changes)
+

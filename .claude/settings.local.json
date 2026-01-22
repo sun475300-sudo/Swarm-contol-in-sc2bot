@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(wc:*)",
+      "Bash(for file in tools/*.py)",
+      "Bash(do python -m py_compile \"$file\")",
+      "Bash(done)",
+      "Bash(while read f)",
+      "Bash(do python -m py_compile \"$f\")",
+      "Bash(for:*)",
+      "Bash(xxd:*)"
     ]
   }
 }
