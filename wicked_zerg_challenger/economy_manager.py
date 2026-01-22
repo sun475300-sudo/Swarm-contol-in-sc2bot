@@ -43,6 +43,10 @@ class EconomyManager:
         await self._train_overlord_if_needed()
         await self._train_drone_if_needed()
 
+        # Distribute workers to gas (every 22 frames = ~1 second)
+        if iteration % 22 == 0:
+            await self._distribute_workers_to_gas()
+
         # Check for macro hatchery needs periodically
         if iteration - self.last_macro_hatch_check >= self.macro_hatch_check_interval:
             self.last_macro_hatch_check = iteration
@@ -85,6 +89,59 @@ class EconomyManager:
             await self.bot.do(larva_unit.train(UnitTypeId.DRONE))
         except Exception:
             return
+
+    async def _distribute_workers_to_gas(self) -> None:
+        """
+        Distribute workers to extractors.
+
+        Ensures each extractor has 3 workers for optimal gas mining.
+        """
+        if not hasattr(self.bot, "gas_buildings"):
+            return
+
+        extractors = self.bot.gas_buildings.ready
+        if not extractors:
+            return
+
+        if not hasattr(self.bot, "workers") or not self.bot.workers:
+            return
+
+        for extractor in extractors:
+            # Check how many workers are assigned
+            assigned_workers = extractor.assigned_harvesters
+            ideal_workers = extractor.ideal_harvesters  # Usually 3
+
+            if assigned_workers < ideal_workers:
+                # Find idle or mineral-mining workers nearby
+                workers_needed = ideal_workers - assigned_workers
+
+                try:
+                    # Get workers that are gathering minerals (not gas)
+                    available_workers = self.bot.workers.filter(
+                        lambda w: (
+                            w.is_gathering and
+                            not w.is_carrying_vespene and
+                            w.distance_to(extractor) < 20
+                        )
+                    )
+
+                    if not available_workers:
+                        # Try idle workers
+                        available_workers = self.bot.workers.filter(
+                            lambda w: w.is_idle and w.distance_to(extractor) < 20
+                        )
+
+                    if available_workers:
+                        # Assign closest workers to extractor
+                        for _ in range(min(workers_needed, len(available_workers))):
+                            worker = available_workers.closest_to(extractor)
+                            if worker:
+                                await self.bot.do(worker.gather(extractor))
+                                available_workers = available_workers.filter(
+                                    lambda w: w.tag != worker.tag
+                                )
+                except Exception:
+                    continue
 
     async def _build_macro_hatchery_if_needed(self) -> None:
         """

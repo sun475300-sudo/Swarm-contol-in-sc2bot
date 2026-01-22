@@ -287,15 +287,21 @@ class QueenManager:
             if getattr(queen, "energy", 0) < self.inject_energy_threshold:
                 continue
 
-            # Check distance
+            # Check distance and issue appropriate command
             try:
                 dist = queen.distance_to(hatch)
                 if dist > self.max_inject_distance:
+                    # Queen too far - move closer first
+                    if dist <= self.max_queen_travel_distance:
+                        try:
+                            await self.bot.do(queen.move(hatch.position))
+                        except Exception:
+                            pass
                     continue
             except Exception:
                 continue
 
-            # Execute inject
+            # Execute inject (queen is close enough)
             try:
                 if hasattr(queen, "can_cast"):
                     if queen.can_cast(AbilityId.EFFECT_INJECTLARVA):
