@@ -25,14 +25,40 @@ except ImportError:
 def build_results_from_replays(replay_dir: Path, max_files: int) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
     replay_files = sorted(replay_dir.glob("*.SC2Replay"))[:max_files]
+    print(f"[REPLAY] Found {len(replay_files)} replay files")
+
     for replay_path in replay_files:
         try:
             replay = sc2reader.load_replay(str(replay_path), load_level=1)
-            game_seconds = max(1, int(getattr(replay, "length", 0)))
+
+            # Handle length - can be Seconds object or int
+            raw_length = getattr(replay, "length", None)
+            if hasattr(raw_length, "seconds"):
+                game_seconds = max(1, int(raw_length.seconds))
+            elif raw_length is not None:
+                game_seconds = max(1, int(float(str(raw_length).replace("s", "").split(".")[0]) * 60 if "." in str(raw_length) else raw_length))
+            else:
+                game_seconds = 600  # Default 10 minutes
+
             minutes = game_seconds / 60.0
-            zerg_player = next((p for p in replay.players if p.play_race == "Zerg"), None)
-            apm = float(getattr(zerg_player, "avg_apm", 150.0)) if zerg_player else 150.0
-            victory = bool(zerg_player and getattr(zerg_player, "result", "") == "Win")
+
+            # Find Zerg player (check play_race attribute)
+            zerg_player = None
+            for p in replay.players:
+                race = getattr(p, "play_race", None) or getattr(p, "pick_race", None)
+                if race == "Zerg":
+                    zerg_player = p
+                    break
+
+            # If no Zerg player, still learn from the replay (opponent analysis)
+            if zerg_player:
+                apm = float(getattr(zerg_player, "avg_apm", 150.0))
+                victory = str(getattr(zerg_player, "result", "")).lower() == "win"
+            else:
+                apm = 150.0
+                victory = False
+
+            print(f"[REPLAY] Processed: {replay_path.name} - {minutes:.1f}min, APM:{apm:.0f}, Win:{victory}")
 
             # Heuristic feature synthesis for smoke training
             minerals = min(2000, apm * 4 + minutes * 200)
