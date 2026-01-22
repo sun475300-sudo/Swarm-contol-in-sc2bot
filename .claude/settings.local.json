@@ -11,7 +11,8 @@
       "Bash(do python -m py_compile \"$f\")",
       "Bash(for:*)",
       "Bash(xxd:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(do echo \"=== $f ===\")"
     ]
   }
 }

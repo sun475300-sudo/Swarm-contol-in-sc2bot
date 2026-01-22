@@ -1234,6 +1234,11 @@ class ProductionResilience:
         if total_extractors >= target_extractors:
             return
 
+        # SPAM FIX: Add cooldown check
+        last_extractor_time = getattr(self, "_last_extractor_build_time", 0)
+        if game_time - last_extractor_time < 10:  # 10 second cooldown
+            return
+
         # Check resources
         if not b.can_afford(UnitTypeId.EXTRACTOR):
             return
@@ -1250,19 +1255,25 @@ class ProductionResilience:
 
             nearby_geysers = [g for g in geysers if g.distance_to(townhall.position) < 12]
             for geyser in nearby_geysers:
-                # Check if this geyser already has an extractor
+                # Check if this geyser already has an extractor (ready or building)
                 has_extractor = any(
-                    e.distance_to(geyser.position) < 1
+                    e.distance_to(geyser.position) < 2
                     for e in extractors
                 )
                 if has_extractor:
                     continue
 
+                # Also check if there's a pending extractor on this geyser
+                # by checking if any worker is building near it
+                if pending_extractors > 0:
+                    # Skip if we already have pending extractors
+                    return
+
                 # Build extractor on this geyser
                 try:
                     await b.build(UnitTypeId.EXTRACTOR, geyser)
+                    self._last_extractor_build_time = game_time
                     print(f"[AUTO TECH] [{int(game_time)}s] Building Extractor #{total_extractors + 1}")
-                    total_extractors += 1
                     return  # Build one at a time
                 except Exception:
                     continue
