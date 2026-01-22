@@ -1149,13 +1149,20 @@ class ProductionResilience:
         if not b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
             return
 
+        # SPAM FIX: Add cooldown for tech buildings
+        last_tech_build = getattr(self, "_last_tech_build_time", 0)
+        if game_time - last_tech_build < 15:  # 15 second cooldown between tech builds
+            return
+
         # 3:00+ : Roach Warren
         if game_time >= 180:
             if not b.structures(UnitTypeId.ROACHWARREN).exists and b.already_pending(UnitTypeId.ROACHWARREN) == 0:
                 if b.can_afford(UnitTypeId.ROACHWARREN) and b.townhalls.exists:
                     try:
                         await b.build(UnitTypeId.ROACHWARREN, near=b.townhalls.first.position)
+                        self._last_tech_build_time = game_time
                         print(f"[AUTO TECH] [{int(game_time)}s] Building Roach Warren")
+                        return  # One tech building at a time
                     except Exception:
                         pass
 
@@ -1163,6 +1170,18 @@ class ProductionResilience:
         if game_time >= 240:
             if not b.structures(UnitTypeId.LAIR).exists and not b.structures(UnitTypeId.HIVE).exists:
                 await self._morph_to_lair()
+
+        # 4:00+ : Evolution Chamber (for upgrades) - Build BEFORE Hydra Den
+        if game_time >= 240:
+            if not b.structures(UnitTypeId.EVOLUTIONCHAMBER).exists and b.already_pending(UnitTypeId.EVOLUTIONCHAMBER) == 0:
+                if b.can_afford(UnitTypeId.EVOLUTIONCHAMBER) and b.townhalls.exists:
+                    try:
+                        await b.build(UnitTypeId.EVOLUTIONCHAMBER, near=b.townhalls.first.position)
+                        self._last_tech_build_time = game_time
+                        print(f"[AUTO TECH] [{int(game_time)}s] Building Evolution Chamber")
+                        return
+                    except Exception:
+                        pass
 
         # 5:00+ : Hydralisk Den (requires Lair)
         if game_time >= 300:
@@ -1172,19 +1191,11 @@ class ProductionResilience:
                     if b.can_afford(UnitTypeId.HYDRALISKDEN) and b.townhalls.exists:
                         try:
                             await b.build(UnitTypeId.HYDRALISKDEN, near=b.townhalls.first.position)
+                            self._last_tech_build_time = game_time
                             print(f"[AUTO TECH] [{int(game_time)}s] Building Hydralisk Den")
+                            return
                         except Exception:
                             pass
-
-        # 4:00+ : Evolution Chamber (for upgrades)
-        if game_time >= 240:
-            if not b.structures(UnitTypeId.EVOLUTIONCHAMBER).exists and b.already_pending(UnitTypeId.EVOLUTIONCHAMBER) == 0:
-                if b.can_afford(UnitTypeId.EVOLUTIONCHAMBER) and b.townhalls.exists:
-                    try:
-                        await b.build(UnitTypeId.EVOLUTIONCHAMBER, near=b.townhalls.first.position)
-                        print(f"[AUTO TECH] [{int(game_time)}s] Building Evolution Chamber")
-                    except Exception:
-                        pass
 
         # 6:00+ : Spire (requires Lair)
         if game_time >= 360:
@@ -1194,7 +1205,9 @@ class ProductionResilience:
                     if b.can_afford(UnitTypeId.SPIRE) and b.townhalls.exists:
                         try:
                             await b.build(UnitTypeId.SPIRE, near=b.townhalls.first.position)
+                            self._last_tech_build_time = game_time
                             print(f"[AUTO TECH] [{int(game_time)}s] Building Spire")
+                            return
                         except Exception:
                             pass
 
