@@ -96,6 +96,57 @@ class PotentialFieldController:
         return repulsion_x, repulsion_y
 
 
+class ChokePointDetector:
+    """Detects chokepoints and narrow passages on the map."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.chokepoints = []
+        self.chokepoint_cache_frame = -1
+        self.chokepoint_radius = 6.0
+        self.narrow_passage_threshold = 4.0
+
+    def update_chokepoints(self, iteration: int) -> None:
+        """Update chokepoint cache periodically."""
+        if iteration - self.chokepoint_cache_frame < 100:
+            return
+
+        self.chokepoint_cache_frame = iteration
+        self.chokepoints = []
+
+        # Get map ramps and chokepoints
+        if hasattr(self.bot, "game_info"):
+            game_info = self.bot.game_info
+            if hasattr(game_info, "map_ramps"):
+                for ramp in game_info.map_ramps:
+                    if hasattr(ramp, "top_center"):
+                        self.chokepoints.append(ramp.top_center)
+                    if hasattr(ramp, "bottom_center"):
+                        self.chokepoints.append(ramp.bottom_center)
+
+    def is_in_chokepoint(self, position) -> bool:
+        """Check if position is near a chokepoint."""
+        if not self.chokepoints or not position:
+            return False
+
+        for choke in self.chokepoints:
+            try:
+                if position.distance_to(choke) < self.chokepoint_radius:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def get_cohesion_modifier(self, position) -> float:
+        """
+        Return cohesion weight modifier based on terrain.
+        Lower cohesion in chokepoints to prevent traffic jams.
+        """
+        if self.is_in_chokepoint(position):
+            return 0.25  # Reduce cohesion to 25% in chokepoints
+        return 1.0
+
+
 class BoidsController:
     """Boids-based micro control with safe fallback spacing."""
 
@@ -103,6 +154,7 @@ class BoidsController:
         self.bot = bot
         self.swarm_controller = BoidsSwarmController()
         self.potential_field = PotentialFieldController()
+        self.chokepoint_detector = ChokePointDetector(bot)
         self.last_update = 0
         self.update_interval = 8
         self.move_scale = 2.5
@@ -160,6 +212,9 @@ class BoidsController:
             return
         self.last_update = iteration
 
+        # Update chokepoint cache
+        self.chokepoint_detector.update_chokepoints(iteration)
+
         units = self._get_combat_units()
         if not units:
             return
@@ -206,12 +261,18 @@ class BoidsController:
                 unit, splash_threats
             )
 
+            # Get cohesion modifier based on chokepoint presence
+            cohesion_multiplier = self.chokepoint_detector.get_cohesion_modifier(
+                unit.position
+            )
+
             vx, vy = self.swarm_controller.calculate_swarm_velocity(
                 unit,
                 neighbors,
                 target=target_pos,
                 enemy_units=enemy_units,
                 separation_multiplier=separation_multiplier,
+                cohesion_multiplier=cohesion_multiplier,
             )
 
             terrain_points = getattr(self.bot, "structures", [])

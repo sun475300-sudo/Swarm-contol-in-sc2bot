@@ -1,33 +1,56 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Creep Manager - vector-driven creep expansion targeting.
+Creep Manager - vector-driven creep expansion targeting with tumor relay.
 """
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 try:
+    from sc2.ids.ability_id import AbilityId
+    from sc2.ids.unit_typeid import UnitTypeId
     from sc2.position import Point2
 except ImportError:  # Fallbacks for tooling environments
     Point2 = None
+    AbilityId = None
+    UnitTypeId = None
 
 
 class CreepManager:
-    """Computes creep tumor targets using map, scout, and expansion data."""
+    """
+    Manages creep spread through queens and automatic tumor relay.
+
+    Features:
+    - Vector-driven targeting toward enemy base
+    - Automatic tumor relay from outermost tumors
+    - Prioritizes map center and attack paths
+    """
 
     def __init__(self, bot):
         self.bot = bot
         self.last_update = 0
         self.update_interval = 22
+        self.tumor_relay_interval = 16  # Check tumors more frequently
+        self.last_tumor_relay = 0
         self.cached_targets: List[object] = []
+        self.tumor_spread_cooldowns: Dict[int, int] = {}  # tumor_tag -> last_spread_frame
 
     async def on_step(self, iteration: int) -> None:
+        """
+        Main creep manager loop.
+        - Refreshes creep targets periodically
+        - Handles automatic tumor relay
+        """
         if iteration - self.last_update < self.update_interval:
+            if iteration - self.last_tumor_relay >= self.tumor_relay_interval:
+                await self._handle_tumor_relay(iteration)
             return
+
         self.last_update = iteration
         self._refresh_targets()
+        await self._handle_tumor_relay(iteration)
 
     def get_creep_target(self, origin_unit) -> Optional[object]:
         if not self.cached_targets:
@@ -114,6 +137,110 @@ class CreepManager:
             if all(pos.distance_to(other) > 2.5 for other in deduped):
                 deduped.append(pos)
         return deduped
+
+    async def _handle_tumor_relay(self, iteration: int) -> None:
+        """
+        Automatic tumor relay system.
+        Finds outermost tumors and spreads them toward enemy base.
+        """
+        if not UnitTypeId or not AbilityId:
+            return
+
+        self.last_tumor_relay = iteration
+
+        # Get all creep tumors (both burrowed and active)
+        tumors = []
+        if hasattr(self.bot, "structures"):
+            tumors = [
+                t
+                for t in self.bot.structures
+                if t.type_id
+                in {
+                    UnitTypeId.CREEPTUMOR,
+                    UnitTypeId.CREEPTUMORBURROWED,
+                    UnitTypeId.CREEPTUMORQUEEN,
+                }
+            ]
+
+        if not tumors:
+            return
+
+        # Clean up old cooldowns
+        tumor_tags = {t.tag for t in tumors}
+        self.tumor_spread_cooldowns = {
+            tag: frame
+            for tag, frame in self.tumor_spread_cooldowns.items()
+            if tag in tumor_tags
+        }
+
+        # Get target direction
+        direction_target = self._get_direction_target()
+        if not direction_target:
+            return
+
+        # Find outermost tumors (farthest from our base, closest to enemy)
+        our_base = None
+        if hasattr(self.bot, "townhalls") and self.bot.townhalls:
+            our_base = self.bot.townhalls.first.position
+
+        if not our_base:
+            return
+
+        # Score tumors by distance to enemy
+        scored_tumors = []
+        for tumor in tumors:
+            # Skip if on cooldown (spread within last 50 frames)
+            last_spread = self.tumor_spread_cooldowns.get(tumor.tag, 0)
+            if iteration - last_spread < 50:
+                continue
+
+            try:
+                dist_to_enemy = tumor.position.distance_to(direction_target)
+                dist_to_base = tumor.position.distance_to(our_base)
+                # Prefer tumors far from base and close to enemy
+                score = dist_to_base - dist_to_enemy * 0.5
+                scored_tumors.append((tumor, score))
+            except Exception:
+                continue
+
+        if not scored_tumors:
+            return
+
+        # Sort by score (highest first) and spread top 2 tumors
+        scored_tumors.sort(key=lambda x: x[1], reverse=True)
+        actions = []
+
+        for tumor, _ in scored_tumors[:2]:  # Spread 2 outermost tumors per cycle
+            try:
+                # Calculate spread target toward enemy
+                spread_target = tumor.position.towards(direction_target, 9.0)
+
+                # Check if tumor can spread (has ability)
+                if hasattr(tumor, "can_cast") and hasattr(
+                    AbilityId, "BUILD_CREEPTUMOR_TUMOR"
+                ):
+                    if tumor.can_cast(AbilityId.BUILD_CREEPTUMOR_TUMOR):
+                        actions.append(
+                            tumor(AbilityId.BUILD_CREEPTUMOR_TUMOR, spread_target)
+                        )
+                        self.tumor_spread_cooldowns[tumor.tag] = iteration
+                elif hasattr(AbilityId, "BUILD_CREEPTUMOR_TUMOR"):
+                    actions.append(
+                        tumor(AbilityId.BUILD_CREEPTUMOR_TUMOR, spread_target)
+                    )
+                    self.tumor_spread_cooldowns[tumor.tag] = iteration
+            except Exception:
+                continue
+
+        if actions:
+            try:
+                if hasattr(self.bot, "do_actions"):
+                    await self.bot.do_actions(actions)
+                else:
+                    for action in actions:
+                        await self.bot.do(action)
+            except Exception:
+                pass
 
     @staticmethod
     def _score_target(origin, candidate, direction_target) -> float:

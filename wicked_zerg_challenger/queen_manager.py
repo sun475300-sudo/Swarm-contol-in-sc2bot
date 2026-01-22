@@ -24,18 +24,27 @@ except ImportError:  # Fallbacks for tooling environments
 
 
 class QueenManager:
-    """Controls queen production and basic support abilities."""
+    """
+    Controls queen production and support abilities.
+
+    Features:
+    - Auto-inject larva on all hatcheries
+    - Dedicated creep queens for aggressive map control
+    - Dynamic queen production based on base count
+    """
 
     def __init__(self, bot):
         self.bot = bot
         self.inject_energy_threshold = 25
         self.creep_energy_threshold = 25
-        self.creep_spread_cooldown = 30.0
+        self.creep_spread_cooldown = 20.0  # Reduced from 30 for faster spread
         self.max_queens_per_base = 1
         self.last_creep_time: Dict[int, float] = {}
-        self.creep_queen_bonus = 1
+        # Increased creep queen bonus for aggressive creep spread
+        self.creep_queen_bonus = 2  # 2 dedicated creep queens
         self.inject_assignments: Dict[int, int] = {}
         self.assigned_queen_tags: Set[int] = set()
+        self.dedicated_creep_queens: Set[int] = set()  # Track dedicated creep queens
 
     async def on_step(self, iteration: int) -> None:
         """Main queen management loop."""
@@ -96,16 +105,26 @@ class QueenManager:
                 continue
 
     def _assign_queen_roles(self, queens, hatcheries) -> None:
-        """Assign inject queens per hatchery and track creep queens."""
+        """
+        Assign queen roles:
+        - Inject queens (1 per hatchery)
+        - Dedicated creep queens (2 for map control)
+        """
         current_queen_tags = {q.tag for q in queens}
         current_hatch_tags = {h.tag for h in hatcheries}
 
+        # Clean up old assignments
         self.inject_assignments = {
             hatch_tag: queen_tag
             for hatch_tag, queen_tag in self.inject_assignments.items()
             if hatch_tag in current_hatch_tags and queen_tag in current_queen_tags
         }
 
+        self.dedicated_creep_queens = {
+            tag for tag in self.dedicated_creep_queens if tag in current_queen_tags
+        }
+
+        # Assign inject queens first (highest priority)
         assigned_queens = set(self.inject_assignments.values())
         for hatch in hatcheries:
             if hatch.tag in self.inject_assignments:
@@ -117,6 +136,31 @@ class QueenManager:
             if candidate:
                 self.inject_assignments[hatch.tag] = candidate.tag
                 assigned_queens.add(candidate.tag)
+
+        # Assign dedicated creep queens (secondary priority)
+        unassigned = [q for q in queens if q.tag not in assigned_queens]
+        target_creep_queens = min(self.creep_queen_bonus, len(unassigned))
+
+        # Prefer queens near the front line for creep spreading
+        if target_creep_queens > 0 and hasattr(self.bot, "enemy_start_locations"):
+            enemy_start = (
+                self.bot.enemy_start_locations[0]
+                if self.bot.enemy_start_locations
+                else None
+            )
+
+            if enemy_start and unassigned:
+                # Sort by distance to enemy (closer = better for creep)
+                unassigned_sorted = sorted(
+                    unassigned,
+                    key=lambda q: q.position.distance_to(enemy_start)
+                    if hasattr(q, "position")
+                    else 999,
+                )
+
+                for queen in unassigned_sorted[:target_creep_queens]:
+                    self.dedicated_creep_queens.add(queen.tag)
+                    assigned_queens.add(queen.tag)
 
         self.assigned_queen_tags = assigned_queens
 
@@ -172,7 +216,20 @@ class QueenManager:
                 continue
 
     async def _spread_creep(self, creep_queens) -> None:
+        """
+        Spread creep with dedicated queens.
+        - Dedicated creep queens move toward enemy and spread aggressively
+        - Other queens spread near their bases
+        """
         current_time = getattr(self.bot, "time", 0.0)
+        enemy_start = None
+
+        if hasattr(self.bot, "enemy_start_locations"):
+            enemy_start = (
+                self.bot.enemy_start_locations[0]
+                if self.bot.enemy_start_locations
+                else None
+            )
 
         for queen in creep_queens:
             last_time = self.last_creep_time.get(queen.tag, 0.0)
@@ -182,10 +239,17 @@ class QueenManager:
             if getattr(queen, "energy", 0) < self.creep_energy_threshold:
                 continue
 
-            if hasattr(queen, "is_idle") and not queen.is_idle:
-                continue
+            # Dedicated creep queens: move forward even when not idle
+            is_dedicated = queen.tag in self.dedicated_creep_queens
+            if not is_dedicated:
+                if hasattr(queen, "is_idle") and not queen.is_idle:
+                    continue
 
             try:
+                # Position dedicated creep queens forward
+                if is_dedicated and enemy_start:
+                    await self._position_creep_queen_forward(queen, enemy_start)
+
                 target = self._get_creep_target_position(queen)
 
                 if hasattr(queen, "can_cast"):
@@ -199,6 +263,41 @@ class QueenManager:
                     self.last_creep_time[queen.tag] = current_time
             except Exception:
                 continue
+
+    async def _position_creep_queen_forward(self, queen, enemy_start) -> None:
+        """Move dedicated creep queen toward enemy base for forward creep spread."""
+        try:
+            # Find farthest creep tumor from our base
+            farthest_tumor = None
+            max_dist = 0
+
+            if hasattr(self.bot, "structures") and hasattr(self.bot, "townhalls"):
+                our_base = (
+                    self.bot.townhalls.first.position if self.bot.townhalls else None
+                )
+                if not our_base:
+                    return
+
+                for structure in self.bot.structures:
+                    if structure.type_id in {
+                        UnitTypeId.CREEPTUMOR,
+                        UnitTypeId.CREEPTUMORBURROWED,
+                    }:
+                        dist = structure.position.distance_to(enemy_start)
+                        if dist > max_dist:
+                            max_dist = dist
+                            farthest_tumor = structure
+
+            # Move queen toward farthest tumor or enemy base
+            if farthest_tumor and hasattr(queen, "distance_to"):
+                if queen.distance_to(farthest_tumor) > 8:
+                    await self.bot.do(queen.move(farthest_tumor.position))
+            elif hasattr(queen, "distance_to") and queen.distance_to(enemy_start) > 15:
+                # Move closer to enemy if too far
+                forward_pos = queen.position.towards(enemy_start, 10)
+                await self.bot.do(queen.move(forward_pos))
+        except Exception:
+            pass
 
     def _get_creep_target_position(self, queen):
         """Pick a creep spread target along the main attack path."""
