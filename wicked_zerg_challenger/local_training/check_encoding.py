@@ -1,84 +1,39 @@
 #!/usr/bin/env python3
-
 # -*- coding: utf-8 -*-
 
-"""ÀÎÄÚµù È®ÀÎ ½ºÅ©¸³Æ®"""
-
-
-import sys
+"""Simple UTF-8 validation for main_integrated.py."""
 
 from pathlib import Path
 
 
-filepath = Path(__file__).parent / 'main_integrated.py'
+def main() -> None:
+    filepath = Path(__file__).parent / "main_integrated.py"
+    print(f"Checking file: {filepath}")
+    print(f"File exists: {filepath.exists()}")
 
+    if not filepath.exists():
+        return
 
-print(f"Checking file: {filepath}")
-
-print(f"File exists: {filepath.exists()}")
-
-
-if filepath.exists():
-
-    pass
-
- # ¹ÙÀÌ³Ê¸®·Î ÀÐ±â
-
-    with open(filepath, 'rb') as f:
-
- raw_data = f.read()
-
-
-
+    raw_data = filepath.read_bytes()
     print(f"File size: {len(raw_data)} bytes")
 
+    try:
+        text = raw_data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        print(f"[ERROR] UTF-8 decode error at byte {exc.start}: {exc}")
+        print(f"Problem bytes: {raw_data[exc.start:exc.start + 20]}")
+        return
+
+    print("[OK] File is valid UTF-8")
+
+    try:
+        compile(text, str(filepath), "exec")
+        print("[OK] Syntax is valid")
+    except SyntaxError as exc:
+        print(f"[ERROR] Syntax error: {exc}")
+        if exc.text:
+            print(f"Line {exc.lineno}: {exc.text.strip()}")
 
 
- # UTF-8·Î µðÄÚµù ½Ãµµ
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-
-     text = raw_data.decode('utf-8')
-
-     print("? File is valid UTF-8")
-
-
-
- # Syntax °Ë»ç
-
- try:
-
-     compile(text, str(filepath), 'exec')
-
-     print("? Syntax is valid")
-
- except SyntaxError as e:
-
-     print(f"? Syntax error: {e}")
-
-     print(f"  Line {e.lineno}: {e.text}")
-
- except UnicodeDecodeError as e:
-
-     print(f"? UTF-8 decode error at byte {e.start}: {e}")
-
-     print(f"  Problem bytes: {raw_data[e.start:e.start+20]}")
+if __name__ == "__main__":
+    main()

@@ -1,564 +1,80 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Integrated parallel training launcher (simplified).
 
+Launches multiple training instances with staggered starts.
 """
 
-================================================================================
+from __future__ import annotations
 
- Integrated Parallel Training System - Resource-Aware Scheduling
-
-================================================================================
-
-GPU-optimized parallel training system with dynamic instance count calculation.
-
-Features:
-
-- Resource-Aware Scheduling: Dynamic GPU memory calculation
-
-- Staggered Launch: Prevents shader compilation spike (15s interval)
-
-- Auto-adjustment: Instance count based on available VRAM
-
-- Performance Optimization: realtime = False + step_multiplier support
-
-Usage:
-
- python parallel_train_integrated.py
-
-GPU Memory Formula:
-
- safe_instances = (total_memory - memory_reserved - 1.0GB) / 0.8GB
-
-Expected Performance (RTX 2060 6GB):
-
- - Total VRAM: 6.0 GB
-
- - Reserved: ~1.2 GB (PyTorch model + system)
-
- - Available: ~4.8 GB
-
- - Safe Instances: (4.8 - 1.0) / 0.8 = 4.75 -> 4 instances
-
-Notes:
-
-    1. Graphics: Set SC2 to 'Window Mode' and 'Very Low' quality
-
-    2. Monitor: Use 'nvidia-smi' to watch GPU memory usage
-
- 3. Auto-exit: Each instance will exit automatically when game ends
-
-================================================================================
-
-"""
-
-import json
+import argparse
 import os
 import subprocess
 import sys
 import time
-import traceback
-from pathlib import Path
-import time
-from pathlib import Path
-import os
-import sys
-import subprocess
-import json
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Set
-from typing import Any
-from typing import Union
-
-import json
-import subprocess
-import time
-import sys
-import os
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Set
-from typing import Any
-from typing import Union
 from pathlib import Path
 
-# IMPROVED: Try C++ protobuf implementation first for better performance
-# Fallback to Python if C++ is not available (for compatibility)
-try:
-    _config = Config()
- protobuf_impl = _config.PROTOCOL_BUFFERS_IMPL
 
- # Try C++ implementation first (10x faster)
-    if protobuf_impl == "cpp":
-        try:
-            os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "cpp"
-            print("[OK] Using C++ protobuf implementation (fast mode)")
- except ImportError:
-     # Fallback to Python if C++ not available
-     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
-     print(
-     "[WARNING] C++ protobuf not available, using Python implementation (slower)")
- else:
-     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = protobuf_impl
-except Exception:
-    # Fallback to Python on any error
-    os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
-
-# Settings
-
-# Allow NUM_INSTANCES to be set via environment variable (for runtime
-# adjustment)
-
-# Default: 1 instance (full GPU/CPU utilization)
-NUM_INSTANCES = int(os.environ.get("NUM_INSTANCES", "1"))
-
-# CRITICAL: Set to 1 instance for maximum GPU and CPU utilization per instance
-# With 1 instance, all GPU memory and CPU cores are dedicated to a single
-# game instance
-
-# Set via: $env:NUM_INSTANCES = 1; python parallel_train_integrated.py
-
-# Seconds between instance launches (prevents shader compilation spike)
-START_INTERVAL = 15
-
-MAIN_FILE = (
-    # Use main_integrated.py (supports parallel training with RL orchestrator)
-    "main_integrated.py"
-)
-
-# Display Settings
-
-SHOW_WINDOW = os.environ.get("SHOW_WINDOW", "false").lower() == "true"
-HEADLESS_MODE = os.environ.get("HEADLESS_MODE", "true").lower() == "true"
-
-# Note: Showing windows will reduce training speed but allows visual monitoring
-
-# GPU memory settings (estimated usage per instance)
-
-# GB (each instance uses ~0.8GB at Very Low settings)
-ESTIMATED_VRAM_PER_INSTANCE = 0.8
-
-MIN_SAFE_VRAM_RESERVE = 1.0  # GB (reserve for OS DWM and display output)
-
-PROJECT_ROOT = Path(__file__).parent.absolute()
-
-# IMPROVED: Use flexible venv path detection
-
-
-def get_venv_dir() -> Path:
-    """Get virtual environment directory from environment variable or use project default"""
-import os
+def get_python_executable() -> str:
     venv_dir = os.environ.get("VENV_DIR")
- if venv_dir and Path(venv_dir).exists():
-     return Path(venv_dir)
- # Try common locations
- possible_paths = [
-     PROJECT_ROOT / ".venv",
-     Path.home() / ".venv",
-     Path(".venv"),
- ]
- for path in possible_paths:
-     if path.exists():
-         return path
- # Default fallback
-    return PROJECT_ROOT / ".venv"
-
-VENV_DIR = get_venv_dir()
-VENV_PYTHON = VENV_DIR / "Scripts" / "python.exe" if sys.platform == "win32" else VENV_DIR / "bin" / "python3"
-PYTHON_EXECUTABLE = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
-
-def check_gpu_memory():
-    """
-
- GPU memory check and safe instance count calculation
-
- GPU Memory Management and Instance Decision Algorithm:
-
- Core Mechanism: Real-time VRAM availability analysis
-
- 1. Total Memory: Total video memory of the GPU
-
- 2. Reserved Memory: Memory currently occupied by PyTorch cache or other processes
-
- 3. Available Memory: Pure free space available for new game instances (Total - Reserved)
-
- Optimal Instance Count Formula:
-
- N_safe = floor((VRAM_available - VRAM_reserve) / VRAM_per_instance)
-
- Where:
-
- - VRAM_available: Currently available GPU memory (GB)
-
- - VRAM_reserve: Minimum reserve capacity for system stability (default: 1.0 GB)
-
- - VRAM_per_instance: Estimated usage per SC2 client (default: 0.8 GB)
-
- - N_safe: Final safe instance count to run
-
- Algorithm Features:
-
- - Safety First: Force reserve 1.0 GB for system stability
-
- - Dynamic Adaptation: Automatically adjust instance count based on GPU load at runtime
-
- - Staggered Launch: START_INTERVAL (15s) distributes temporary peak load during client loading
-
- Returns:
-
- tuple: (is_gpu_available, total_vram_gb, available_vram_gb, recommended_instances, gpu_name)
-
-    """
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-import torch
-
- if not torch.cuda.is_available():
-     print("[GPU] CUDA GPU not available. Running in CPU mode.")
-
-     return False, 0, 0, NUM_INSTANCES, "CPU"
-
- device = torch.cuda.current_device()
-
- gpu_props = torch.cuda.get_device_properties(device)
-
- gpu_name = gpu_props.name
-
- total_memory = gpu_props.total_memory / (1024**3) # Convert to GB
-
- # Calculate actual available memory excluding reserved memory
-
- allocated = torch.cuda.memory_allocated(device) / (1024**3) # GB
-
- reserved = torch.cuda.memory_reserved(device) / (1024**3) # GB
-
- available = total_memory - reserved # GB
-
- # Apply algorithm: (available - 1GB reserve) / 0.8GB per instance
-
- # Example: 8GB GPU with 2GB used: (6 - 1) / 0.8 = 6.25 -> 6 instances possible
-
- safe_available = max(0, available - MIN_SAFE_VRAM_RESERVE)
-
- safe_instances = int(safe_available / ESTIMATED_VRAM_PER_INSTANCE)
-
- # Compare with user setting (NUM_INSTANCES) and select minimum
-
- # RTX 3080(10GB) or higher GPUs can increase NUM_INSTANCES for more instances
-
- safe_instances = max(1, min(safe_instances, NUM_INSTANCES))
-
- # Print detailed GPU memory information
-
-     print(f"[GPU] GPU Detected: {gpu_name}")
-
-     print(f"[GPU] Total VRAM: {total_memory:.2f} GB")
-
-     print(f"[GPU] Reserved VRAM: {reserved:.2f} GB (Allocated: {allocated:.2f} GB)")
-
-     print(f"[GPU] Available VRAM: {available:.2f} GB")
-
-     print(f"[GPU] Safe Reserve: {MIN_SAFE_VRAM_RESERVE:.1f} GB (OS DWM + Display)")
-
-     print(f"[GPU] Safe Available: {safe_available:.2f} GB")
-
- print(
-     f"[GPU] Recommended Instances: {safe_instances} (Formula: floor(({available:.2f} - {MIN_SAFE_VRAM_RESERVE:.1f}) / {ESTIMATED_VRAM_PER_INSTANCE:.1f}) = {safe_instances})"
- )
-
- # High-end GPU detection and recommendation
-
- if total_memory >= 10.0 and safe_instances < NUM_INSTANCES:
-     print(
-     f"[GPU] Tip: RTX 3080(10GB) or higher GPU detected! Increasing NUM_INSTANCES to {safe_instances}~{int(safe_available / ESTIMATED_VRAM_PER_INSTANCE)} will significantly improve training speed."
- )
-
- return True, total_memory, available, safe_instances, gpu_name
-
- except ImportError:
-     print("[GPU] PyTorch not installed. Running in CPU mode.")
-
-     return False, 0, 0, NUM_INSTANCES, "CPU"
-
- except Exception as e:
-     print(f"[WARNING] GPU memory check failed: {e}")
-
-import traceback
-
- traceback.print_exc()
-
- # Try to check if CUDA is available even if memory check failed
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-import torch
-
- if torch.cuda.is_available():
-     print(
-     "[GPU] CUDA is available but memory check failed. Using default instance count."
- )
-
-     return True, 0, 0, NUM_INSTANCES, "GPU (Unknown)"
-
- except:
-     pass
-
-     return False, 0, 0, NUM_INSTANCES, "Unknown"
-
-def read_instance_status(instance_id):
-    """
-
- Read instance status from JSON file
-
- Args:
-
- instance_id: Instance identifier
-
- Returns:
-
- dict: Status data or None if file not found/invalid
-
-    """
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     # IMPROVED: Use project root stats/ directory with instance subdirectory
- project_root = Path(__file__).parent.parent.parent
-     status_file = project_root / "stats" / f"instance_{instance_id}" / "status.json"
-
- if status_file.exists():
-     with open(status_file, "r", encoding="utf-8") as f:
- return json.load(f)
-
- except Exception:
-     pass
-
- return None
-
-def get_gpu_temperature():
-    """
-
- Get GPU temperature using nvidia-smi (Windows/Linux)
-
- Returns:
-
- float: GPU temperature in Celsius, or None if unavailable
-
-    """
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-import subprocess
-
- result = subprocess.run(
- [
-    "nvidia-smi",
-    "--query-gpu = temperature.gpu",
-    "--format = csv,noheader,nounits",
- ],
- capture_output = True,
- text = True,
- timeout = 2,
- )
-
- if result.returncode == 0:
-     temp_str = result.stdout.strip()
-
- return float(temp_str)
-
- except Exception:
-     pass
-
- return None
-
-def display_dashboard(processes):
-    """
-
- Display real-time dashboard with all instance statuses
-
- Args:
-
- processes: List of process info dictionaries
-
-    """
-
- try:
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     pass
- pass
-
- except Exception:
-     pass
-     # Read all instance statuses
-
- instance_statuses = []
-
- total_wins = 0
-
- total_losses = 0
-
- for proc_info in processes:
-     instance_id = proc_info.get("id", 0)
-
- status = read_instance_status(instance_id)
-
- if status:
-     instance_statuses.append(
-     {"id": instance_id, "status": status, "process": proc_info}
- )
-
-     total_wins += status.get("win_count", 0)
-
-     total_losses += status.get("loss_count", 0)
-
- else:
- # Process exists but status file not found (initializing)
-
- instance_statuses.append(
- {
-     "id": instance_id,
-     "status": {
-     "status": "INITIALIZING",
-     "mode": "HEADLESS",
-     "current_game_time": "00:00",
-     "current_minerals": 0,
-     "current_supply": "0/0",
-     "current_units": 0,
- },
-     "process": proc_info,
- }
- )
-
- # Build dashboard display
-
- lines = []
-
- # Instance status lines
-
-     for inst in sorted(instance_statuses, key = lambda x: x["id"]):
-         pass
-     inst_id = inst["id"]
-
-     stat = inst["status"]
-
-     mode = stat.get("mode", "HEADLESS")
-
-     game_time = stat.get("current_game_time", "00:00")
-
-     minerals = stat.get("current_minerals", 0)
-
-     supply = stat.get("current_supply", "0/0")
-
-     units = stat.get("current_units", 0)
-
-     status_text = stat.get("status", "UNKNOWN")
-
- # Format: [INSTANCE #1] TIME: 05:20 | MIN: 450 | SUPPLY: 45/52 | UNITS: 45 (VISUAL)
-
- line = (
-     f"[INSTANCE #{inst_id}] "
-     f"TIME: {game_time} | "
-     f"MIN: {minerals:4d} | "
-     f"SUPPLY: {supply} | "
-     f"UNITS: {units:3d} "
-     f"({mode})"
- )
-
- lines.append(line)
-
- # Separator
-
-     lines.append("-" * 70)
-
+    if venv_dir:
+        candidate = Path(venv_dir)
+        py = candidate / ("Scripts" if sys.platform == "win32" else "bin") / "python"
+        if py.exists():
+            return str(py)
+    return sys.executable
+
+
+def launch_instances(
+    instances: int,
+    main_file: str,
+    start_interval: int,
+    show_window: bool,
+    headless: bool,
+) -> None:
+    python_exec = get_python_executable()
+    processes = []
+
+    for idx in range(instances):
+        env = os.environ.copy()
+        env["INSTANCE_ID"] = str(idx)
+        env["SHOW_WINDOW"] = "true" if show_window else "false"
+        env["HEADLESS_MODE"] = "true" if headless else "false"
+
+        cmd = [python_exec, main_file]
+        processes.append(subprocess.Popen(cmd, env=env))
+        print(f"[LAUNCH] Instance {idx} -> {main_file}")
+
+        if idx < instances - 1:
+            time.sleep(start_interval)
+
+    for proc in processes:
+        proc.wait()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Parallel training launcher")
+    parser.add_argument("--instances", type=int, default=1, help="Number of instances")
+    parser.add_argument(
+        "--main-file", default="main_integrated.py", help="Training entry file"
+    )
+    parser.add_argument(
+        "--start-interval", type=int, default=15, help="Seconds between launches"
+    )
+    parser.add_argument("--show-window", action="store_true", help="Show game windows")
+    parser.add_argument("--headless", action="store_true", help="Headless mode")
+    args = parser.parse_args()
+
+    launch_instances(
+        instances=max(1, args.instances),
+        main_file=args.main_file,
+        start_interval=max(0, args.start_interval),
+        show_window=args.show_window,
+        headless=args.headless,
+    )
+
+<<<<<<< Current (Your changes)
  # Total stats
 
  total_games = total_wins + total_losses
@@ -1121,52 +637,8 @@ def start_parallel_training():
 
  except:
      pass
+=======
+>>>>>>> Incoming (Background Agent changes)
 
 if __name__ == "__main__":
-    print("\n" + "=" * 70)
-
-    print("Integrated Parallel Training System - Resource-Aware Scheduling")
-
-    print("=" * 70)
-
-    print(f"  Default Instances: {NUM_INSTANCES} (auto-adjusted based on GPU memory)")
-
-    print(f"  Start Interval: {START_INTERVAL} seconds (Staggered Launch)")
-
-    print(f"  Project Path: {PROJECT_ROOT}")
-
-    print("=" * 70)
-
-    print("\nGPU Memory Safety Tips:")
-
-    print("  RTX 2060 (6GB): Expect 4 instances maximum")
-
-    print("  RTX 3080 (10GB): Can run 5~8 instances (set NUM_INSTANCES higher)")
-
-    print("  Each instance uses ~0.8GB VRAM at Very Low settings")
-
-    print("  System reserves 1.0GB for OS DWM and display output")
-
-    print("  Formula: N_safe = floor((VRAM_available - 1.0GB) / 0.8GB)")
-
-    print("  If VRAM is insufficient, games may crash")
-
-    print("  Monitor with: nvidia-smi (watch GPU memory usage)")
-
-    print("  Performance: realtime = False enables maximum training speed")
-
-    print("  Staggered Launch: 15s interval prevents shader compilation spike")
-
-    print("\nDisplay Options:")
-
-    print("  Default: Headless mode (realtime = False, windows hidden)")
-
-    print("  To show windows: Set environment variable SHOW_WINDOW = true")
-
-    print("  Example: $env:SHOW_WINDOW='true'; python parallel_train_integrated.py")
-
-    print("  Note: Showing windows will reduce training speed significantly")
-
-    print("=" * 70 + "\n")
-
- start_parallel_training()
+    main()

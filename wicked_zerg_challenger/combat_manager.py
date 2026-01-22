@@ -77,13 +77,11 @@ class CombatManager:
             if not hasattr(self.bot, 'units') or not hasattr(self.bot, 'enemy_units'):
                 return
             
-            army_units = self.bot.units.filter(
-                lambda u: u.type_id.name in ['ZERGLING', 'ROACH', 'HYDRALISK', 'MUTALISK']
-            )
-            
-            enemy_units = getattr(self.bot, 'enemy_units', [])
-            
-            if not army_units.exists or not enemy_units:
+            army_units = self._filter_army_units(getattr(self.bot, "units", []))
+
+            enemy_units = getattr(self.bot, "enemy_units", [])
+
+            if not self._has_units(army_units) or not self._has_units(enemy_units):
                 return
             
             # 전투 로직 실행
@@ -154,21 +152,20 @@ class CombatManager:
             
             formation_manager = FormationManager(self.bot)
             
-            if not enemy_units.exists or not units.exists:
+            if not self._has_units(enemy_units) or not self._has_units(units):
                 return
             
             # 적 중심 계산
-            enemy_center = Point2((
-                sum(u.position.x for u in enemy_units) / enemy_units.amount,
-                sum(u.position.y for u in enemy_units) / enemy_units.amount
-            ))
+            enemy_center = self._get_enemy_center(enemy_units)
+            if enemy_center is None:
+                return
             
             # 원거리 유닛만 진형 형성 (히드라리스크, 로ach, Ravager)
-            ranged_units = units.filter(
-                lambda u: u.type_id.name in ['HYDRALISK', 'ROACH', 'RAVAGER']
+            ranged_units = self._filter_units_by_type(
+                units, ["HYDRALISK", "ROACH", "RAVAGER"]
             )
             
-            if ranged_units.exists and ranged_units.amount >= 3:
+            if self._has_units(ranged_units) and self._units_amount(ranged_units) >= 3:
                 # Concave 진형 형성
                 formation_positions = formation_manager.form_concave(
                     ranged_units, enemy_center, formation_radius=8.0
@@ -182,7 +179,7 @@ class CombatManager:
                         pass
             
             # 길목 회피 확인
-            if self.bot.townhalls.exists:
+            if hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
                 our_base = self.bot.townhalls.first.position
                 chokepoint = formation_manager.find_chokepoint(enemy_units, our_base)
                 
@@ -209,9 +206,60 @@ class CombatManager:
             enemy_units: 적 유닛들
         """
         try:
-            for unit in units[:20]:  # 최대 20개만 처리
-                closest_enemy = enemy_units.closest_to(unit.position)
+            for unit in list(units)[:20]:  # 최대 20개만 처리
+                closest_enemy = self._closest_enemy(enemy_units, unit)
                 if closest_enemy:
                     await self.bot.do(unit.attack(closest_enemy))
         except Exception:
             pass
+
+    def _filter_army_units(self, units):
+        return self._filter_units_by_type(
+            units, ["ZERGLING", "ROACH", "HYDRALISK", "MUTALISK"]
+        )
+
+    def _filter_units_by_type(self, units, names):
+        if hasattr(units, "filter"):
+            return units.filter(lambda u: u.type_id.name in names)
+        return [u for u in units if getattr(u.type_id, "name", "") in names]
+
+    @staticmethod
+    def _has_units(units) -> bool:
+        if hasattr(units, "exists"):
+            return bool(units.exists)
+        return bool(units)
+
+    @staticmethod
+    def _units_amount(units) -> int:
+        if hasattr(units, "amount"):
+            return int(units.amount)
+        return len(units)
+
+    def _get_enemy_center(self, enemy_units):
+        if not Point2:
+            return None
+        items = list(enemy_units)
+        if not items:
+            return None
+        count = len(items)
+        x_sum = sum(u.position.x for u in items)
+        y_sum = sum(u.position.y for u in items)
+        return Point2((x_sum / count, y_sum / count))
+
+    def _closest_enemy(self, enemy_units, unit):
+        if hasattr(enemy_units, "closest_to"):
+            try:
+                return enemy_units.closest_to(unit.position)
+            except Exception:
+                return None
+        closest = None
+        closest_dist = None
+        for enemy in enemy_units:
+            try:
+                dist = unit.distance_to(enemy)
+            except Exception:
+                continue
+            if closest_dist is None or dist < closest_dist:
+                closest = enemy
+                closest_dist = dist
+        return closest

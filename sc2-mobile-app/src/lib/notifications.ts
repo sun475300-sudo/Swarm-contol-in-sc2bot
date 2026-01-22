@@ -3,7 +3,7 @@
  * Web Push API를 사용하여 브라우저 알림 구현
  */
 
-export interface NotificationOptions {
+export interface AppNotificationOptions {
   title: string;
   body: string;
   icon?: string;
@@ -20,7 +20,7 @@ export interface NotificationOptions {
  * 푸시 알림 지원 여부 확인
  */
 export function isPushNotificationSupported(): boolean {
-  return 'serviceWorker' in navigator && 'Notification' in window;
+  return "serviceWorker" in navigator && "Notification" in window;
 }
 
 /**
@@ -28,47 +28,51 @@ export function isPushNotificationSupported(): boolean {
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!isPushNotificationSupported()) {
-    console.warn('Push notifications are not supported');
-    return 'denied';
+    console.warn("Push notifications are not supported");
+    return "denied";
   }
 
-  if (Notification.permission === 'granted') {
-    return 'granted';
+  if (Notification.permission === "granted") {
+    return "granted";
   }
 
-  if (Notification.permission !== 'denied') {
+  if (Notification.permission !== "denied") {
     const permission = await Notification.requestPermission();
     return permission;
   }
 
-  return 'denied';
+  return "denied";
 }
 
 /**
  * 브라우저 알림 표시
  */
-export function showNotification(options: NotificationOptions): void {
+export function showNotification(options: AppNotificationOptions): void {
   if (!isPushNotificationSupported()) {
-    console.warn('Push notifications are not supported');
+    console.warn("Push notifications are not supported");
     return;
   }
 
-  if (Notification.permission !== 'granted') {
-    console.warn('Notification permission not granted');
+  if (Notification.permission !== "granted") {
+    console.warn("Notification permission not granted");
     return;
   }
 
-  const notification = new Notification(options.title, {
+  const notificationOptions: NotificationOptions & {
+    actions?: AppNotificationOptions["actions"];
+  } = {
     body: options.body,
-    icon: options.icon || '/icon-192.png',
-    badge: options.badge || '/icon-192.png',
-    tag: options.tag || 'sc2-notification',
+    icon: options.icon || "/icon-192.png",
+    badge: options.badge || "/icon-192.png",
+    tag: options.tag || "sc2-notification",
     requireInteraction: options.requireInteraction || false,
     actions: options.actions || [],
-  });
+  };
+
+  const notification = new Notification(options.title, notificationOptions);
 
   // 알림 클릭 이벤트
-  notification.addEventListener('click', () => {
+  notification.addEventListener("click", () => {
     window.focus();
     notification.close();
   });
@@ -77,14 +81,17 @@ export function showNotification(options: NotificationOptions): void {
 /**
  * 게임 종료 알림
  */
-export function notifyGameEnd(result: 'Victory' | 'Defeat', mapName: string): void {
-  const title = result === 'Victory' ? '🎉 게임 승리!' : '😢 게임 패배';
-  const body = `${mapName}에서 ${result === 'Victory' ? '승리' : '패배'}했습니다.`;
+export function notifyGameEnd(
+  result: "Victory" | "Defeat",
+  mapName: string
+): void {
+  const title = result === "Victory" ? "🎉 게임 승리!" : "😢 게임 패배";
+  const body = `${mapName}에서 ${result === "Victory" ? "승리" : "패배"}했습니다.`;
 
   showNotification({
     title,
     body,
-    tag: 'game-end',
+    tag: "game-end",
     requireInteraction: true,
   });
 }
@@ -92,11 +99,14 @@ export function notifyGameEnd(result: 'Victory' | 'Defeat', mapName: string): vo
 /**
  * 학습 완료 알림
  */
-export function notifyTrainingComplete(episodeNumber: number, reward: number): void {
+export function notifyTrainingComplete(
+  episodeNumber: number,
+  reward: number
+): void {
   showNotification({
-    title: '📚 학습 에피소드 완료',
+    title: "📚 학습 에피소드 완료",
     body: `에피소드 ${episodeNumber}가 완료되었습니다. 보상: ${reward.toFixed(2)}`,
-    tag: 'training-complete',
+    tag: "training-complete",
     requireInteraction: true,
   });
 }
@@ -106,9 +116,9 @@ export function notifyTrainingComplete(episodeNumber: number, reward: number): v
  */
 export function notifyArenaWin(elo: number, opponent: string): void {
   showNotification({
-    title: '🏆 Arena 경기 승리!',
+    title: "🏆 Arena 경기 승리!",
     body: `${opponent}을(를) 이겼습니다. ELO: +${elo}`,
-    tag: 'arena-win',
+    tag: "arena-win",
     requireInteraction: true,
   });
 }
@@ -118,9 +128,9 @@ export function notifyArenaWin(elo: number, opponent: string): void {
  */
 export function notifyArenaLoss(elo: number, opponent: string): void {
   showNotification({
-    title: '⚔️ Arena 경기 패배',
+    title: "⚔️ Arena 경기 패배",
     body: `${opponent}에게 졌습니다. ELO: -${elo}`,
-    tag: 'arena-loss',
+    tag: "arena-loss",
   });
 }
 
@@ -129,9 +139,9 @@ export function notifyArenaLoss(elo: number, opponent: string): void {
  */
 export function notifyBotConfigChanged(configName: string): void {
   showNotification({
-    title: '⚙️ 봇 설정 변경',
+    title: "⚙️ 봇 설정 변경",
     body: `활성 봇 설정이 "${configName}"으로 변경되었습니다.`,
-    tag: 'bot-config-changed',
+    tag: "bot-config-changed",
   });
 }
 
@@ -142,7 +152,7 @@ export function notifyInfo(title: string, body: string): void {
   showNotification({
     title,
     body,
-    tag: 'info',
+    tag: "info",
   });
 }
 
@@ -153,7 +163,7 @@ export function notifyError(title: string, body: string): void {
   showNotification({
     title,
     body,
-    tag: 'error',
+    tag: "error",
     requireInteraction: true,
   });
 }
@@ -163,7 +173,7 @@ export function notifyError(title: string, body: string): void {
  */
 export function getNotificationPermission(): NotificationPermission {
   if (!isPushNotificationSupported()) {
-    return 'denied';
+    return "denied";
   }
   return Notification.permission;
 }
@@ -178,7 +188,7 @@ export async function closeAllNotifications(): Promise<void> {
 
   const registration = await navigator.serviceWorker.ready;
   const notifications = await registration.getNotifications();
-  notifications.forEach((notification) => {
+  notifications.forEach(notification => {
     notification.close();
   });
 }
@@ -193,7 +203,7 @@ export async function closeNotificationByTag(tag: string): Promise<void> {
 
   const registration = await navigator.serviceWorker.ready;
   const notifications = await registration.getNotifications({ tag });
-  notifications.forEach((notification) => {
+  notifications.forEach(notification => {
     notification.close();
   });
 }

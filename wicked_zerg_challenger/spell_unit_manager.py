@@ -1,21 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Spell Unit Manager - Optimized targeting for spell units (Infestor, Viper, Ravager)
+Spell Unit Manager - Optimized targeting for spell units (Infestor, Viper)
+
+CRITICAL: Spell units require less frequent targeting updates than regular units
+to reduce CPU load and allow proper spell cooldown management.
+
+Features:
+- Infestor: Neural Parasite, Fungal Growth
+- Viper: Abduct, Parasitic Bomb, Blinding Cloud, Consume
+- Optimized targeting cycle (16 frames instead of every frame)
 """
 
-from typing import TYPE_CHECKING, List, Optional, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from sc2.unit import Unit
-    from sc2.position import Point2
-    from sc2.ids.unit_typeid import UnitTypeId
     from sc2.ids.ability_id import AbilityId
+    from sc2.ids.unit_typeid import UnitTypeId
+    from sc2.position import Point2
+    from sc2.unit import Unit
 else:
+    # Runtime imports
     try:
-        from sc2.unit import Unit
-        from sc2.position import Point2
-        from sc2.ids.unit_typeid import UnitTypeId
         from sc2.ids.ability_id import AbilityId
+        from sc2.ids.unit_typeid import UnitTypeId
+        from sc2.position import Point2
+        from sc2.unit import Unit
     except ImportError:
         Unit = None
         Point2 = None
@@ -24,118 +33,241 @@ else:
 
 
 class SpellUnitManager:
+    """
+    Spell Unit Manager - Optimized spell unit control
+
+    CRITICAL: Spell units are controlled less frequently (16 frames) than regular units
+    to reduce CPU load and allow proper spell cooldown management.
+    """
+
     def __init__(self, bot: "WickedZergBotPro"):
         self.bot = bot
         self.last_spell_update_frame: int = 0
-        self.spell_update_interval: int = 16
-        self.infestor_last_spell: Dict[int, float] = {}
-        self.viper_last_spell: Dict[int, float] = {}
-        self.ravager_last_bile: Dict[int, float] = {}
+        self.spell_update_interval: int = 16  # Update every 16 frames (~0.7 seconds)
+
+        # Spell cooldown tracking
+        from typing import Dict
+
+        self.infestor_last_spell: Dict[int, float] = {}  # unit tag -> last spell time
+        self.viper_last_spell: Dict[int, float] = {}  # unit tag -> last spell time
+
+        # Spell cooldowns (seconds)
         self.NEURAL_PARASITE_COOLDOWN = 1.5
         self.FUNGAL_GROWTH_COOLDOWN = 1.0
         self.ABDUCT_COOLDOWN = 1.0
         self.PARASITIC_BOMB_COOLDOWN = 1.0
         self.BLINDING_CLOUD_COOLDOWN = 1.0
-        self.CORROSIVE_BILE_COOLDOWN = 0.71
-        self.bile_lead_time = getattr(self.bot, "bile_lead_time", 1.7)
-        self.bile_structure_bonus = getattr(self.bot, "bile_structure_bonus", 80.0)
-        self.bile_forcefield_bonus = getattr(self.bot, "bile_forcefield_bonus", 120.0)
-        self.bile_siegetank_bonus = getattr(self.bot, "bile_siegetank_bonus", 100.0)
+        self.CONSUME_COOLDOWN = 1.0
+        self.consume_energy_threshold = 50
+
+        self.viper_last_consume: Dict[int, float] = {}
 
     async def update(self, iteration: int):
+        """
+        Update spell units (called less frequently than regular units)
+
+        Args:
+            iteration: Current game iteration
+        """
+        # Only update every N frames to reduce CPU load
         if iteration - self.last_spell_update_frame < self.spell_update_interval:
             return
+
         self.last_spell_update_frame = iteration
-        await self._update_infestors()
-        await self._update_vipers()
-        await self._update_ravagers()
+
+        try:
+            # Update Infestors
+            await self._update_infestors()
+
+            # Update Vipers
+            await self._update_vipers()
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] SpellUnitManager.update() error: {e}")
 
     async def _update_infestors(self):
+        """Update Infestor spell usage"""
         b = self.bot
+
         infestors = b.units(UnitTypeId.INFESTOR).ready
         if not infestors.exists:
             return
+
         enemy_units = getattr(b, "enemy_units", [])
         if not enemy_units:
             return
+
         current_time = b.time
+
         for infestor in infestors:
-            last_spell = self.infestor_last_spell.get(infestor.tag, 0.0)
-            time_since = current_time - last_spell
+            infestor_tag = infestor.tag
 
-            if time_since >= self.NEURAL_PARASITE_COOLDOWN:
-                high_value = [
-                    e for e in enemy_units
-                    if e.type_id in [
-                        UnitTypeId.SIEGETANKSIEGED,
-                        UnitTypeId.COLOSSUS,
-                        UnitTypeId.BATTLECRUISER,
-                        UnitTypeId.CARRIER,
-                        UnitTypeId.HIGHTEMPLAR,
-                        UnitTypeId.RAVEN,
-                        UnitTypeId.LURKER,
-                        UnitTypeId.IMMORTAL,
+            # Check if spell is on cooldown
+            last_spell_time = self.infestor_last_spell.get(infestor_tag, 0.0)
+            time_since_spell = current_time - last_spell_time
+
+            # Neural Parasite (high priority targets)
+            if time_since_spell >= self.NEURAL_PARASITE_COOLDOWN:
+                high_value_ids = self._unit_type_ids(
+                    [
+                        "SIEGETANKSIEGED",
+                        "SIEGETANK",
+                        "COLOSSUS",
+                        "IMMORTAL",
+                        "DISRUPTOR",
+                        "HIGHTEMPLAR",
+                        "ARCHON",
+                        "WIDOWMINE",
+                        "WIDOWMINEBURROWED",
+                        "BATTLECRUISER",
+                        "CARRIER",
+                        "TEMPEST",
+                        "GHOST",
                     ]
+                )
+                high_value_targets = [
+                    e for e in enemy_units if e.type_id in high_value_ids
                 ]
-                nearby = self._find_nearby_targets(infestor, high_value, 9.0)
-                if nearby and infestor.energy >= 100:
-                    try:
-                        await b.do(infestor(AbilityId.NEURALPARASITE_NEURALPARASITE, nearby[0]))
-                        self.infestor_last_spell[infestor.tag] = current_time
-                        continue
-                    except Exception:
-                        pass
 
-            if time_since >= self.FUNGAL_GROWTH_COOLDOWN:
-                nearby = self._find_nearby_targets(infestor, enemy_units, 10.0)
-                if len(nearby) >= 3 and infestor.energy >= 75:
-                    best = self._find_best_fungal_target(infestor, nearby)
-                    if best:
+                if high_value_targets:
+                    # Use closer_than API for performance
+                    if hasattr(enemy_units, "closer_than"):
+                        nearby_targets = list(
+                            enemy_units.closer_than(9.0, infestor.position)
+                        )
+                    else:
+                        nearby_targets = [
+                            e
+                            for e in high_value_targets
+                            if infestor.distance_to(e) < 9.0
+                        ]
+
+                    if nearby_targets:
+                        target = nearby_targets[0]
+                        if infestor.energy >= 100:  # Neural Parasite costs 100 energy
+                            try:
+                                await b.do(
+                                    infestor(
+                                        AbilityId.NEURALPARASITE_NEURALPARASITE, target
+                                    )
+                                )
+                                self.infestor_last_spell[infestor_tag] = current_time
+                                continue
+                            except Exception:
+                                pass
+
+            # Fungal Growth (area damage)
+            if time_since_spell >= self.FUNGAL_GROWTH_COOLDOWN:
+                # Find clumped enemy units
+                if hasattr(enemy_units, "closer_than"):
+                    nearby_enemies = list(
+                        enemy_units.closer_than(10.0, infestor.position)
+                    )
+                else:
+                    nearby_enemies = [
+                        e for e in enemy_units if infestor.distance_to(e) < 10.0
+                    ]
+
+                if len(nearby_enemies) >= 3:  # At least 3 enemies for fungal
+                    # Find best position to hit multiple enemies
+                    best_target = self._find_best_fungal_target(
+                        infestor, nearby_enemies
+                    )
+                    if best_target and infestor.energy >= 75:  # Fungal costs 75 energy
                         try:
-                            await b.do(infestor(AbilityId.FUNGALGROWTH_FUNGALGROWTH, best))
-                            self.infestor_last_spell[infestor.tag] = current_time
+                            await b.do(
+                                infestor(
+                                    AbilityId.FUNGALGROWTH_FUNGALGROWTH, best_target
+                                )
+                            )
+                            self.infestor_last_spell[infestor_tag] = current_time
                         except Exception:
                             pass
 
-            if infestor.energy < 50:
-                await self._retreat_low_energy_unit(infestor)
-
     async def _update_vipers(self):
+        """Update Viper spell usage"""
         b = self.bot
+
         vipers = b.units(UnitTypeId.VIPER).ready
         if not vipers.exists:
             return
+
         enemy_units = getattr(b, "enemy_units", [])
         if not enemy_units:
             return
-        current_time = b.time
-        for viper in vipers:
-            last_spell = self.viper_last_spell.get(viper.tag, 0.0)
-            time_since = current_time - last_spell
 
-            if time_since >= self.ABDUCT_COOLDOWN:
-                high_value = [
-                    e for e in enemy_units
-                    if e.type_id in [
+        current_time = b.time
+
+        for viper in vipers:
+            viper_tag = viper.tag
+
+            # Check if spell is on cooldown
+            last_spell_time = self.viper_last_spell.get(viper_tag, 0.0)
+            time_since_spell = current_time - last_spell_time
+
+            consume_ability = getattr(AbilityId, "VIPERCONSUME_VIPERCONSUME", None)
+            if consume_ability is None:
+                consume_ability = getattr(AbilityId, "EFFECT_CONSUME", None)
+            if consume_ability:
+                last_consume_time = self.viper_last_consume.get(viper_tag, 0.0)
+                time_since_consume = current_time - last_consume_time
+                if (
+                    viper.energy < self.consume_energy_threshold
+                    and time_since_consume >= self.CONSUME_COOLDOWN
+                ):
+                    consume_target = self._find_consume_target(viper)
+                    if consume_target:
+                        try:
+                            await b.do(viper(consume_ability, consume_target))
+                            self.viper_last_consume[viper_tag] = current_time
+                            continue
+                        except Exception:
+                            pass
+
+            # Abduct (pull high-value targets)
+            if time_since_spell >= self.ABDUCT_COOLDOWN:
+                # Find high-value targets
+                high_value_targets = [
+                    e
+                    for e in enemy_units
+                    if e.type_id
+                    in [
                         UnitTypeId.SIEGETANKSIEGED,
                         UnitTypeId.COLOSSUS,
                         UnitTypeId.THOR,
                         UnitTypeId.BATTLECRUISER,
                     ]
                 ]
-                nearby = self._find_nearby_targets(viper, high_value, 11.0)
-                if nearby and viper.energy >= 75:
-                    try:
-                        await b.do(viper(AbilityId.ABDUCT_ABDUCT, nearby[0]))
-                        self.viper_last_spell[viper.tag] = current_time
-                        continue
-                    except Exception:
-                        pass
 
-            if time_since >= self.PARASITIC_BOMB_COOLDOWN:
+                if high_value_targets:
+                    # Use closer_than API for performance
+                    if hasattr(enemy_units, "closer_than"):
+                        nearby_targets = list(
+                            enemy_units.closer_than(11.0, viper.position)
+                        )
+                    else:
+                        nearby_targets = [
+                            e for e in high_value_targets if viper.distance_to(e) < 11.0
+                        ]
+
+                    if nearby_targets:
+                        target = nearby_targets[0]
+                        if viper.energy >= 75:  # Abduct costs 75 energy
+                            try:
+                                await b.do(viper(AbilityId.ABDUCT_ABDUCT, target))
+                                self.viper_last_spell[viper_tag] = current_time
+                                continue
+                            except Exception:
+                                pass
+
+            # Parasitic Bomb (air units)
+            if time_since_spell >= self.PARASITIC_BOMB_COOLDOWN:
                 air_targets = [
-                    e for e in enemy_units
-                    if e.is_flying and e.type_id in [
+                    e
+                    for e in enemy_units
+                    if e.is_flying
+                    and e.type_id
+                    in [
                         UnitTypeId.BANSHEE,
                         UnitTypeId.VIKING,
                         UnitTypeId.MEDIVAC,
@@ -144,146 +276,152 @@ class SpellUnitManager:
                         UnitTypeId.CARRIER,
                     ]
                 ]
-                nearby = self._find_nearby_targets(viper, air_targets, 14.0)
-                if nearby and viper.energy >= 125:
-                    try:
-                        await b.do(viper(AbilityId.PARASITICBOMB_PARASITICBOMB, nearby[0]))
-                        self.viper_last_spell[viper.tag] = current_time
-                        continue
-                    except Exception:
-                        pass
 
-            if time_since >= self.BLINDING_CLOUD_COOLDOWN:
+                if air_targets:
+                    if hasattr(enemy_units, "closer_than"):
+                        nearby_air = list(enemy_units.closer_than(14.0, viper.position))
+                    else:
+                        nearby_air = [
+                            e for e in air_targets if viper.distance_to(e) < 14.0
+                        ]
+
+                    if nearby_air:
+                        target = nearby_air[0]
+                        if viper.energy >= 125:  # Parasitic Bomb costs 125 energy
+                            try:
+                                await b.do(
+                                    viper(AbilityId.PARASITICBOMB_PARASITICBOMB, target)
+                                )
+                                self.viper_last_spell[viper_tag] = current_time
+                                continue
+                            except Exception:
+                                pass
+
+            # Blinding Cloud (ground units)
+            if time_since_spell >= self.BLINDING_CLOUD_COOLDOWN:
                 ground_targets = [
-                    e for e in enemy_units
-                    if not e.is_flying and e.type_id in [
+                    e
+                    for e in enemy_units
+                    if not e.is_flying
+                    and e.type_id
+                    in [
                         UnitTypeId.SIEGETANKSIEGED,
                         UnitTypeId.MARINE,
                         UnitTypeId.MARAUDER,
                     ]
                 ]
-                nearby = self._find_nearby_targets(viper, ground_targets, 12.0)
-                if nearby and viper.energy >= 100:
-                    best = self._find_best_blinding_cloud_position(viper, nearby)
-                    if best:
-                        try:
-                            await b.do(viper(AbilityId.BLINDINGCLOUD_BLINDINGCLOUD, best))
-                            self.viper_last_spell[viper.tag] = current_time
-                        except Exception:
-                            pass
 
-            if viper.energy < 50:
-                await self._retreat_low_energy_unit(viper)
+                if ground_targets:
+                    if hasattr(enemy_units, "closer_than"):
+                        nearby_ground = list(
+                            enemy_units.closer_than(12.0, viper.position)
+                        )
+                    else:
+                        nearby_ground = [
+                            e for e in ground_targets if viper.distance_to(e) < 12.0
+                        ]
 
-    async def _update_ravagers(self):
-        b = self.bot
-        ravagers = b.units(UnitTypeId.RAVAGER).ready
-        if not ravagers.exists:
-            return
-        enemy_units = getattr(b, "enemy_units", [])
-        if not enemy_units:
-            return
-        current_time = b.time
-        for ravager in ravagers:
-            last_bile = self.ravager_last_bile.get(ravager.tag, 0.0)
-            if current_time - last_bile < self.CORROSIVE_BILE_COOLDOWN:
-                continue
-            nearby = self._find_nearby_targets(ravager, enemy_units, 12.0)
-            if not nearby:
-                continue
-            best = self._find_best_bile_target(ravager, nearby)
-            if best:
-                try:
-                    await b.do(ravager(AbilityId.CORROSIVEBILE_CORROSIVEBILE, best))
-                    self.ravager_last_bile[ravager.tag] = current_time
-                except Exception:
-                    pass
+                    if nearby_ground:
+                        # Find clumped ground units
+                        best_position = self._find_best_blinding_cloud_position(
+                            viper, nearby_ground
+                        )
+                        if (
+                            best_position and viper.energy >= 100
+                        ):  # Blinding Cloud costs 100 energy
+                            try:
+                                await b.do(
+                                    viper(
+                                        AbilityId.BLINDINGCLOUD_BLINDINGCLOUD,
+                                        best_position,
+                                    )
+                                )
+                                self.viper_last_spell[viper_tag] = current_time
+                            except Exception:
+                                pass
 
-    def _find_nearby_targets(self, unit: Unit, targets: List[Unit], max_range: float) -> List[Unit]:
-        if hasattr(targets, "closer_than"):
-            return list(targets.closer_than(max_range, unit.position))
-        return [e for e in targets if unit.distance_to(e.position) < max_range]
+    def _find_best_fungal_target(
+        self, infestor: Unit, enemies: List[Unit]
+    ) -> Optional[Point2]:
+        """Find best position for Fungal Growth to hit multiple enemies"""
+        if not enemies:
+            return None
 
-    async def _retreat_low_energy_unit(self, unit: Unit):
-        b = self.bot
-        if not b.townhalls.exists:
-            return
-        safe_pos = b.townhalls.first.position
-
-        # Viper consume
-        if unit.type_id == UnitTypeId.VIPER:
-            consumable_types = [
-                UnitTypeId.HYDRALISKDEN,
-                UnitTypeId.SPIRE,
-                UnitTypeId.EVOLUTIONCHAMBER,
-                UnitTypeId.HATCHERY,
-                UnitTypeId.LAIR,
-                UnitTypeId.HIVE,
-            ]
-            consumables = b.units.filter(
-                lambda u: u.type_id in consumable_types
-                and getattr(u, "health_percentage", 1.0) >= 0.2
-            )
-            if consumables.exists:
-                building = consumables.closest_to(unit.position)
-                if unit.distance_to(building.position) < 5.0:
-                    try:
-                        await b.do(unit(AbilityId.CONSUME_CONSUME, building))
-                        return
-                    except Exception:
-                        pass
-
-        if unit.distance_to(safe_pos) > 10.0:
-            await b.do(unit.move(safe_pos))
-
-    def _find_best_fungal_target(self, infestor: Unit, enemies: List[Unit]) -> Optional[Point2]:
-        best_pos = None
+        # Find position that hits most enemies (within 2.5 radius)
+        best_position = None
         max_hits = 0
-        for enemy in enemies[:10]:
+
+        for enemy in enemies[:10]:  # Limit to 10 enemies for performance
             hits = sum(1 for e in enemies if e.distance_to(enemy.position) <= 2.5)
             if hits > max_hits:
                 max_hits = hits
-                best_pos = enemy.position
-        return best_pos
+                best_position = enemy.position
 
-    def _find_best_blinding_cloud_position(self, viper: Unit, enemies: List[Unit]) -> Optional[Point2]:
+        return best_position
+
+    def _find_best_blinding_cloud_position(
+        self, viper: Unit, enemies: List[Unit]
+    ) -> Optional[Point2]:
+        """Find best position for Blinding Cloud to cover multiple enemies"""
+        if not enemies:
+            return None
+
+        # Find center of enemy cluster
         if len(enemies) == 1:
             return enemies[0].position
+
+        # Calculate centroid
         total_x = sum(e.position.x for e in enemies)
         total_y = sum(e.position.y for e in enemies)
-        return Point2((total_x / len(enemies), total_y / len(enemies)))
+        centroid = Point2((total_x / len(enemies), total_y / len(enemies)))
 
-    def _find_best_bile_target(self, ravager: Unit, enemies: List[Unit]) -> Optional[Point2]:
-        best_pos = None
-        best_score = 0.0
-        for enemy in enemies[:15]:
-            # 예측 사격: 이동 벡터 기반 리드
-            target_pos = self._predict_position(enemy, lead_time=self.bile_lead_time)
-            nearby_count = sum(1 for e in enemies if e.distance_to(target_pos) <= 2.5)
-            structure_bonus = self.bile_structure_bonus if getattr(enemy, "is_structure", False) else 0.0
+        return centroid
 
-            # 고정 위협 우선 (Force Field, SiegeTank 등)
-            priority_bonus = 0.0
-            if hasattr(UnitTypeId, "FORCEFIELD") and enemy.type_id == UnitTypeId.FORCEFIELD:
-                priority_bonus = self.bile_forcefield_bonus
-            if enemy.type_id in [UnitTypeId.SIEGETANKSIEGED, UnitTypeId.SIEGETANK]:
-                priority_bonus = max(priority_bonus, self.bile_siegetank_bonus)
+    def _find_consume_target(self, viper: Unit) -> Optional[Unit]:
+        """Find a safe structure to consume for Viper energy."""
+        if not hasattr(self.bot, "structures"):
+            return None
 
-            score = nearby_count * 20.0 + structure_bonus + priority_bonus
-            if score > best_score:
-                best_score = score
-                best_pos = target_pos
-        return best_pos if best_score >= 40.0 else None
+        if not UnitTypeId:
+            return None
 
-    def _predict_position(self, unit: Unit, lead_time: float = 1.7) -> "Point2":
-        """
-        이동 경로 예측 (간단 리드)
-        """
-        pos = unit.position
-        velocity = getattr(unit, "velocity", None)
-        if velocity is None:
-            return pos
+        candidate_ids = self._unit_type_ids(
+            [
+                "EXTRACTOR",
+                "EVOLUTIONCHAMBER",
+                "SPINECRAWLER",
+                "SPORECRAWLER",
+                "HATCHERY",
+                "LAIR",
+                "HIVE",
+            ]
+        )
+
+        structures = [s for s in self.bot.structures if s.type_id in candidate_ids]
+        if not structures:
+            return None
+
+        healthy = []
+        for structure in structures:
+            health = getattr(structure, "health", 0)
+            health_ratio = getattr(structure, "health_percentage", 1.0)
+            if health > 200 and health_ratio > 0.6:
+                healthy.append(structure)
+
+        candidates = healthy if healthy else structures
+
         try:
-            return pos + velocity * lead_time
+            return min(candidates, key=lambda s: viper.distance_to(s))
         except Exception:
-            return pos
+            return candidates[0] if candidates else None
+
+    @staticmethod
+    def _unit_type_ids(names: List[str]) -> List[object]:
+        if not UnitTypeId:
+            return []
+        unit_ids = []
+        for name in names:
+            unit_type = getattr(UnitTypeId, name, None)
+            if unit_type is not None:
+                unit_ids.append(unit_type)
+        return unit_ids

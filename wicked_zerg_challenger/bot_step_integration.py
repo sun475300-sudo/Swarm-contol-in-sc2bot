@@ -1,81 +1,90 @@
 # -*- coding: utf-8 -*-
 """
-Bot Step Integration - on_step ±¸Çö ÅëÇÕ ¸ğµâ
+Bot Step Integration - on_step êµ¬í˜„ í†µí•© ëª¨ë“ˆ
 
-ÀÌ ¸ğµâÀº WickedZergBotProÀÇ on_step ¸Ş¼­µå¸¦ ±¸ÇöÇÏ¿©
-½ÇÁ¦ °ÔÀÓ ·ÎÁ÷°ú ÈÆ·Ã ·ÎÁ÷À» ÅëÇÕÇÕ´Ï´Ù.
+ì´ ëª¨ë“ˆì€ WickedZergBotProì˜ on_step ë©”ì„œë“œë¥¼ êµ¬í˜„í•˜ì—¬
+ì‹¤ì œ ê²Œì„ ë¡œì§ê³¼ í›ˆë ¨ ë¡œì§ì„ í†µí•©í•©ë‹ˆë‹¤.
 """
 
-from typing import Optional, Dict, Any
 import asyncio
+from typing import Any, Dict, Optional
 
 try:
     from sc2.bot_ai import BotAI
     from sc2.ids.unit_typeid import UnitTypeId
 except ImportError:
+
     class BotAI:
         pass
+
     class UnitTypeId:
         pass
 
 
 class BotStepIntegrator:
     """
-    BotÀÇ on_step ¸Ş¼­µå¸¦ ±¸ÇöÇÏ´Â ÅëÇÕ Å¬·¡½º
-    
-    ±â´É:
-    1. ¸Å´ÏÀúµé ÃÊ±âÈ­ (lazy loading)
-    2. °ÔÀÓ ·ÎÁ÷ ½ÇÇà (economy, production, combat µî)
-    3. ÈÆ·Ã ¸ğµå: º¸»ó °è»ê ¹× RL ¾÷µ¥ÀÌÆ®
-    4. ÃÖ½Å °³¼± »çÇ× ÅëÇÕ (advanced_building_manager µî)
+    Botì˜ on_step ë©”ì„œë“œë¥¼ êµ¬í˜„í•˜ëŠ” í†µí•© í´ë˜ìŠ¤
+
+    ê¸°ëŠ¥:
+    1. ë§¤ë‹ˆì €ë“¤ ì´ˆê¸°í™” (lazy loading)
+    2. ê²Œì„ ë¡œì§ ì‹¤í–‰ (economy, production, combat ë“±)
+    3. í›ˆë ¨ ëª¨ë“œ: ë³´ìƒ ê³„ì‚° ë° RL ì—…ë°ì´íŠ¸
+    4. ìµœì‹  ê°œì„  ì‚¬í•­ í†µí•© (advanced_building_manager ë“±)
     """
-    
+
     def __init__(self, bot):
         self.bot = bot
         self._managers_initialized = False
-        
+
     async def initialize_managers(self):
-        """¸Å´ÏÀúµé ÃÊ±âÈ­ (lazy loading)"""
+        """ë§¤ë‹ˆì €ë“¤ ì´ˆê¸°í™” (lazy loading)"""
         if self._managers_initialized:
             return
-        
+
         try:
             # Economy Manager
             if self.bot.economy is None:
                 try:
                     from economy_manager import EconomyManager
+
                     self.bot.economy = EconomyManager(self.bot)
                 except ImportError:
                     pass
-            
+
             # Production Manager
             if self.bot.production is None:
                 try:
-                    from local_training.production_resilience import ProductionResilience
+                    from local_training.production_resilience import (
+                        ProductionResilience,
+                    )
+
                     self.bot.production = ProductionResilience(self.bot)
                 except ImportError:
                     pass
-            
+
             # Combat Manager
             if self.bot.combat is None:
                 try:
                     from combat_manager import CombatManager
+
                     self.bot.combat = CombatManager(self.bot)
                 except ImportError:
                     pass
-            
+
             # Intel Manager
             if self.bot.intel is None:
                 try:
                     from intel_manager import IntelManager
+
                     self.bot.intel = IntelManager(self.bot)
                 except ImportError:
                     pass
-            
+
             # Scouting System
             if self.bot.scout is None:
                 try:
                     from scouting_system import ScoutingSystem
+
                     self.bot.scout = ScoutingSystem(self.bot)
                 except ImportError:
                     pass
@@ -84,6 +93,7 @@ class BotStepIntegrator:
             if not hasattr(self.bot, "creep_manager"):
                 try:
                     from creep_manager import CreepManager
+
                     self.bot.creep_manager = CreepManager(self.bot)
                 except ImportError:
                     pass
@@ -91,257 +101,301 @@ class BotStepIntegrator:
             # Upgrade Manager
             if not hasattr(self.bot, "upgrade_manager"):
                 try:
-                    from upgrade_manager import UpgradeManager
-                    self.bot.upgrade_manager = UpgradeManager(self.bot)
+                    from upgrade_manager import EvolutionUpgradeManager
+
+                    self.bot.upgrade_manager = EvolutionUpgradeManager(self.bot)
                 except ImportError:
                     pass
-            
+
+            # Unit Factory (fallback production)
+            if not hasattr(self.bot, "unit_factory"):
+                try:
+                    from unit_factory import UnitFactory
+
+                    self.bot.unit_factory = UnitFactory(self.bot)
+                except ImportError:
+                    pass
+
             # Micro Controller
             if self.bot.micro is None:
                 try:
                     from micro_controller import BoidsController
+
                     self.bot.micro = BoidsController(self.bot)
                 except ImportError:
                     pass
-            
+
+            # Spell Unit Manager
+            if not hasattr(self.bot, "spell_manager"):
+                try:
+                    from spell_unit_manager import SpellUnitManager
+
+                    self.bot.spell_manager = SpellUnitManager(self.bot)
+                except ImportError:
+                    pass
+
             # Queen Manager
             if self.bot.queen_manager is None:
                 try:
                     from queen_manager import QueenManager
+
                     self.bot.queen_manager = QueenManager(self.bot)
                 except ImportError:
                     pass
-            
-            # Advanced Building Manager (ÃÖ½Å °³¼± »çÇ×)
-            if not hasattr(self.bot, 'advanced_building_manager'):
+
+            # Advanced Building Manager (ìµœì‹  ê°œì„  ì‚¬í•­)
+            if not hasattr(self.bot, "advanced_building_manager"):
                 try:
-                    from local_training.advanced_building_manager import AdvancedBuildingManager
-                    self.bot.advanced_building_manager = AdvancedBuildingManager(self.bot)
+                    from local_training.advanced_building_manager import (
+                        AdvancedBuildingManager,
+                    )
+
+                    self.bot.advanced_building_manager = AdvancedBuildingManager(
+                        self.bot
+                    )
                 except ImportError:
                     pass
-            
-            # Aggressive Tech Builder (ÃÖ½Å °³¼± »çÇ×)
-            if not hasattr(self.bot, 'aggressive_tech_builder'):
+
+            # Aggressive Tech Builder (ìµœì‹  ê°œì„  ì‚¬í•­)
+            if not hasattr(self.bot, "aggressive_tech_builder"):
                 try:
-                    from local_training.aggressive_tech_builder import AggressiveTechBuilder
+                    from local_training.aggressive_tech_builder import (
+                        AggressiveTechBuilder,
+                    )
+
                     self.bot.aggressive_tech_builder = AggressiveTechBuilder(self.bot)
                 except ImportError:
                     pass
-            
-            # Reward System (ÈÆ·Ã ¸ğµå¿ë)
-            if self.bot.train_mode and not hasattr(self.bot, '_reward_system'):
+
+            # Reward System (í›ˆë ¨ ëª¨ë“œìš©)
+            if self.bot.train_mode and not hasattr(self.bot, "_reward_system"):
                 try:
                     from local_training.reward_system import ZergRewardSystem
+
                     self.bot._reward_system = ZergRewardSystem()
                 except ImportError:
                     pass
-            
-            # RL Agent (ÈÆ·Ã ¸ğµå¿ë)
-            if self.bot.train_mode and not hasattr(self.bot, 'rl_agent'):
+
+            # RL Agent (í›ˆë ¨ ëª¨ë“œìš©)
+            if self.bot.train_mode and not hasattr(self.bot, "rl_agent"):
                 try:
-                    # RL Agent Å¬·¡½º¸¦ Ã£¾Æ¼­ ÃÊ±âÈ­
-                    # ½ÇÁ¦ RL Agent Å¬·¡½º °æ·Î´Â ÇÁ·ÎÁ§Æ® ±¸Á¶¿¡ µû¶ó ´Ù¸¦ ¼ö ÀÖÀ½
+                    # RL Agent í´ë˜ìŠ¤ë¥¼ ì°¾ì•„ì„œ ì´ˆê¸°í™”
+                    # ì‹¤ì œ RL Agent í´ë˜ìŠ¤ ê²½ë¡œëŠ” í”„ë¡œì íŠ¸ êµ¬ì¡°ì— ë”°ë¼ ë‹¤ë¥¼ ìˆ˜ ìˆìŒ
                     from local_training.rl_agent import RLAgent
+
                     self.bot.rl_agent = RLAgent()
                 except ImportError:
-                    # RL Agent°¡ ¾øÀ¸¸é °æ°í¸¸ Ãâ·ÂÇÏ°í °è¼Ó ÁøÇà
-                    iteration = getattr(self.bot, 'iteration', 0)
+                    # RL Agentê°€ ì—†ìœ¼ë©´ ê²½ê³ ë§Œ ì¶œë ¥í•˜ê³  ê³„ì† ì§„í–‰
+                    iteration = getattr(self.bot, "iteration", 0)
                     if iteration % 500 == 0:
-                        print("[WARNING] RL Agent not available, training will continue without RL updates")
-            
+                        print(
+                            "[WARNING] RL Agent not available, training will continue without RL updates"
+                        )
+
             self._managers_initialized = True
-            
+
         except Exception as e:
-            iteration = getattr(self.bot, 'iteration', 0)
+            iteration = getattr(self.bot, "iteration", 0)
             if iteration % 100 == 0:
                 print(f"[WARNING] Failed to initialize some managers: {e}")
-    
+
     async def execute_game_logic(self, iteration: int):
-        """°ÔÀÓ ·ÎÁ÷ ½ÇÇà"""
+        """ê²Œì„ ë¡œì§ ì‹¤í–‰"""
         try:
-            # 1. Intel (Á¤º¸ ¼öÁı)
-            if self.bot.intel:
-                try:
-                    await self.bot.intel.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Intel error: {e}")
-            
-            # 2. Scouting (Á¤Âû)
-            if self.bot.scout:
-                try:
-                    await self.bot.scout.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Scouting error: {e}")
-            
-            # 3. Economy (°æÁ¦)
-            if self.bot.economy:
-                try:
-                    await self.bot.economy.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Economy error: {e}")
-            
-            # 4. Production (»ı»ê)
+            # 1. Intel (ì •ë³´ ìˆ˜ì§‘)
+            await self._safe_manager_step(self.bot.intel, iteration, "Intel")
+
+            # 2. Scouting (ì •ì°°)
+            await self._safe_manager_step(self.bot.scout, iteration, "Scouting")
+
+            # 2.2. Creep Manager (ì ë§‰ ê³„íš)
+            await self._safe_manager_step(
+                getattr(self.bot, "creep_manager", None),
+                iteration,
+                "Creep manager",
+            )
+
+            # 3. Economy (ê²½ì œ)
+            await self._safe_manager_step(self.bot.economy, iteration, "Economy")
+
+            # 4. Production (ìƒì‚°)
             if self.bot.production:
                 try:
-                    # ProductionResilienceÀÇ ¸Ş¼­µå È£Ãâ
-                    if hasattr(self.bot.production, 'fix_production_bottleneck'):
+                    # ProductionResilienceì˜ ë©”ì„œë“œ í˜¸ì¶œ
+                    if hasattr(self.bot.production, "fix_production_bottleneck"):
                         await self.bot.production.fix_production_bottleneck()
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Production error: {e}")
-            
-            # 5. Advanced Building Manager (ÃÖ½Å °³¼± »çÇ×)
-            if hasattr(self.bot, 'advanced_building_manager'):
+
+            # 4.2. Unit Factory (fallback when production manager missing)
+            if hasattr(self.bot, "unit_factory") and self.bot.production is None:
                 try:
-                    # ÀÚ¿ø ÀûÃ¼ ½Ã Ã³¸®
-                    if iteration % 22 == 0:  # ¸Å 1ÃÊ¸¶´Ù
-                        surplus_results = await self.bot.advanced_building_manager.handle_resource_surplus()
+                    await self.bot.unit_factory.on_step(iteration)
+                except Exception as e:
+                    if iteration % 200 == 0:
+                        print(f"[WARNING] Unit factory error: {e}")
+
+            # 4.5. Evolution Upgrades (ê³µë°© ì—…ê·¸ë ˆì´ë“œ)
+            await self._safe_manager_step(
+                getattr(self.bot, "upgrade_manager", None),
+                iteration,
+                "Upgrade manager",
+            )
+
+            # 5. Advanced Building Manager (ìµœì‹  ê°œì„  ì‚¬í•­)
+            if hasattr(self.bot, "advanced_building_manager"):
+                try:
+                    # ìì› ì ì²´ ì‹œ ì²˜ë¦¬
+                    if iteration % 22 == 0:  # ë§¤ 1ì´ˆë§ˆë‹¤
+                        surplus_results = (
+                            await self.bot.advanced_building_manager.handle_resource_surplus()
+                        )
                         if surplus_results and iteration % 100 == 0:
                             print(f"[RESOURCE SURPLUS] Handled: {surplus_results}")
-                    
-                    # ¹æ¾î °Ç¹° ÃÖÀû À§Ä¡¿¡ °Ç¼³
-                    if iteration % 44 == 0:  # ¸Å 2ÃÊ¸¶´Ù
+
+                    # ë°©ì–´ ê±´ë¬¼ ìµœì  ìœ„ì¹˜ì— ê±´ì„¤
+                    if iteration % 44 == 0:  # ë§¤ 2ì´ˆë§ˆë‹¤
                         await self.bot.advanced_building_manager.build_defense_buildings_optimally()
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Advanced Building Manager error: {e}")
-            
-            # 6. Aggressive Tech Builder (ÃÖ½Å °³¼± »çÇ×)
-            if hasattr(self.bot, 'aggressive_tech_builder'):
+
+            # 6. Aggressive Tech Builder (ìµœì‹  ê°œì„  ì‚¬í•­)
+            if hasattr(self.bot, "aggressive_tech_builder"):
                 try:
-                    # ÀÚ¿øÀÌ ³ÑÄ¥ ¶§ Å×Å© °Ç¼³
-                    if iteration % 22 == 0:  # ¸Å 1ÃÊ¸¶´Ù
-                        has_excess, _, _ = self.bot.aggressive_tech_builder.has_excess_resources()
+                    # ìì›ì´ ë„˜ì¹  ë•Œ í…Œí¬ ê±´ì„¤
+                    if iteration % 22 == 0:  # ë§¤ 1ì´ˆë§ˆë‹¤
+                        has_excess, _, _ = (
+                            self.bot.aggressive_tech_builder.has_excess_resources()
+                        )
                         if has_excess:
-                            recommendations = await self.bot.aggressive_tech_builder.recommend_tech_builds()
+                            recommendations = (
+                                await self.bot.aggressive_tech_builder.recommend_tech_builds()
+                            )
                             for tech_type, base_supply, priority in recommendations:
                                 await self.bot.aggressive_tech_builder.build_tech_aggressively(
                                     tech_type,
                                     lambda: self._build_tech(tech_type),
                                     base_supply,
-                                    priority
+                                    priority,
                                 )
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Aggressive Tech Builder error: {e}")
-            
-            # 7. Queen Manager (¿©¿Õ °ü¸®)
-            if self.bot.queen_manager:
-                try:
-                    if hasattr(self.bot.queen_manager, "on_step"):
-                        await self.bot.queen_manager.on_step(iteration)
-                    else:
-                        await self.bot.queen_manager.manage_queens()
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Queen Manager error: {e}")
 
-            # 7.5 Creep Manager
-            if hasattr(self.bot, "creep_manager"):
-                try:
-                    await self.bot.creep_manager.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Creep Manager error: {e}")
-            
-            # 8. Combat (ÀüÅõ)
-            if self.bot.combat:
-                try:
-                    await self.bot.combat.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Combat error: {e}")
-            
-            # 9. Micro Control (¸¶ÀÌÅ©·Î ÄÁÆ®·Ñ)
-            if self.bot.micro:
-                try:
-                    await self.bot.micro.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Micro error: {e}")
+            # 7. Queen Manager (ì—¬ì™• ê´€ë¦¬)
+            await self._safe_manager_step(self.bot.queen_manager, iteration, "Queen Manager")
 
-            # 10. Upgrade Manager
-            if hasattr(self.bot, "upgrade_manager"):
-                try:
-                    await self.bot.upgrade_manager.on_step(iteration)
-                except Exception as e:
-                    if iteration % 200 == 0:
-                        print(f"[WARNING] Upgrade Manager error: {e}")
-                    
+            # 8. Combat (ì „íˆ¬)
+            await self._safe_manager_step(self.bot.combat, iteration, "Combat")
+
+            # 9. Spell Units (Infestor/Viper)
+            await self._safe_manager_step(
+                getattr(self.bot, "spell_manager", None),
+                iteration,
+                "Spell manager",
+                method_name="update",
+            )
+
+            # 10. Micro Control (ë§ˆì´í¬ë¡œ ì»¨íŠ¸ë¡¤)
+            await self._safe_manager_step(self.bot.micro, iteration, "Micro")
+
         except Exception as e:
             if iteration % 100 == 0:
                 print(f"[WARNING] Game logic execution error: {e}")
-    
+
+    async def _safe_manager_step(
+        self, manager, iteration: int, label: str, method_name: str = "on_step"
+    ) -> None:
+        if not manager:
+            return
+        method = getattr(manager, method_name, None)
+        if not method:
+            return
+        try:
+            await method(iteration)
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] {label} error: {e}")
+
     async def _build_tech(self, tech_type):
-        """Å×Å© °Ç¹° °Ç¼³ ÇïÆÛ ÇÔ¼ö"""
+        """í…Œí¬ ê±´ë¬¼ ê±´ì„¤ í—¬í¼ í•¨ìˆ˜"""
+        if not hasattr(self.bot, "townhalls"):
+            return False
         if not self.bot.townhalls.exists:
             return False
-        
+
         main_base = self.bot.townhalls.first
+        map_center = None
+        if hasattr(self.bot, "game_info"):
+            map_center = getattr(self.bot.game_info, "map_center", None)
+        if map_center is None:
+            map_center = main_base.position
         try:
             return await self.bot.build(
                 tech_type,
-                near=main_base.position.towards(self.bot.game_info.map_center, 5)
+                near=main_base.position.towards(map_center, 5),
             )
         except Exception:
             return False
-    
+
     async def execute_training_logic(self, iteration: int):
-        """ÈÆ·Ã ·ÎÁ÷ ½ÇÇà (train_mode=TrueÀÏ ¶§¸¸)"""
+        """í›ˆë ¨ ë¡œì§ ì‹¤í–‰ (train_mode=Trueì¼ ë•Œë§Œ)"""
         if not self.bot.train_mode:
             return
-        
+
         try:
-            # º¸»ó ½Ã½ºÅÛ °è»ê
-            if hasattr(self.bot, '_reward_system'):
+            # ë³´ìƒ ì‹œìŠ¤í…œ ê³„ì‚°
+            if hasattr(self.bot, "_reward_system"):
                 try:
-                    step_reward = self.bot._reward_system.calculate_step_reward(self.bot)
-                    
-                    # RL ¿¡ÀÌÀüÆ® ¾÷µ¥ÀÌÆ®
-                    if hasattr(self.bot, 'rl_agent') and self.bot.rl_agent:
+                    step_reward = self.bot._reward_system.calculate_step_reward(
+                        self.bot
+                    )
+
+                    # RL ì—ì´ì „íŠ¸ ì—…ë°ì´íŠ¸
+                    if hasattr(self.bot, "rl_agent") and self.bot.rl_agent:
                         self.bot.rl_agent.update_reward(step_reward)
-                    
-                    # ÁÖ±âÀûÀ¸·Î º¸»ó ·Î±× Ãâ·Â
+
+                    # ì£¼ê¸°ì ìœ¼ë¡œ ë³´ìƒ ë¡œê·¸ ì¶œë ¥
                     if iteration % 500 == 0:
                         print(f"[TRAINING] Step reward: {step_reward:.3f}")
-                        
+
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Training logic error: {e}")
         except Exception as e:
             if iteration % 200 == 0:
                 print(f"[WARNING] Training execution error: {e}")
-    
+
     async def on_step(self, iteration: int):
         """
-        ÅëÇÕ on_step ¸Ş¼­µå
-        
-        ÀÌ ¸Ş¼­µå´Â WickedZergBotProÀÇ on_step¿¡¼­ È£ÃâµË´Ï´Ù.
+        í†µí•© on_step ë©”ì„œë“œ
+
+        ì´ ë©”ì„œë“œëŠ” WickedZergBotProì˜ on_stepì—ì„œ í˜¸ì¶œë©ë‹ˆë‹¤.
         """
         try:
-            # 1. ¸Å´ÏÀúµé ÃÊ±âÈ­ (Ã¹ È£Ãâ ½Ã)
+            # 1. ë§¤ë‹ˆì €ë“¤ ì´ˆê¸°í™” (ì²« í˜¸ì¶œ ì‹œ)
             await self.initialize_managers()
-            
-            # 2. °ÔÀÓ ·ÎÁ÷ ½ÇÇà
+
+            # 2. ê²Œì„ ë¡œì§ ì‹¤í–‰
             await self.execute_game_logic(iteration)
-            
-            # 3. ÈÆ·Ã ·ÎÁ÷ ½ÇÇà (train_mode=TrueÀÏ ¶§¸¸)
+
+            # 3. í›ˆë ¨ ë¡œì§ ì‹¤í–‰ (train_mode=Trueì¼ ë•Œë§Œ)
             await self.execute_training_logic(iteration)
-            
+
         except Exception as e:
             if iteration % 100 == 0:
                 print(f"[ERROR] on_step execution error: {e}")
                 import traceback
+
                 traceback.print_exc()
 
 
 def create_on_step_implementation(bot):
     """
-    on_step ±¸ÇöÀ» »ı¼ºÇÏ´Â ÆÑÅä¸® ÇÔ¼ö
-    
+    on_step êµ¬í˜„ì„ ìƒì„±í•˜ëŠ” íŒ©í† ë¦¬ í•¨ìˆ˜
+
     Usage:
         integrator = create_on_step_implementation(self)
         async def on_step(self, iteration: int):

@@ -1,245 +1,196 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Unit Factory - 생산 로직 (정상화 버전)
+Unit factory - larva production with gas reservation logic.
 
-목표:
-1. 프레임당 다중 생산 (return 병목 제거)
-2. 여왕 생산 가스 조건 제거
-3. 간결하고 안전한 생산 흐름 유지
+Keeps gas-heavy units from being starved by mineral-only spam.
 """
 
-from typing import Optional, List
+from typing import Iterable, List, Optional
 
 try:
     from sc2.ids.unit_typeid import UnitTypeId
-except ImportError:
-    class UnitTypeId:
-        LARVA = "LARVA"
-        ZERGLING = "ZERGLING"
-        ROACH = "ROACH"
-        HYDRALISK = "HYDRALISK"
-        MUTALISK = "MUTALISK"
-        ULTRALISK = "ULTRALISK"
-        OVERLORD = "OVERLORD"
-        QUEEN = "QUEEN"
-        SPAWNINGPOOL = "SPAWNINGPOOL"
-        ROACHWARREN = "ROACHWARREN"
-        HYDRALISKDEN = "HYDRALISKDEN"
-        SPIRE = "SPIRE"
-        ULTRALISKCAVERN = "ULTRALISKCAVERN"
+except ImportError:  # Fallbacks for tooling environments
+    UnitTypeId = None
 
 
 class UnitFactory:
-    """Unit Production Specialist."""
+    def __init__(self, bot):
+        self.bot = bot
+        self.min_gas_reserve = 100
+        self.min_mineral_reserve_for_gas = 150
+        self.gas_unit_ratio_target = 0.35
+        self.larva_gas_ratio = 0.4
+        self.larva_pressure_threshold = 6
+        self.max_larva_spend_per_step = 3
 
-    def __init__(self, production_manager):
-        self.pm = production_manager
-        self.bot = production_manager.bot
-        self.config = getattr(production_manager, "config", None)
-        self.priority_table = self._build_priority_table()
-
-    async def _produce_army(self, game_phase, build_plan: Optional[dict] = None):
-        b = self.bot
-
-        larvae = list(b.units(UnitTypeId.LARVA))
-        if not larvae:
+    async def on_step(self, iteration: int) -> None:
+        if not UnitTypeId or not hasattr(self.bot, "larva"):
             return
 
-        if b.supply_left < 2:
+        larva = self.bot.larva
+        if not larva:
             return
 
-        # Flush mode: use all larvae when minerals >= 1000
-        if b.minerals < 1000:
-            # Reserve a small portion if needed
-            reserve_count = max(1, int(len(larvae) * 0.2))
-            if len(larvae) > reserve_count:
-                larvae = larvae[:-reserve_count]
-            else:
-                return
+        if hasattr(self.bot, "supply_left") and self.bot.supply_left <= 0:
+            return
 
-        # Counter priority
-        counter_priority = []
-        if hasattr(b, "counter_punch") and b.counter_punch and hasattr(b.counter_punch, "get_train_priority"):
-            counter_priority = b.counter_punch.get_train_priority()
+        minerals = getattr(self.bot, "minerals", 0)
+        vespene = getattr(self.bot, "vespene", 0)
+        gas_units = self._count_gas_units()
+        total_units = max(1, self._count_combat_units())
+        gas_ratio = gas_units / total_units
+        can_spend_gas = vespene >= self.min_gas_reserve
+        queue = self._build_priority_queue(
+            minerals=minerals,
+            vespene=vespene,
+            gas_ratio=gas_ratio,
+            gas_units=gas_units,
+            larva_count=len(larva),
+            can_spend_gas=can_spend_gas,
+        )
 
-        # Tech-based units
-        tech_based_units = await self._get_tech_based_unit_composition()
+        to_spend = 0
+        for larva_unit in larva:
+            if to_spend >= self.max_larva_spend_per_step:
+                break
 
-        # Default units with resource-aware ordering
-        units_to_produce = self._select_units_by_resources(game_phase)
+            unit_type = self._pick_unit(queue)
+            if not unit_type:
+                break
 
-        produced_count = 0
-
-        # Production loop: consume as many larvae as possible
-        for larva in list(larvae):
-            if not hasattr(larva, "is_ready") or not larva.is_ready:
+            try:
+                await self.bot.do(larva_unit.train(unit_type))
+                to_spend += 1
+            except Exception:
                 continue
 
-            if b.supply_left < 1:
-                if b.can_afford(UnitTypeId.OVERLORD):
-                    await self._safe_train(larva, UnitTypeId.OVERLORD)
-                continue
+    def _pick_unit(self, queue: List[object]) -> Optional[object]:
+        for unit_type in queue:
+            if self._can_train(unit_type):
+                return unit_type
+        return None
 
-            produced = False
-
-            for unit_type in counter_priority:
-                if await self._try_produce_unit(unit_type, [larva]):
-                    produced = True
-                    produced_count += 1
-                    break
-
-            if produced:
-                continue
-
-            for unit_type in tech_based_units:
-                if await self._try_produce_unit(unit_type, [larva]):
-                    produced = True
-                    produced_count += 1
-                    break
-
-            if produced:
-                continue
-
-            for unit_type in units_to_produce:
-                if await self._try_produce_unit(unit_type, [larva]):
-                    produced_count += 1
-                    break
-
-        if produced_count > 0 and getattr(b, "iteration", 0) % 50 == 0:
-            print(f"[PRODUCTION] [{int(b.time)}s] Produced {produced_count} units this frame")
-
-    async def _produce_queen(self):
-        """Queen production (gas 조건 제거)."""
-        b = self.bot
-
-        if not b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
-            return
-
-        # 여왕은 미네랄만 사용
-        if b.minerals < 150:
-            return
-
-        townhalls = list(b.townhalls) if hasattr(b, "townhalls") else []
-        if not townhalls:
-            return
-
-        queens_count = b.units(UnitTypeId.QUEEN).amount + b.already_pending(UnitTypeId.QUEEN)
-        if queens_count >= len(townhalls):
-            return
-
-        # Worker / supply sanity
-        if b.workers.amount < len(townhalls) * 8:
-            return
-        if b.supply_cap - b.supply_used < 4:
-            return
-
-        idle_hatcheries = [
-            th for th in townhalls
-            if th.is_ready and th.is_idle and (not hasattr(th, "orders") or len(th.orders) == 0)
-        ]
-        if not idle_hatcheries:
-            return
-
-        hatch = idle_hatcheries[0]
-        await self._safe_train(hatch, UnitTypeId.QUEEN)
-
-    async def _try_produce_unit(self, unit_type, larvae: List):
-        b = self.bot
-
-        if unit_type == UnitTypeId.ROACH and not b.structures(UnitTypeId.ROACHWARREN).ready.exists:
+    def _can_train(self, unit_type) -> bool:
+        if not self.bot.can_afford(unit_type):
             return False
-        if unit_type == UnitTypeId.HYDRALISK and not b.structures(UnitTypeId.HYDRALISKDEN).ready.exists:
+        if not self._requirements_met(unit_type):
             return False
-        if unit_type == UnitTypeId.MUTALISK and not b.structures(UnitTypeId.SPIRE).ready.exists:
-            return False
-        if unit_type == UnitTypeId.ULTRALISK and not b.structures(UnitTypeId.ULTRALISKCAVERN).ready.exists:
-            return False
-        if unit_type != UnitTypeId.ZERGLING and not b.can_afford(unit_type):
-            return False
+        return True
 
-        for larva in larvae:
-            if hasattr(larva, "is_ready") and not larva.is_ready:
-                continue
-            if b.supply_left < 1:
-                return False
-            if await self._safe_train(larva, unit_type):
-                return True
-        return False
-
-    async def _safe_train(self, unit, unit_type) -> bool:
-        try:
-            result = unit.train(unit_type)
-            if hasattr(result, "__await__"):
-                await result
+    def _requirements_met(self, unit_type) -> bool:
+        if not hasattr(self.bot, "structures"):
             return True
-        except Exception:
-            return False
 
-    def _should_use_basic_units(self) -> bool:
-        # Early game or fallback
-        supply_used = getattr(self.bot, "supply_used", 0)
-        return supply_used < 40
-
-    async def _get_tech_based_unit_composition(self) -> List:
-        b = self.bot
-        scout = getattr(b, "scout", None)
-        if scout and getattr(scout, "enemy_has_air", False):
-            if b.structures(UnitTypeId.HYDRALISKDEN).ready.exists:
-                return [UnitTypeId.HYDRALISK]
-        return []
-
-    def _get_counter_units(self, game_phase) -> List:
-        # Simplified fallback counter composition
-        return [UnitTypeId.ZERGLING, UnitTypeId.ROACH, UnitTypeId.HYDRALISK]
-
-    def _build_priority_table(self) -> dict:
-        """Build a mineral/gas-aware priority table."""
-        table = {
-            "low_gas": [
-                UnitTypeId.ZERGLING,
-                UnitTypeId.ROACH,
-                UnitTypeId.HYDRALISK,
-            ],
-            "balanced": [
-                UnitTypeId.ROACH,
-                UnitTypeId.HYDRALISK,
-                UnitTypeId.ZERGLING,
-                UnitTypeId.MUTALISK,
-            ],
-            "high_gas": [
-                UnitTypeId.HYDRALISK,
-                UnitTypeId.MUTALISK,
-                UnitTypeId.ROACH,
-                UnitTypeId.ZERGLING,
-                UnitTypeId.ULTRALISK,
-            ],
+        requirements = {
+            UnitTypeId.ZERGLING: UnitTypeId.SPAWNINGPOOL,
+            UnitTypeId.BANELING: UnitTypeId.BANELINGNEST,
+            UnitTypeId.ROACH: UnitTypeId.ROACHWARREN,
+            UnitTypeId.RAVAGER: UnitTypeId.ROACHWARREN,
+            UnitTypeId.HYDRALISK: UnitTypeId.HYDRALISKDEN,
+            UnitTypeId.LURKER: UnitTypeId.LURKERDENMP,
         }
-        override = getattr(self.config, "production_priority_table", None)
-        if isinstance(override, dict):
-            table.update(override)
-        return table
+        required = requirements.get(unit_type)
+        if not required:
+            return True
 
-    def _select_units_by_resources(self, game_phase) -> List:
-        """Select unit order based on mineral/gas competition."""
-        b = self.bot
-        minerals = getattr(b, "minerals", 0)
-        gas = getattr(b, "vespene", 0)
-        gas_ratio = gas / max(minerals, 1)
+        structures = self.bot.structures(required)
+        return bool(structures and structures.ready)
 
-        if self._should_use_basic_units():
-            base_units = [UnitTypeId.ZERGLING, UnitTypeId.ROACH]
+    def _build_priority_queue(
+        self,
+        minerals: int,
+        vespene: int,
+        gas_ratio: float,
+        gas_units: int,
+        larva_count: int,
+        can_spend_gas: bool,
+    ) -> List[object]:
+        gas_priority = can_spend_gas and gas_ratio < self.gas_unit_ratio_target
+        larva_gas_target = max(1, int(larva_count * self.larva_gas_ratio))
+        gas_shortfall = gas_units < larva_gas_target
+        mineral_guard = minerals < self.min_mineral_reserve_for_gas
+
+        allow_mineral_mix = not (gas_priority and (gas_shortfall or mineral_guard))
+        if gas_priority and larva_count >= self.larva_pressure_threshold:
+            allow_mineral_mix = allow_mineral_mix or minerals >= self.min_mineral_reserve_for_gas * 2
+
+        queue: List[object] = []
+        if gas_priority:
+            queue.extend(self._filter_units(self._gas_unit_table(), vespene))
+            if allow_mineral_mix:
+                queue.extend(self._filter_units(self._mineral_unit_table(), vespene))
         else:
-            base_units = self._get_counter_units(game_phase)
+            if allow_mineral_mix:
+                queue.extend(self._filter_units(self._mineral_unit_table(), vespene))
+            queue.extend(self._filter_units(self._gas_unit_table(), vespene))
 
-        if gas < 50 or gas_ratio < 0.15:
-            order = self.priority_table.get("low_gas", base_units)
-        elif gas > 150 and gas_ratio > 0.6:
-            order = self.priority_table.get("high_gas", base_units)
-        else:
-            order = self.priority_table.get("balanced", base_units)
+        if not queue:
+            queue = [entry["unit"] for entry in self._gas_unit_table() + self._mineral_unit_table()]
+        return queue
 
-        # Preserve any base units not included in the table
-        for u in base_units:
-            if u not in order:
-                order.append(u)
-        return order
+    def _filter_units(self, table: List[dict], vespene: int) -> List[object]:
+        queue: List[object] = []
+        for entry in table:
+            unit_type = entry["unit"]
+            max_ratio = entry.get("max_ratio")
+            min_gas = entry.get("min_gas", 0)
+            if max_ratio is not None and self._unit_ratio(unit_type) >= max_ratio:
+                continue
+            if vespene < min_gas:
+                continue
+            queue.append(unit_type)
+        return queue
+
+    def _gas_unit_table(self) -> List[dict]:
+        return [
+            {"unit": UnitTypeId.HYDRALISK, "min_gas": 50, "max_ratio": 0.45},
+            {"unit": UnitTypeId.ROACH, "min_gas": 25, "max_ratio": 0.5},
+            {"unit": UnitTypeId.RAVAGER, "min_gas": 25, "max_ratio": 0.35},
+            {"unit": UnitTypeId.LURKER, "min_gas": 75, "max_ratio": 0.2},
+            {"unit": UnitTypeId.ULTRALISK, "min_gas": 150, "max_ratio": 0.15},
+        ]
+
+    def _mineral_unit_table(self) -> List[dict]:
+        return [
+            {"unit": UnitTypeId.ZERGLING, "max_ratio": 0.7},
+            {"unit": UnitTypeId.BANELING, "max_ratio": 0.35},
+        ]
+
+    def _count_combat_units(self) -> int:
+        if not hasattr(self.bot, "units"):
+            return 0
+        units = self.bot.units
+        combat_types = {
+            UnitTypeId.ZERGLING,
+            UnitTypeId.BANELING,
+            UnitTypeId.ROACH,
+            UnitTypeId.RAVAGER,
+            UnitTypeId.HYDRALISK,
+            UnitTypeId.LURKER,
+            UnitTypeId.ULTRALISK,
+        }
+        return sum(1 for unit in units if unit.type_id in combat_types)
+
+    def _count_gas_units(self) -> int:
+        if not hasattr(self.bot, "units"):
+            return 0
+        units = self.bot.units
+        gas_types = {
+            UnitTypeId.ROACH,
+            UnitTypeId.RAVAGER,
+            UnitTypeId.HYDRALISK,
+            UnitTypeId.LURKER,
+            UnitTypeId.ULTRALISK,
+        }
+        return sum(1 for unit in units if unit.type_id in gas_types)
+
+    def _count_unit_type(self, unit_type) -> int:
+        if not hasattr(self.bot, "units"):
+            return 0
+        units = self.bot.units
+        return sum(1 for unit in units if unit.type_id == unit_type)
+
+    def _unit_ratio(self, unit_type) -> float:
+        total = max(1, self._count_combat_units())
+        return self._count_unit_type(unit_type) / total

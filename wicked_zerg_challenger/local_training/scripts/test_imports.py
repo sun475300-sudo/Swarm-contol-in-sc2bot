@@ -1,31 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Test imports for replay build order learner"""
+"""
+Import test for local training scripts.
+"""
 
-import sys
-from pathlib import Path
 
-script_dir = Path(__file__).parent
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
+def main() -> None:
+    modules = [
+        "replay_learning_tracker_sqlite",
+        "replay_quality_filter",
+        "move_completed_replays",
+    ]
+    for module in modules:
+        try:
+            __import__(module)
+            print(f"[OK] Imported {module}")
+        except Exception as exc:
+            print(f"[ERROR] Failed to import {module}: {exc}")
 
-print("Testing imports...")
-print(f"Script directory: {script_dir}")
-print(f"Python path: {sys.path[:3]}")
 
-modules_to_test = [
-    "replay_learning_manager",
-    "learning_logger",
-    "strategy_database",
-    "replay_crash_handler",
-    "learning_status_manager"
-]
-
-for module_name in modules_to_test:
-    try:
-        __import__(module_name)
-        print(f"[OK] {module_name}")
- except ImportError as e:
-     print(f"[FAIL] {module_name}: {e}")
- except Exception as e:
-     print(f"[ERROR] {module_name}: {e}")
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
-  TrendingUp,
-  TrendingDown,
   Trophy,
   Swords,
   Brain,
@@ -13,14 +11,28 @@ import {
   WifiOff,
   RefreshCw,
   ChevronRight,
-  Gamepad2,
-} from 'lucide-react';
-import { getGameStats, getTrainingStats, getArenaStats, getRecentGames, GameStats, TrainingStats, ArenaStats, GameSession } from '@/lib/api';
-import { getRepositoryStats, formatRelativeTime, GitHubCommit } from '@/lib/github';
+} from "lucide-react";
+import {
+  getGameStats,
+  getTrainingStats,
+  getArenaStats,
+  getRecentGames,
+  GameStats,
+  TrainingStats,
+  ArenaStats,
+  GameSession,
+} from "@/lib/api";
+import {
+  getRepositoryStats,
+  formatRelativeTime,
+  GitHubCommit,
+} from "@/lib/github";
 
 export default function Dashboard() {
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
-  const [trainingStats, setTrainingStats] = useState<TrainingStats | null>(null);
+  const [trainingStats, setTrainingStats] = useState<TrainingStats | null>(
+    null
+  );
   const [arenaStats, setArenaStats] = useState<ArenaStats | null>(null);
   const [recentGames, setRecentGames] = useState<GameSession[]>([]);
   const [recentCommits, setRecentCommits] = useState<GitHubCommit[]>([]);
@@ -32,12 +44,12 @@ export default function Dashboard() {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -59,7 +71,7 @@ export default function Dashboard() {
       setRecentCommits(githubStats.recentCommits?.slice(0, 3) || []);
       setLastUpdate(new Date());
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      console.error("Failed to fetch dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -95,20 +107,22 @@ export default function Dashboard() {
             <WifiOff className="h-4 w-4 text-red-400" />
           )}
           <span className="text-xs text-muted-foreground">
-            {isOnline ? '온라인' : '오프라인'}
+            {isOnline ? "온라인" : "오프라인"}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            {lastUpdate.toLocaleTimeString('ko-KR')}
+            {lastUpdate.toLocaleTimeString("ko-KR")}
           </span>
           <button
             onClick={fetchData}
             className="rounded-lg p-1 hover:bg-secondary"
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 text-muted-foreground ${loading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -135,7 +149,9 @@ export default function Dashboard() {
               최고: {arenaStats?.highestElo || 0}
             </span>
           </div>
-          <p className="mt-3 text-2xl font-bold">{arenaStats?.currentElo || 0}</p>
+          <p className="mt-3 text-2xl font-bold">
+            {arenaStats?.currentElo || 0}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">Arena ELO</p>
         </div>
 
@@ -147,7 +163,9 @@ export default function Dashboard() {
               평균: {trainingStats?.averageReward.toFixed(1) || 0}
             </span>
           </div>
-          <p className="mt-3 text-2xl font-bold">{trainingStats?.latestReward.toFixed(1) || 0}</p>
+          <p className="mt-3 text-2xl font-bold">
+            {trainingStats?.latestReward.toFixed(1) || 0}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">최근 보상</p>
         </div>
 
@@ -159,7 +177,9 @@ export default function Dashboard() {
               에피소드: {trainingStats?.totalEpisodes || 0}
             </span>
           </div>
-          <p className="mt-3 text-2xl font-bold">{gameStats?.totalGames || 0}</p>
+          <p className="mt-3 text-2xl font-bold">
+            {gameStats?.totalGames || 0}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">총 게임</p>
         </div>
       </div>
@@ -212,7 +232,7 @@ export default function Dashboard() {
               최근 게임 기록이 없습니다
             </p>
           ) : (
-            recentGames.map((game) => (
+            recentGames.map(game => (
               <div
                 key={game.id}
                 className="flex items-center justify-between rounded-lg bg-white/5 p-3"
@@ -220,12 +240,12 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      game.result === 'Victory'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-red-500/20 text-red-400'
+                      game.result === "Victory"
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-red-500/20 text-red-400"
                     }`}
                   >
-                    {game.result === 'Victory' ? (
+                    {game.result === "Victory" ? (
                       <Trophy className="h-4 w-4" />
                     ) : (
                       <Swords className="h-4 w-4" />
@@ -241,10 +261,12 @@ export default function Dashboard() {
                 <div className="text-right">
                   <p
                     className={`text-sm font-semibold ${
-                      game.result === 'Victory' ? 'text-green-400' : 'text-red-400'
+                      game.result === "Victory"
+                        ? "text-green-400"
+                        : "text-red-400"
                     }`}
                   >
-                    {game.result === 'Victory' ? '승리' : '패배'}
+                    {game.result === "Victory" ? "승리" : "패배"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {game.unitsKilled}K / {game.unitsLost}D
@@ -269,7 +291,7 @@ export default function Dashboard() {
             </button>
           </div>
           <div className="mt-4 space-y-2">
-            {recentCommits.map((commit) => (
+            {recentCommits.map(commit => (
               <a
                 key={commit.sha}
                 href={commit.html_url}
@@ -278,10 +300,11 @@ export default function Dashboard() {
                 className="block rounded-lg bg-white/5 p-3 hover:bg-white/10"
               >
                 <p className="text-sm font-medium line-clamp-1">
-                  {commit.message.split('\n')[0]}
+                  {commit.message.split("\n")[0]}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {commit.author.name} • {formatRelativeTime(commit.author.date)}
+                  {commit.author.name} •{" "}
+                  {formatRelativeTime(commit.author.date)}
                 </p>
               </a>
             ))}

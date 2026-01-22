@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Play, Pause, RotateCcw, Power, Settings } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Play, Pause, RotateCcw, Power } from "lucide-react";
 import {
   startBot,
   stopBot,
@@ -9,15 +9,18 @@ import {
   changeBotConfig,
   getBotStatus,
   BotStatus,
-} from '@/lib/botControl';
-import { getBotConfigs, BotConfig } from '@/lib/api';
+} from "@/lib/botControl";
+import { getBotConfigs, BotConfig } from "@/lib/api";
 
 export default function BotControl() {
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null);
   const [botConfigs, setBotConfigs] = useState<BotConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,15 +44,15 @@ export default function BotControl() {
     try {
       const result = await action();
       if (result.success) {
-        setMessage({ type: 'success', text: result.message });
+        setMessage({ type: "success", text: result.message });
         // 상태 새로고침
         const status = await getBotStatus();
         setBotStatus(status);
       } else {
-        setMessage({ type: 'error', text: result.message });
+        setMessage({ type: "error", text: result.message });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: '작업 실패' });
+      setMessage({ type: "error", text: "작업 실패" });
     } finally {
       setActionLoading(false);
       setTimeout(() => setMessage(null), 3000);
@@ -58,31 +61,31 @@ export default function BotControl() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running':
-        return 'text-green-400 bg-green-500/10';
-      case 'stopped':
-        return 'text-red-400 bg-red-500/10';
-      case 'paused':
-        return 'text-yellow-400 bg-yellow-500/10';
-      case 'error':
-        return 'text-red-500 bg-red-500/10';
+      case "running":
+        return "text-green-400 bg-green-500/10";
+      case "stopped":
+        return "text-red-400 bg-red-500/10";
+      case "paused":
+        return "text-yellow-400 bg-yellow-500/10";
+      case "error":
+        return "text-red-500 bg-red-500/10";
       default:
-        return 'text-gray-400 bg-gray-500/10';
+        return "text-gray-400 bg-gray-500/10";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'running':
-        return '실행 중';
-      case 'stopped':
-        return '중지됨';
-      case 'paused':
-        return '일시 정지됨';
-      case 'error':
-        return '오류';
+      case "running":
+        return "실행 중";
+      case "stopped":
+        return "중지됨";
+      case "paused":
+        return "일시 정지됨";
+      case "error":
+        return "오류";
       default:
-        return '알 수 없음';
+        return "알 수 없음";
     }
   };
 
@@ -106,7 +109,9 @@ export default function BotControl() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
               <p className="text-xs text-muted-foreground">상태</p>
-              <p className={`mt-2 inline-block rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(botStatus.status)}`}>
+              <p
+                className={`mt-2 inline-block rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(botStatus.status)}`}
+              >
                 {getStatusLabel(botStatus.status)}
               </p>
             </div>
@@ -135,7 +140,7 @@ export default function BotControl() {
             <div>
               <p className="text-xs text-muted-foreground">마지막 게임</p>
               <p className="mt-2 text-sm">
-                {new Date(botStatus.lastGameTime).toLocaleTimeString('ko-KR')}
+                {new Date(botStatus.lastGameTime).toLocaleTimeString("ko-KR")}
               </p>
             </div>
           </div>
@@ -148,7 +153,7 @@ export default function BotControl() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <button
             onClick={() => handleAction(startBot)}
-            disabled={actionLoading || botStatus?.status === 'running'}
+            disabled={actionLoading || botStatus?.status === "running"}
             className="flex items-center justify-center gap-2 rounded-lg bg-green-500/20 px-4 py-3 font-medium text-green-400 hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Play className="h-4 w-4" />
@@ -157,7 +162,7 @@ export default function BotControl() {
 
           <button
             onClick={() => handleAction(pauseBot)}
-            disabled={actionLoading || botStatus?.status !== 'running'}
+            disabled={actionLoading || botStatus?.status !== "running"}
             className="flex items-center justify-center gap-2 rounded-lg bg-yellow-500/20 px-4 py-3 font-medium text-yellow-400 hover:bg-yellow-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Pause className="h-4 w-4" />
@@ -166,7 +171,7 @@ export default function BotControl() {
 
           <button
             onClick={() => handleAction(resumeBot)}
-            disabled={actionLoading || botStatus?.status !== 'paused'}
+            disabled={actionLoading || botStatus?.status !== "paused"}
             className="flex items-center justify-center gap-2 rounded-lg bg-blue-500/20 px-4 py-3 font-medium text-blue-400 hover:bg-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Play className="h-4 w-4" />
@@ -184,7 +189,7 @@ export default function BotControl() {
 
           <button
             onClick={() => handleAction(stopBot)}
-            disabled={actionLoading || botStatus?.status === 'stopped'}
+            disabled={actionLoading || botStatus?.status === "stopped"}
             className="flex items-center justify-center gap-2 rounded-lg bg-red-500/20 px-4 py-3 font-medium text-red-400 hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Power className="h-4 w-4" />
@@ -198,15 +203,17 @@ export default function BotControl() {
         <div className="glass rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-md">
           <h3 className="mb-4 font-semibold">봇 설정 변경</h3>
           <div className="space-y-3">
-            {botConfigs.map((config) => (
+            {botConfigs.map(config => (
               <button
                 key={config.id}
                 onClick={() => handleAction(() => changeBotConfig(config.id))}
-                disabled={actionLoading || config.id === botStatus?.activeConfigId}
+                disabled={
+                  actionLoading || config.id === botStatus?.activeConfigId
+                }
                 className={`w-full rounded-lg border p-4 text-left transition-colors ${
                   config.id === botStatus?.activeConfigId
-                    ? 'border-accent bg-accent/10'
-                    : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    ? "border-accent bg-accent/10"
+                    : "border-white/10 bg-white/5 hover:bg-white/10"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="flex items-start justify-between">
@@ -216,7 +223,8 @@ export default function BotControl() {
                       {config.description}
                     </p>
                     <p className="mt-2 text-xs">
-                      <span className="font-medium">전략:</span> {config.strategy}
+                      <span className="font-medium">전략:</span>{" "}
+                      {config.strategy}
                     </p>
                   </div>
                   {config.id === botStatus?.activeConfigId && (
@@ -235,9 +243,9 @@ export default function BotControl() {
       {message && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm font-medium ${
-            message.type === 'success'
-              ? 'border-green-500/50 bg-green-500/10 text-green-400'
-              : 'border-red-500/50 bg-red-500/10 text-red-400'
+            message.type === "success"
+              ? "border-green-500/50 bg-green-500/10 text-green-400"
+              : "border-red-500/50 bg-red-500/10 text-red-400"
           }`}
         >
           {message.text}
