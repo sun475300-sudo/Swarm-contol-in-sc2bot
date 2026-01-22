@@ -1060,32 +1060,75 @@ class ProductionResilience:
     async def panic_mode_production(self) -> None:
         b = self.bot
 
-        # EMERGENCY DEFENSE: Build Spine Crawlers at 2:30+ if enemy detected
-        # Prevents 3-minute defeat when bot has 0 army
-        if b.time > 150 and b.already_pending(UnitTypeId.SPINECRAWLER) == 0:
-            spine_crawlers = b.units(UnitTypeId.SPINECRAWLER)
-            spine_count = spine_crawlers.amount if hasattr(spine_crawlers, 'amount') else len(list(spine_crawlers))
+        # === PROACTIVE DEFENSE: Build defenses earlier ===
+        # Build 1st Spine at 3:00, 2nd at 4:00 (regardless of enemy detection)
+        await self._build_early_defense(b)
 
-            # Check if enemy is nearby (scouting system should detect this)
-            intel = getattr(b, "intel", None)
-            enemy_near_base = False
-            if intel and hasattr(intel, "enemy_units_near_base"):
-                enemy_near_base = intel.enemy_units_near_base
+    async def _build_early_defense(self, b) -> None:
+        """
+        Build defense structures proactively.
 
-            # Build 1-2 Spine Crawlers for defense if conditions met
-            if (enemy_near_base or b.time > 180) and spine_count < 2 and b.can_afford(UnitTypeId.SPINECRAWLER):
-                if b.townhalls.exists:
-                    try:
-                        main_base = b.townhalls.first
-                        # Place Spine Crawler in front of base (towards enemy)
-                        defense_pos = main_base.position.towards(b.game_info.map_center, 8)
-                        await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
-                        if b.iteration % 50 == 0:
-                            print(
-                                f"[EMERGENCY DEFENSE] [{int(b.time)}s] Building Spine Crawler for defense")
-                    except Exception as e:
-                        if b.iteration % 100 == 0:
-                            print(f"[EMERGENCY DEFENSE] Failed to build Spine Crawler: {e}")
+        Timeline:
+        - 3:00 (180s): First Spine Crawler
+        - 4:00 (240s): Second Spine Crawler
+        - 5:00 (300s): Spore Crawler (if air threat possible)
+        """
+        game_time = getattr(b, "time", 0)
+
+        # Need Spawning Pool for Spine Crawlers
+        if not b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
+            return
+
+        spine_crawlers = b.structures(UnitTypeId.SPINECRAWLER)
+        spine_count = spine_crawlers.amount if hasattr(spine_crawlers, 'amount') else len(list(spine_crawlers))
+        pending_spines = b.already_pending(UnitTypeId.SPINECRAWLER)
+
+        # Defense cooldown to prevent spam
+        last_defense_time = getattr(self, "_last_defense_build_time", 0)
+        if game_time - last_defense_time < 30:  # 30 second cooldown
+            return
+
+        # 3:00+ : First Spine Crawler
+        if game_time >= 180 and spine_count + pending_spines < 1:
+            if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
+                try:
+                    main_base = b.townhalls.first
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 8)
+                    await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                    self._last_defense_build_time = game_time
+                    print(f"[DEFENSE] [{int(game_time)}s] Building Spine Crawler #1")
+                    return
+                except Exception:
+                    pass
+
+        # 4:00+ : Second Spine Crawler
+        if game_time >= 240 and spine_count + pending_spines < 2:
+            if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
+                try:
+                    main_base = b.townhalls.first
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 10)
+                    await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                    self._last_defense_build_time = game_time
+                    print(f"[DEFENSE] [{int(game_time)}s] Building Spine Crawler #2")
+                    return
+                except Exception:
+                    pass
+
+        # 5:00+ : Spore Crawler for air defense
+        spore_crawlers = b.structures(UnitTypeId.SPORECRAWLER)
+        spore_count = spore_crawlers.amount if hasattr(spore_crawlers, 'amount') else 0
+        pending_spores = b.already_pending(UnitTypeId.SPORECRAWLER)
+
+        if game_time >= 300 and spore_count + pending_spores < 1:
+            if b.can_afford(UnitTypeId.SPORECRAWLER) and b.townhalls.exists:
+                try:
+                    main_base = b.townhalls.first
+                    await b.build(UnitTypeId.SPORECRAWLER, near=main_base.position)
+                    self._last_defense_build_time = game_time
+                    print(f"[DEFENSE] [{int(game_time)}s] Building Spore Crawler")
+                    return
+                except Exception:
+                    pass
 
         if b.production:
             await b.production._produce_overlord()
