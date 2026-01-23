@@ -132,9 +132,9 @@ class WickedZergBotProImpl(BotAI):
         # === 6. Hierarchical RL (훈련 모드에서만) ===
         if self.train_mode:
             try:
-                from local_training.hierarchical_rl import HierarchicalRLAgent
-                self.hierarchical_rl = HierarchicalRLAgent(self)
-                print("[BOT] HierarchicalRLAgent initialized (training mode)")
+                from local_training.hierarchical_rl.improved_hierarchical_rl import HierarchicalRLSystem
+                self.hierarchical_rl = HierarchicalRLSystem()
+                print("[BOT] HierarchicalRLSystem initialized (training mode)")
             except ImportError as e:
                 print(f"[BOT_WARN] HierarchicalRL not available: {e}")
                 self.hierarchical_rl = None
