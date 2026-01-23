@@ -63,9 +63,9 @@ class QueenManager:
         self.creep_spread_cooldown = 12.0  # 개선: 15초 → 12초 (더 공격적인 확장)
         self.inject_queen_creep_threshold = 50  # 인젝트 퀸이 점막 놓을 에너지 임계값
 
-        # Queen production
-        self.max_queens_per_base = 1
-        self.creep_queen_bonus = 3  # 개선: 2 → 3 (전용 점막 퀸 추가)
+        # Queen production - ★ 기지당 2마리 배치 ★
+        self.max_queens_per_base = 2  # 개선: 1 → 2 (기지당 2마리)
+        self.creep_queen_bonus = 2    # 점막 전용 퀸 (기지 2개 이상일 때)
 
         # 점막 확장 추적
         self.creep_tumor_count = 0
@@ -201,8 +201,9 @@ class QueenManager:
         """
         Assign queen roles - inject queens and dedicated creep queens.
 
+        ★ 개선: 기지당 2마리 배치 ★
         Priority:
-        1. Inject queens (1 per hatchery)
+        1. Inject queens (2 per hatchery - 1차/2차 인젝트 퀸)
         2. Dedicated creep queens for map control
         """
         current_queen_tags = {q.tag for q in queens}
@@ -219,9 +220,22 @@ class QueenManager:
             tag for tag in self.dedicated_creep_queens if tag in current_queen_tags
         }
 
-        # Assign inject queens
+        # ★ 기지당 2마리 배정을 위한 2차 배정 딕셔너리 ★
+        if not hasattr(self, 'secondary_inject_assignments'):
+            self.secondary_inject_assignments = {}
+
+        self.secondary_inject_assignments = {
+            hatch_tag: queen_tag
+            for hatch_tag, queen_tag in self.secondary_inject_assignments.items()
+            if hatch_tag in current_hatch_tags and queen_tag in current_queen_tags
+        }
+
+        # Assign inject queens (1차 - 메인 인젝트)
         assigned_queens = set(self.inject_assignments.values())
+        assigned_queens.update(self.secondary_inject_assignments.values())
+
         for hatch in hatcheries:
+            # 1차 인젝트 퀸 배정
             if hatch.tag in self.inject_assignments:
                 # Check if assigned queen is too far
                 queen_tag = self.inject_assignments[hatch.tag]
@@ -233,17 +247,38 @@ class QueenManager:
                             # Reassign if too far
                             del self.inject_assignments[hatch.tag]
                             assigned_queens.discard(queen_tag)
-                        else:
-                            continue
                     except Exception:
-                        continue
+                        pass
 
-            candidate = self._find_closest_queen(
-                hatch.position, queens, assigned_queens
-            )
-            if candidate:
-                self.inject_assignments[hatch.tag] = candidate.tag
-                assigned_queens.add(candidate.tag)
+            if hatch.tag not in self.inject_assignments:
+                candidate = self._find_closest_queen(
+                    hatch.position, queens, assigned_queens
+                )
+                if candidate:
+                    self.inject_assignments[hatch.tag] = candidate.tag
+                    assigned_queens.add(candidate.tag)
+
+        # ★ 2차 인젝트 퀸 배정 (기지당 2마리) ★
+        for hatch in hatcheries:
+            if hatch.tag in self.secondary_inject_assignments:
+                queen_tag = self.secondary_inject_assignments[hatch.tag]
+                queen = self._find_queen_by_tag(queens, queen_tag)
+                if queen:
+                    try:
+                        dist = queen.distance_to(hatch.position)
+                        if dist > self.max_queen_travel_distance:
+                            del self.secondary_inject_assignments[hatch.tag]
+                            assigned_queens.discard(queen_tag)
+                    except Exception:
+                        pass
+
+            if hatch.tag not in self.secondary_inject_assignments:
+                candidate = self._find_closest_queen(
+                    hatch.position, queens, assigned_queens
+                )
+                if candidate:
+                    self.secondary_inject_assignments[hatch.tag] = candidate.tag
+                    assigned_queens.add(candidate.tag)
 
         # Assign dedicated creep queens
         unassigned = [q for q in queens if q.tag not in assigned_queens]
@@ -277,7 +312,9 @@ class QueenManager:
         """
         Inject larva on hatcheries with cooldown tracking.
 
-        Improved efficiency with distance checks and reassignment.
+        ★ 개선: 기지당 2마리 퀸 활용 ★
+        - 1차 퀸이 인젝트 불가능하면 2차 퀸이 대신 수행
+        - 더 효율적인 라바 생산
         """
         current_time = getattr(self.bot, "time", 0.0)
 
@@ -292,18 +329,28 @@ class QueenManager:
             if current_time - last_inject < self.inject_cooldown:
                 continue
 
-            # Find assigned queen
+            # ★ 1차 퀸 시도 ★
             queen = self._find_queen_by_tag(
                 queens, self.inject_assignments.get(hatch_tag)
             )
 
+            # ★ 1차 퀸이 에너지 부족하면 2차 퀸 시도 ★
+            if not queen or getattr(queen, "energy", 0) < self.inject_energy_threshold:
+                secondary_assignments = getattr(self, 'secondary_inject_assignments', {})
+                secondary_queen = self._find_queen_by_tag(
+                    queens, secondary_assignments.get(hatch_tag)
+                )
+                if secondary_queen and getattr(secondary_queen, "energy", 0) >= self.inject_energy_threshold:
+                    queen = secondary_queen
+
             # Fallback to closest queen if no assignment
-            if not queen:
+            if not queen or getattr(queen, "energy", 0) < self.inject_energy_threshold:
                 try:
                     nearby = [
                         q
                         for q in queens
                         if q.distance_to(hatch.position) < self.max_queen_travel_distance
+                        and getattr(q, "energy", 0) >= self.inject_energy_threshold
                     ]
                     if nearby:
                         queen = min(

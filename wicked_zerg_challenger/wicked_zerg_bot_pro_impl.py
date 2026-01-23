@@ -225,6 +225,31 @@ class WickedZergBotProImpl(BotAI):
                 import traceback
                 traceback.print_exc()
 
+        # ★★★ 커리큘럼 매니저: 승리/패배 기록 ★★★
+        try:
+            from local_training.curriculum_manager import CurriculumManager
+
+            curriculum = CurriculumManager()
+            result_str = str(game_result).upper()
+
+            if "VICTORY" in result_str or "WIN" in result_str:
+                promoted = curriculum.record_win()
+                if promoted:
+                    print("[CURRICULUM] ★★★ 다음 단계로 승격! ★★★")
+            elif "DEFEAT" in result_str or "LOSS" in result_str:
+                demoted = curriculum.record_loss()
+                if demoted:
+                    print("[CURRICULUM] 난이도 하향 - 연습 더 필요")
+
+            # 현재 진행 상황 출력
+            progress = curriculum.get_progress_info()
+            print(f"[CURRICULUM] 현재 단계: {progress['level_name']} "
+                  f"({progress['wins_at_current_level']}/{progress['wins_required']}승)")
+            print(f"[CURRICULUM] 최종 목표: CheatInsane AI 격파!")
+
+        except Exception as e:
+            print(f"[WARNING] Curriculum manager error: {e}")
+
         # Store training result for run_with_training.py
         self._training_result = {
             "game_result": str(game_result),

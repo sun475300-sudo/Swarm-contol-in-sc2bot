@@ -42,21 +42,28 @@ except ImportError:
 class AdvancedBuildingManager:
     """
     고도화된 건설 관리자
-    
+
     기능:
     1. 중복 코드 제거: 가시지옥 굴, 맹독충 변태 로직 공통화
     2. 방어 건물 위치 최적화: 적 공격 경로 분석
     3. 자원 적체 시 테크 건물 공격적 건설
+    4. ★ 일꾼 충돌 방지 건물 배치 ★
     """
-    
+
     def __init__(self, bot):
         self.bot = bot
         # 자원 적체 기준값
         self.resource_surplus_threshold = 3000  # 미네랄 3000 이상
         self.gas_surplus_threshold = 500         # 가스 500 이상
-        
+
         # 방어 건물 건설 관련
         self.defense_buildings_cache = {}  # 캐시된 방어 건물 위치
+
+        # ★ 일꾼 충돌 방지 설정 ★
+        self.min_distance_from_minerals = 3.0  # 미네랄에서 최소 거리
+        self.min_distance_from_gas = 3.0       # 가스에서 최소 거리
+        self.min_distance_from_townhall = 5.0  # 해처리에서 최소 거리
+        self.worker_path_width = 2.0           # 일꾼 이동 경로 폭
         
     # ==================== 1. 중복 코드 제거: 공통 변태 로직 ====================
     
@@ -484,5 +491,181 @@ class AdvancedBuildingManager:
         if mineral_surplus > 500:
             banelings = await self.morph_banelings(max_count=10)
             results["banelings_morphed"] = banelings
-        
+
         return results
+
+    # ==================== 4. 일꾼 충돌 방지 건물 배치 ====================
+
+    def is_worker_path(self, position: Point2) -> bool:
+        """
+        주어진 위치가 일꾼 이동 경로인지 확인.
+
+        일꾼이 미네랄/가스와 해처리 사이를 이동하는 경로를 차단하면 안됨.
+
+        Args:
+            position: 확인할 위치
+
+        Returns:
+            True if position is on worker path
+        """
+        if not self.bot.townhalls.exists:
+            return False
+
+        for th in self.bot.townhalls:
+            th_pos = th.position
+
+            # 미네랄 필드 확인
+            if hasattr(self.bot, 'mineral_field'):
+                for mineral in self.bot.mineral_field.closer_than(12, th_pos):
+                    if self._is_on_line_segment(position, th_pos, mineral.position, self.worker_path_width):
+                        return True
+
+            # 가스 확인
+            if hasattr(self.bot, 'vespene_geyser'):
+                for gas in self.bot.vespene_geyser.closer_than(12, th_pos):
+                    if self._is_on_line_segment(position, th_pos, gas.position, self.worker_path_width):
+                        return True
+
+        return False
+
+    def _is_on_line_segment(self, point: Point2, line_start: Point2, line_end: Point2, width: float) -> bool:
+        """
+        점이 선분 근처에 있는지 확인.
+
+        Args:
+            point: 확인할 점
+            line_start: 선분 시작점
+            line_end: 선분 끝점
+            width: 선분 폭
+
+        Returns:
+            True if point is within width of line segment
+        """
+        try:
+            line_vec = Point2((line_end.x - line_start.x, line_end.y - line_start.y))
+            point_vec = Point2((point.x - line_start.x, point.y - line_start.y))
+
+            line_len = math.sqrt(line_vec.x**2 + line_vec.y**2)
+            if line_len == 0:
+                return False
+
+            line_unit = Point2((line_vec.x / line_len, line_vec.y / line_len))
+            proj_length = point_vec.x * line_unit.x + point_vec.y * line_unit.y
+
+            if proj_length < 0 or proj_length > line_len:
+                return False
+
+            proj_point = Point2((
+                line_start.x + line_unit.x * proj_length,
+                line_start.y + line_unit.y * proj_length
+            ))
+            distance = math.sqrt((point.x - proj_point.x)**2 + (point.y - proj_point.y)**2)
+
+            return distance <= width
+        except Exception:
+            return False
+
+    def get_safe_building_position(self, building_type: UnitTypeId, near: Point2, avoid_worker_paths: bool = True) -> Optional[Point2]:
+        """
+        ★ 일꾼이 끼지 않는 안전한 건물 배치 위치 찾기 ★
+        """
+        candidates = self._generate_spiral_positions(near, max_distance=15, step=2)
+
+        for candidate in candidates:
+            if self._is_safe_position(candidate, building_type, avoid_worker_paths):
+                return candidate
+
+        return near
+
+    def _generate_spiral_positions(self, center: Point2, max_distance: float, step: float) -> List[Point2]:
+        """중심점에서 나선형으로 위치 생성."""
+        positions = [center]
+
+        for distance in range(int(step), int(max_distance), int(step)):
+            for angle in range(0, 360, 45):
+                rad = math.radians(angle)
+                x = center.x + distance * math.cos(rad)
+                y = center.y + distance * math.sin(rad)
+                positions.append(Point2((x, y)))
+
+        return positions
+
+    def _is_safe_position(self, position: Point2, building_type: UnitTypeId, avoid_worker_paths: bool) -> bool:
+        """건설 위치가 안전한지 확인."""
+        try:
+            if hasattr(self.bot, 'game_info'):
+                playable = self.bot.game_info.playable_area
+                if not (playable.x <= position.x <= playable.x + playable.width):
+                    return False
+                if not (playable.y <= position.y <= playable.y + playable.height):
+                    return False
+
+            if avoid_worker_paths and self.is_worker_path(position):
+                return False
+
+            if hasattr(self.bot, 'mineral_field'):
+                for mineral in self.bot.mineral_field:
+                    if mineral.distance_to(position) < self.min_distance_from_minerals:
+                        return False
+
+            if hasattr(self.bot, 'vespene_geyser'):
+                for gas in self.bot.vespene_geyser:
+                    if gas.distance_to(position) < self.min_distance_from_gas:
+                        return False
+
+            if self.bot.townhalls.exists:
+                for th in self.bot.townhalls:
+                    if th.distance_to(position) < self.min_distance_from_townhall:
+                        return False
+
+            if hasattr(self.bot, 'structures'):
+                for structure in self.bot.structures:
+                    if structure.distance_to(position) < 2.5:
+                        return False
+
+            return True
+        except Exception:
+            return False
+
+    async def build_with_worker_safety(self, building_type: UnitTypeId, near: Point2) -> bool:
+        """★ 일꾼 안전을 고려한 건물 건설 ★"""
+        if not self.bot.can_afford(building_type):
+            return False
+
+        safe_position = self.get_safe_building_position(building_type, near)
+
+        if not safe_position:
+            return False
+
+        try:
+            result = await self.bot.build(building_type, near=safe_position)
+            if result:
+                print(f"[BUILDING] Built {building_type} at safe position")
+                return True
+        except Exception as e:
+            if self.bot.iteration % 100 == 0:
+                print(f"[BUILDING] Failed: {e}")
+
+        return False
+
+    async def rescue_stuck_workers(self) -> int:
+        """★ 끼인 일꾼 구출 ★"""
+        if not hasattr(self.bot, 'workers'):
+            return 0
+
+        rescued = 0
+        for worker in self.bot.workers:
+            try:
+                if hasattr(worker, 'is_idle') and worker.is_idle:
+                    if hasattr(self.bot, 'structures'):
+                        for structure in self.bot.structures:
+                            if worker.distance_to(structure) < 1.5:
+                                if hasattr(self.bot, 'mineral_field') and self.bot.mineral_field.exists:
+                                    closest_mineral = self.bot.mineral_field.closest_to(worker)
+                                    self.bot.do(worker.gather(closest_mineral))
+                                    rescued += 1
+                                break
+            except Exception:
+                continue
+
+        return rescued

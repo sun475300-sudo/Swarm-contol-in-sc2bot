@@ -45,8 +45,22 @@ class CurriculumManager:
         # Load current level from file
         self.current_idx = self.load_level()
 
-        # IMPROVED: Minimum games per level before promotion
-        # Ensures sufficient practice at each level before moving up
+        # ★ NEW: 승리 횟수 기반 승격 시스템 ★
+        # 각 단계에서 필요한 승리 횟수 (달성 시 다음 단계로 승격)
+        self.wins_required_per_level = {
+            0: 5,   # VeryEasy: 5승 필요
+            1: 7,   # Easy: 7승 필요
+            2: 10,  # Medium: 10승 필요
+            3: 12,  # Hard: 12승 필요
+            4: 15,  # VeryHard: 15승 필요
+            5: 20,  # CheatInsane: 20승 필요 (마스터!)
+        }
+
+        # 현재 레벨에서의 승리/패배 카운터
+        self.wins_at_current_level = 0
+        self.losses_at_current_level = 0
+
+        # IMPROVED: Minimum games per level before promotion (백업용)
         self.min_games_per_level = {
             0: 10,  # VeryEasy: minimum 10 games
             1: 15,  # Easy: minimum 15 games
@@ -56,13 +70,15 @@ class CurriculumManager:
             5: 40,  # CheatInsane: minimum 40 games
         }
 
-        # IMPROVED: Win rate thresholds (conservative to ensure gradual progression)
-        # Higher threshold means more games needed before promotion (one level at a time)
+        # Win rate thresholds (백업 시스템으로 유지)
         self.promotion_threshold = 0.80  # 80% win rate to promote (one level up)
         self.demotion_threshold = 0.20  # 20% win rate to demote (one level down)
 
         # Current level game counter
         self.games_at_current_level = 0
+
+        # 데이터 로드
+        self._load_win_loss_data()
 
     def load_level(self) -> int:
         """Load curriculum level from stats file."""
@@ -83,12 +99,28 @@ class CurriculumManager:
         except (IOError, json.JSONDecodeError):
             return 0
 
+    def _load_win_loss_data(self):
+        """현재 레벨의 승리/패배 데이터 로드."""
+        if not self.stats_file.exists():
+            return
+
+        try:
+            with open(self.stats_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.wins_at_current_level = data.get("wins_at_current_level", 0)
+            self.losses_at_current_level = data.get("losses_at_current_level", 0)
+        except (IOError, json.JSONDecodeError):
+            pass
+
     def save_level(self):
-        """Save current curriculum level to stats file."""
+        """Save current curriculum level and win/loss data to stats file."""
         try:
             data = {
                 "curriculum_level_idx": self.current_idx,
                 "games_at_current_level": self.games_at_current_level,
+                "wins_at_current_level": self.wins_at_current_level,
+                "losses_at_current_level": self.losses_at_current_level,
+                "wins_required": self.wins_required_per_level.get(self.current_idx, 10),
             }
             with open(self.stats_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -117,9 +149,126 @@ class CurriculumManager:
             return difficulty_names[self.current_idx]
         return "Very Easy"
 
+    def record_win(self) -> bool:
+        """
+        ★ 승리 기록 및 승격 체크 ★
+
+        승리할 때마다 호출됩니다.
+        필요한 승리 횟수에 도달하면 자동으로 다음 단계로 승격합니다.
+
+        Returns:
+            True if promoted to next level, False otherwise
+        """
+        self.wins_at_current_level += 1
+        self.games_at_current_level += 1
+
+        wins_required = self.wins_required_per_level.get(self.current_idx, 10)
+
+        print(f"\n{'='*70}")
+        print(f"[CURRICULUM] 🎉 승리! ({self.wins_at_current_level}/{wins_required})")
+        print(f"  현재 단계: {self.get_level_name()} (Level {self.current_idx + 1}/{len(self.levels)})")
+        print(f"{'='*70}\n")
+
+        # 승격 체크: 필요한 승리 횟수 달성
+        if self.wins_at_current_level >= wins_required:
+            return self._promote_to_next_level()
+
+        self.save_level()
+        return False
+
+    def record_loss(self) -> bool:
+        """
+        ★ 패배 기록 및 강등 체크 ★
+
+        패배할 때마다 호출됩니다.
+        연속 패배가 많으면 강등될 수 있습니다.
+
+        Returns:
+            True if demoted to previous level, False otherwise
+        """
+        self.losses_at_current_level += 1
+        self.games_at_current_level += 1
+
+        wins_required = self.wins_required_per_level.get(self.current_idx, 10)
+
+        print(f"\n{'='*70}")
+        print(f"[CURRICULUM] 패배 (승리: {self.wins_at_current_level}/{wins_required})")
+        print(f"  현재 단계: {self.get_level_name()} (Level {self.current_idx + 1}/{len(self.levels)})")
+        print(f"{'='*70}\n")
+
+        # 강등 체크: 10게임 이상 & 승률 20% 미만
+        if self.games_at_current_level >= 10:
+            win_rate = self.wins_at_current_level / self.games_at_current_level
+            if win_rate < self.demotion_threshold:
+                return self._demote_to_previous_level()
+
+        self.save_level()
+        return False
+
+    def _promote_to_next_level(self) -> bool:
+        """다음 단계로 승격."""
+        if self.current_idx >= len(self.levels) - 1:
+            print(f"\n{'★'*35}")
+            print(f"[CURRICULUM] 🏆 최고 난이도 마스터!")
+            print(f"  모든 단계를 완료했습니다!")
+            print(f"{'★'*35}\n")
+            self.save_level()
+            return False
+
+        old_difficulty = self.levels[self.current_idx].name
+        self.current_idx += 1
+        new_difficulty = self.levels[self.current_idx].name
+
+        # 새 레벨 초기화
+        old_wins = self.wins_at_current_level
+        self.wins_at_current_level = 0
+        self.losses_at_current_level = 0
+        self.games_at_current_level = 0
+
+        self.save_level()
+
+        wins_required = self.wins_required_per_level.get(self.current_idx, 10)
+
+        print(f"\n{'★'*35}")
+        print(f"[CURRICULUM] 🎊 단계 승격!")
+        print(f"  {old_difficulty} -> {new_difficulty}")
+        print(f"  이전 단계 승리: {old_wins}승")
+        print(f"  다음 목표: {wins_required}승 달성하기")
+        print(f"{'★'*35}\n")
+
+        return True
+
+    def _demote_to_previous_level(self) -> bool:
+        """이전 단계로 강등."""
+        if self.current_idx <= 0:
+            self.save_level()
+            return False
+
+        old_difficulty = self.levels[self.current_idx].name
+        self.current_idx -= 1
+        new_difficulty = self.levels[self.current_idx].name
+
+        # 새 레벨 초기화
+        self.wins_at_current_level = 0
+        self.losses_at_current_level = 0
+        self.games_at_current_level = 0
+
+        self.save_level()
+
+        wins_required = self.wins_required_per_level.get(self.current_idx, 10)
+
+        print(f"\n{'='*70}")
+        print(f"[CURRICULUM] 📉 난이도 하향 (연습 더 필요)")
+        print(f"  {old_difficulty} -> {new_difficulty}")
+        print(f"  목표: {wins_required}승 달성하기")
+        print(f"{'='*70}\n")
+
+        return True
+
     def check_promotion(self, win_rate: float, total_games: int) -> bool:
         """
         Check if AI should be promoted to next difficulty.
+        (백업 시스템: record_win/record_loss 사용 권장)
 
         IMPROVED: Ensures difficulty increases by exactly ONE level at a time.
         Never skips levels - always goes: VeryEasy -> Easy -> Medium -> Hard -> VeryHard -> CheatInsane
@@ -142,6 +291,8 @@ class CurriculumManager:
                 # IMPROVED: Only promote one level at a time
                 self.current_idx = new_idx
                 self.games_at_current_level = 0
+                self.wins_at_current_level = 0
+                self.losses_at_current_level = 0
                 self.save_level()
 
                 print(f"\n{'='*70}")
@@ -211,6 +362,7 @@ class CurriculumManager:
         """Get current progress information."""
         current_difficulty = self.get_difficulty()
         min_games = self.min_games_per_level.get(self.current_idx, 10)
+        wins_required = self.wins_required_per_level.get(self.current_idx, 10)
 
         return {
             "current_level": self.current_idx + 1,
@@ -218,9 +370,14 @@ class CurriculumManager:
             "current_difficulty": current_difficulty.name,
             "level_name": self.get_level_name(),
             "games_at_current_level": self.games_at_current_level,
+            "wins_at_current_level": self.wins_at_current_level,
+            "losses_at_current_level": self.losses_at_current_level,
+            "wins_required": wins_required,
+            "wins_remaining": max(0, wins_required - self.wins_at_current_level),
             "min_games_required": min_games,
             "promotion_threshold": self.promotion_threshold,
             "demotion_threshold": self.demotion_threshold,
+            "final_goal": "Beat CheatInsane AI!",
         }
 
     def update_priority(self, building_name: str, priority: str = "Urgent") -> None:

@@ -384,37 +384,88 @@ class StrategyManager:
 
     def _handle_air_threat(self) -> None:
         """
-        공중 위협 대응
+        ★★★ 공중 위협 대응 강화 ★★★
 
         적 공중 유닛 감지 시:
-        1. 스포어 크롤러 건설 요청
-        2. 히드라리스크 우선 생산
+        1. 스포어 크롤러 긴급 건설 (모든 기지에)
+        2. 히드라리스크 굴 최우선 건설
         3. 퀸 추가 생산 (대공 + 트랜스퓨전)
+        4. 커럽터/히드라 우선 생산
         """
         game_time = getattr(self.bot, "time", 0)
 
-        # 스포어 크롤러 긴급 건설
+        # ★ 스포어 크롤러 긴급 건설 ★
         self.emergency_spore_requested = True
 
-        # 히드라 굴 건설 확인
+        # ★ 기지 수만큼 스포어 필요 ★
+        if not hasattr(self, "_spore_count_needed"):
+            self._spore_count_needed = 0
+        if hasattr(self.bot, "townhalls"):
+            self._spore_count_needed = max(2, self.bot.townhalls.amount)
+
+        # ★ 히드라 굴 긴급 건설 ★
         if hasattr(self.bot, "structures"):
             try:
                 from sc2.ids.unit_typeid import UnitTypeId
 
+                # 히드라 굴 체크
                 hydra_dens = self.bot.structures(UnitTypeId.HYDRALISKDEN)
                 if not hydra_dens.exists and self.bot.already_pending(UnitTypeId.HYDRALISKDEN) == 0:
-                    # 히드라 굴 건설 요청
-                    if hasattr(self.bot, "production") and self.bot.production:
-                        print(f"[STRATEGY] [{int(game_time)}s] ★ Air threat! Building Hydralisk Den ★")
-            except Exception:
-                pass
+                    # 레어가 있으면 히드라 굴 건설
+                    lairs = self.bot.structures(UnitTypeId.LAIR)
+                    hives = self.bot.structures(UnitTypeId.HIVE)
+                    if lairs.exists or hives.exists:
+                        print(f"[STRATEGY] [{int(game_time)}s] ★★★ AIR THREAT - BUILDING HYDRA DEN NOW ★★★")
+                        # 직접 건설 시도
+                        if self.bot.can_afford(UnitTypeId.HYDRALISKDEN):
+                            if self.bot.townhalls.exists:
+                                pos = self.bot.townhalls.first.position.towards(
+                                    self.bot.game_info.map_center, 5
+                                )
+                                try:
+                                    self.bot.train_or_build_sync(UnitTypeId.HYDRALISKDEN, near=pos)
+                                except Exception:
+                                    pass
+
+                # ★ 스파이어 체크 (커럽터 생산용) ★
+                spires = self.bot.structures(UnitTypeId.SPIRE)
+                greater_spires = self.bot.structures(UnitTypeId.GREATERSPIRE)
+                if not spires.exists and not greater_spires.exists:
+                    if self.bot.already_pending(UnitTypeId.SPIRE) == 0:
+                        lairs = self.bot.structures(UnitTypeId.LAIR)
+                        hives = self.bot.structures(UnitTypeId.HIVE)
+                        if (lairs.exists or hives.exists) and self.bot.can_afford(UnitTypeId.SPIRE):
+                            print(f"[STRATEGY] [{int(game_time)}s] ★ Building Spire for Corruptors ★")
+
+            except Exception as e:
+                if self.bot.iteration % 200 == 0:
+                    print(f"[STRATEGY] Air threat handling error: {e}")
+
+        # ★ 대공 유닛 비율 강제 조정 ★
+        self._force_anti_air_ratios()
 
         # 로그 쿨다운 (10초마다만 출력)
         if not hasattr(self, "_last_air_log_time"):
             self._last_air_log_time = 0
         if game_time - self._last_air_log_time >= 10:
-            print(f"[STRATEGY] [{int(game_time)}s] ★★ AIR THREAT DETECTED - Building anti-air ★★")
+            print(f"[STRATEGY] [{int(game_time)}s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★")
             self._last_air_log_time = game_time
+
+    def _force_anti_air_ratios(self) -> None:
+        """★ 대공 유닛 비율 강제 조정 ★"""
+        # 모든 페이즈에 대공 유닛 비율 높이기
+        anti_air_ratios = {
+            GamePhase.EARLY: {"zergling": 0.2, "queen": 0.3, "hydra": 0.5},
+            GamePhase.MID: {"hydra": 0.5, "corruptor": 0.3, "queen": 0.2},
+            GamePhase.LATE: {"hydra": 0.4, "corruptor": 0.4, "viper": 0.2},
+        }
+
+        # 현재 적 종족의 비율 덮어쓰기
+        self.race_unit_ratios[self.detected_enemy_race] = anti_air_ratios
+
+    def get_spore_count_needed(self) -> int:
+        """필요한 스포어 크롤러 수 반환"""
+        return getattr(self, "_spore_count_needed", 2)
 
     def _detect_direct_air_threat(self) -> None:
         """
