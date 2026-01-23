@@ -93,6 +93,16 @@ class CombatManager:
         self._worker_defense_threshold = 1  # ★ FIX: 적 1기라도 일꾼 근처 위협 시 방어 ★
         self._critical_defense_threshold = 8  # 적 8기 이상이면 모든 유닛 방어
 
+        # === ★★★ VICTORY CONDITION TRACKING ★★★ ===
+        self._victory_push_active = False  # 승리 푸시 모드
+        self._last_enemy_structure_count = 0  # 마지막으로 본 적 건물 수
+        self._enemy_structures_destroyed = 0  # 파괴한 적 건물 수
+        self._last_victory_check = 0  # 마지막 승리 조건 체크 시간
+        self._victory_check_interval = 110  # 승리 조건 체크 주기 (약 5초)
+        self._endgame_push_threshold = 360  # 6분 이후 승리 푸시 가능
+        self._known_enemy_expansions = set()  # 발견한 적 확장 위치
+        self._last_expansion_check = 0  # 마지막 확장 체크 시간
+
         # 매니저 초기화
         self._initialize_managers()
     
@@ -137,6 +147,11 @@ class CombatManager:
         try:
             # Clean up stale unit assignments
             self._cleanup_assignments()
+
+            # ★★★ 승리 조건 체크 및 승리 푸시 활성화 ★★★
+            if iteration - self._last_victory_check > self._victory_check_interval:
+                await self._check_victory_conditions(iteration)
+                self._last_victory_check = iteration
 
             # ★ 필수 기지 방어 체크 - 항상 최우선 ★
             base_threat = await self._check_mandatory_base_defense(iteration)

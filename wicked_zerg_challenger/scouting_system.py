@@ -39,6 +39,14 @@ class ScoutingSystem:
         self.sensor_csv_path = "logs/sensor_network.csv"
         self.sensor_json_path = "logs/sensor_network.json"
 
+        # ★★★ 주기 정찰 강화 ★★★
+        self.expansion_scout_index = 0  # 확장 기지 정찰 순번
+        self.last_expansion_scout = 0  # 마지막 확장 정찰 시간
+        self.scouted_expansions = set()  # 정찰한 확장 위치
+        self.last_proxy_check = 0  # 프록시 체크 시간
+        self.proxy_check_locations: List[Point2] = []  # 프록시 의심 위치
+        self.army_tracking_positions: List[Point2] = []  # 적 군대 추적 위치
+
         params = getattr(self.bot, "scout_params", None)
         if isinstance(params, dict):
             self.log_interval = params.get("log_interval", self.log_interval)
@@ -50,11 +58,23 @@ class ScoutingSystem:
             if not self.intel_manager and hasattr(self.bot, "intel"):
                 self.intel_manager = self.bot.intel
 
-            if iteration - self.last_scout_update > 110:
+            # ★ 개선: 110 → 70 (정찰 빈도 증가, 약 3초마다)
+            if iteration - self.last_scout_update > 70:
                 await self._update_overlord_network()
                 await self._assign_ling_scouts()
                 await self._maybe_morph_overseer()
                 self.last_scout_update = iteration
+
+            # ★★★ 새로운 정찰 기능 ★★★
+            # 확장 기지 순환 정찰 (15초마다)
+            if iteration - self.last_expansion_scout > 330:
+                await self._scout_expansions()
+                self.last_expansion_scout = iteration
+
+            # 프록시/숨겨진 건물 체크 (30초마다, 초반 5분간)
+            if self.bot.time < 300 and iteration - self.last_proxy_check > 660:
+                await self._check_proxy_locations()
+                self.last_proxy_check = iteration
 
             await self._move_scouts()
             self._log_sensor_snapshot(iteration)
@@ -85,16 +105,42 @@ class ScoutingSystem:
             self.scout_assignments[overlord.tag] = target
 
     async def _assign_ling_scouts(self):
+        """저글링 정찰 배정 - ★ 개선: 2마리 → 4마리로 증가 ★"""
         zerglings = self.bot.units(UnitTypeId.ZERGLING)
         if not zerglings.exists or not self.bot.enemy_start_locations:
             return
+
+        # ★ 게임 시간대별 정찰 저글링 수 조정
+        game_time = getattr(self.bot, "time", 0)
+        if game_time < 180:  # 초반 3분
+            max_scouts = 2
+        elif game_time < 360:  # 3-6분
+            max_scouts = 3
+        else:  # 6분 이후
+            max_scouts = 4
+
         active = [z for z in zerglings if z.tag in self.scout_zerglings]
-        if len(active) >= 2:
+        if len(active) >= max_scouts:
             return
+
         available = [z for z in zerglings if z.tag not in self.scout_zerglings]
-        for z in available[:2 - len(active)]:
+        for z in available[:max_scouts - len(active)]:
             self.scout_zerglings.append(z.tag)
-            self.scout_assignments[z.tag] = self.bot.enemy_start_locations[0]
+            # ★ 다양한 정찰 목표 설정
+            if len(self.scout_zerglings) == 1:
+                # 첫 번째: 적 메인 기지
+                self.scout_assignments[z.tag] = self.bot.enemy_start_locations[0]
+            elif len(self.scout_zerglings) == 2:
+                # 두 번째: 맵 중앙
+                map_center = getattr(self.bot.game_info, "map_center", self.bot.enemy_start_locations[0])
+                self.scout_assignments[z.tag] = map_center
+            else:
+                # 나머지: 확장 기지 정찰
+                expansions = getattr(self.bot, "expansion_locations_list", [])
+                if expansions and len(expansions) > len(self.scout_zerglings) - 3:
+                    self.scout_assignments[z.tag] = expansions[len(self.scout_zerglings) - 3]
+                else:
+                    self.scout_assignments[z.tag] = self.bot.enemy_start_locations[0]
 
     async def _maybe_morph_overseer(self):
         if self.bot.time < 240 or self.bot.vespene < 50:
@@ -156,6 +202,104 @@ class ScoutingSystem:
         side1 = Point2((base_side.x + 6.0, base_side.y))
         side2 = Point2((base_side.x - 6.0, base_side.y))
         return [back, side1, side2]
+
+    async def _scout_expansions(self):
+        """
+        ★★★ 확장 기지 순환 정찰 ★★★
+
+        모든 확장 위치를 주기적으로 정찰하여 적의 확장을 파악합니다.
+        """
+        if not hasattr(self.bot, "expansion_locations_list"):
+            return
+
+        expansions = self.bot.expansion_locations_list
+        if not expansions:
+            return
+
+        # 오버로드 중 정찰에 사용할 유닛 선택
+        overlords = self.bot.units(UnitTypeId.OVERLORD)
+        if not overlords.exists:
+            return
+
+        # 확장 위치를 순환하며 정찰
+        if self.expansion_scout_index >= len(expansions):
+            self.expansion_scout_index = 0
+
+        target_expansion = expansions[self.expansion_scout_index]
+        self.expansion_scout_index += 1
+
+        # 가장 가까운 오버로드를 해당 확장으로 보냄
+        if overlords.exists:
+            closest_overlord = overlords.closest_to(target_expansion)
+            # 기존 할당이 없거나, 우선순위가 낮은 경우에만 재할당
+            if closest_overlord.tag not in self.scout_assignments or closest_overlord.is_idle:
+                self.scout_assignments[closest_overlord.tag] = target_expansion
+                self.scouted_expansions.add(target_expansion)
+
+                # 인텔 매니저에 정보 전달
+                if self.intel_manager:
+                    try:
+                        # 확장 위치 정찰 정보 기록
+                        self.intel_manager.record_scouted_location(target_expansion)
+                    except Exception:
+                        pass
+
+    async def _check_proxy_locations(self):
+        """
+        ★★★ 프록시/숨겨진 건물 탐색 ★★★
+
+        초반에 프록시 건물이 있을 만한 위치를 체크합니다.
+        """
+        if not hasattr(self.bot, "enemy_start_locations") or not self.bot.enemy_start_locations:
+            return
+
+        enemy_start = self.bot.enemy_start_locations[0]
+        our_base = self.bot.townhalls.first.position if self.bot.townhalls.exists else None
+        if not our_base:
+            return
+
+        # 프록시 의심 위치 계산 (우리 기지와 적 기지 사이)
+        if not self.proxy_check_locations:
+            # 우리 기지 주변
+            for angle in range(0, 360, 45):
+                import math
+                rad = math.radians(angle)
+                offset_x = 15 * math.cos(rad)
+                offset_y = 15 * math.sin(rad)
+                proxy_pos = Point2((our_base.x + offset_x, our_base.y + offset_y))
+                self.proxy_check_locations.append(proxy_pos)
+
+            # 중간 지점
+            mid_point = Point2(((our_base.x + enemy_start.x) / 2, (our_base.y + enemy_start.y) / 2))
+            for angle in range(0, 360, 90):
+                rad = math.radians(angle)
+                offset_x = 10 * math.cos(rad)
+                offset_y = 10 * math.sin(rad)
+                proxy_pos = Point2((mid_point.x + offset_x, mid_point.y + offset_y))
+                self.proxy_check_locations.append(proxy_pos)
+
+        # 저글링 또는 오버로드를 프록시 체크 위치로 보냄
+        zerglings = self.bot.units(UnitTypeId.ZERGLING)
+        overlords = self.bot.units(UnitTypeId.OVERLORD)
+
+        available_scouts = []
+        if zerglings.exists:
+            # 정찰 중이 아닌 저글링
+            available_scouts.extend([z for z in zerglings if z.tag not in self.scout_zerglings and z.is_idle])
+
+        if overlords.exists and len(available_scouts) < 2:
+            # idle 오버로드
+            available_scouts.extend([o for o in overlords if o.is_idle])
+
+        # 프록시 체크 위치에 정찰 유닛 배정
+        for i, scout in enumerate(available_scouts[:min(3, len(self.proxy_check_locations))]):
+            if i < len(self.proxy_check_locations):
+                target = self.proxy_check_locations[i]
+                self.scout_assignments[scout.tag] = target
+                try:
+                    self.bot.do(scout.move(target))
+                except Exception:
+                    pass
 
     def _log_sensor_snapshot(self, iteration: int) -> None:
         if iteration - self.last_sensor_log < self.log_interval:
