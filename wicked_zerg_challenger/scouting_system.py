@@ -104,7 +104,7 @@ class ScoutingSystem:
             if overlords.exists and self.bot.time - self.last_overseer_morph > 60:
                 target = overlords.closest_to(self.bot.townhalls.first.position)
                 try:
-                    await self.bot.do(target(AbilityId.MORPH_OVERSEER))
+                    self.bot.do(target(AbilityId.MORPH_OVERSEER))
                     self.last_overseer_morph = self.bot.time
                 except Exception:
                     pass
@@ -132,7 +132,7 @@ class ScoutingSystem:
             # Only move if idle AND not in combat
             if unit.is_idle and not has_enemies_nearby:
                 try:
-                    await self.bot.do(unit.move(target_pos))
+                    self.bot.do(unit.move(target_pos))
                 except Exception:
                     pass
 

@@ -51,6 +51,7 @@ class WickedZergBotProImpl(BotAI):
         self.rogue_tactics = None          # Baneling drop + larva saving
         self.transformer_model = None      # Transformer decision model
         self.hierarchical_rl = None        # Hierarchical RL agent
+        self.aggressive_strategies = None  # Early game aggressive strategies
 
         # Step integrator initialization
         self._step_integrator = None
@@ -65,10 +66,20 @@ class WickedZergBotProImpl(BotAI):
         - PID Controller: Smooth unit movement
         - Rogue Tactics: Baneling drop, larva saving
         - Transformer Model: Decision making (training mode)
+        - ProductionResilience: Safe unit production with retry logic
         """
         await super().on_start()
 
         print("[BOT] on_start: Initializing all managers...")
+
+        # === 0. ProductionResilience (안전한 유닛 생산) ===
+        try:
+            from local_training.production_resilience import ProductionResilience
+            self.production = ProductionResilience(self)
+            print("[BOT] ProductionResilience initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] ProductionResilience not available: {e}")
+            self.production = None
 
         # === 1. Strategy Manager (종족별 전략 + Emergency Mode) ===
         try:
@@ -130,6 +141,15 @@ class WickedZergBotProImpl(BotAI):
         else:
             self.hierarchical_rl = None
 
+        # === 7. Aggressive Strategies (초반 공격 전략) ===
+        try:
+            from aggressive_strategies import AggressiveStrategyExecutor
+            self.aggressive_strategies = AggressiveStrategyExecutor(self)
+            print("[BOT] AggressiveStrategyExecutor initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] AggressiveStrategies not available: {e}")
+            self.aggressive_strategies = None
+
         # === Step integrator initialization ===
         self._step_integrator = BotStepIntegrator(self)
 
@@ -140,14 +160,25 @@ class WickedZergBotProImpl(BotAI):
         Called every game step.
 
         This method executes actual game logic and training logic.
+
+        NOTE: 모든 매니저 호출은 BotStepIntegrator에서 처리됨
+        - StrategyManager: 종족별 전략 + Emergency Mode
+        - RogueTacticsManager: 맹독충 드랍 + 라바 세이빙
+        - AggressiveStrategies: 초반 공격 전략 (12풀, 맹독충 올인 등)
+        중복 호출 방지를 위해 여기서는 호출하지 않음
         """
         # Store iteration as attribute for other modules to access
         self.iteration = iteration
 
+        # 전략 선택 (한 번만 실행)
+        if self.aggressive_strategies and not self.aggressive_strategies._strategy_decided:
+            enemy_race = str(getattr(self, "enemy_race", "Unknown"))
+            self.aggressive_strategies.select_strategy(enemy_race)
+
         if self._step_integrator is None:
             self._step_integrator = BotStepIntegrator(self)
 
-        # Execute integrated on_step
+        # Execute integrated on_step (모든 핵심 매니저 포함)
         await self._step_integrator.on_step(iteration)
 
     async def on_end(self, game_result):

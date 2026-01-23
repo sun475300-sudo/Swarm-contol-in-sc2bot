@@ -24,6 +24,13 @@ class UnitFactory:
         self.larva_pressure_threshold = 6
         self.max_larva_spend_per_step = 3
 
+        # ★ COMBAT REINFORCEMENT SYSTEM ★
+        # 전투 중 병력 충원을 위한 시스템
+        self._combat_mode = False
+        self._last_combat_check = 0
+        self._combat_check_interval = 22  # ~1초마다 체크
+        self._combat_larva_spend = 5  # 전투 중 더 많은 라바 소비 (3 -> 5)
+
         # 종족별 가스 유닛 비율 (Strategy Manager와 연동)
         self.race_gas_ratios = {
             "Terran": 0.40,    # 대 테란: 뮤탈/히드라 비중 높음
@@ -88,6 +95,49 @@ class UnitFactory:
             return getattr(strategy, "emergency_active", False)
         return False
 
+    def _check_combat_mode(self, iteration: int) -> bool:
+        """
+        전투 모드 확인 - 전투 중이면 병력 충원 모드 활성화
+
+        Returns:
+            True if in combat mode (need reinforcement)
+        """
+        if iteration - self._last_combat_check < self._combat_check_interval:
+            return self._combat_mode
+
+        self._last_combat_check = iteration
+
+        # 전투 감지 조건들
+        in_combat = False
+
+        # 1. Strategy Manager의 emergency_active 체크
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if strategy and getattr(strategy, "emergency_active", False):
+            in_combat = True
+
+        # 2. 적 유닛이 기지 근처에 있는지 체크
+        if not in_combat and hasattr(self.bot, "enemy_units") and hasattr(self.bot, "townhalls"):
+            enemy_units = self.bot.enemy_units
+            for th in self.bot.townhalls:
+                nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < 35]
+                if len(nearby_enemies) >= 3:  # 3기 이상의 적이 근처에
+                    in_combat = True
+                    break
+
+        # 3. 아군 병력 손실 체크 (서플라이 급감)
+        if not in_combat and hasattr(self.bot, "supply_army"):
+            supply_army = self.bot.supply_army
+            if not hasattr(self, "_last_supply_army"):
+                self._last_supply_army = supply_army
+            else:
+                supply_loss = self._last_supply_army - supply_army
+                if supply_loss > 10:  # 10 서플라이 이상 손실
+                    in_combat = True
+                self._last_supply_army = supply_army
+
+        self._combat_mode = in_combat
+        return in_combat
+
     async def on_step(self, iteration: int) -> None:
         if not UnitTypeId or not hasattr(self.bot, "larva"):
             return
@@ -98,6 +148,18 @@ class UnitFactory:
 
         if hasattr(self.bot, "supply_left") and self.bot.supply_left <= 0:
             return
+
+        # ★ COMBAT REINFORCEMENT: 전투 모드 체크 ★
+        in_combat = self._check_combat_mode(iteration)
+
+        # 전투 중이면 더 많은 라바 소비
+        if in_combat:
+            self.max_larva_spend_per_step = self._combat_larva_spend
+            if iteration % 200 == 0:
+                game_time = getattr(self.bot, "time", 0)
+                print(f"[UNIT_FACTORY] [{int(game_time)}s] COMBAT MODE: Increased production rate")
+        else:
+            self.max_larva_spend_per_step = 3  # 기본값
 
         # === StrategyManager 실시간 비율 연동 ===
         # 매 스텝마다 전략 매니저의 가스 비율을 가져와서 적용
@@ -129,7 +191,11 @@ class UnitFactory:
             # 오버로드가 필요하면 생산, 아니면 스킵
             if self.bot.supply_left < 2 and self.bot.can_afford(UnitTypeId.OVERLORD):
                 try:
-                    await self.bot.do(larva.first.train(UnitTypeId.OVERLORD))
+                    # ProductionResilience의 _safe_train 사용 (있을 경우)
+                    if hasattr(self.bot, 'production') and self.bot.production:
+                        await self.bot.production._safe_train(larva.first, UnitTypeId.OVERLORD)
+                    else:
+                        self.bot.do(larva.first.train(UnitTypeId.OVERLORD))
                 except Exception:
                     pass
             return
@@ -163,7 +229,12 @@ class UnitFactory:
                 break
 
             try:
-                await self.bot.do(larva_unit.train(unit_type))
+                # ProductionResilience의 _safe_train 사용 (있을 경우)
+                if hasattr(self.bot, 'production') and self.bot.production:
+                    await self.bot.production._safe_train(larva_unit, unit_type)
+                else:
+                    # Fallback: 직접 train 호출
+                    self.bot.do(larva_unit.train(unit_type))
                 to_spend += 1
             except Exception:
                 continue
@@ -209,6 +280,16 @@ class UnitFactory:
         larva_count: int,
         can_spend_gas: bool,
     ) -> List[object]:
+        # ★ 공중 위협 시 히드라 강제 생산 ★
+        force_hydra = getattr(self, "_force_hydra", False)
+        if force_hydra:
+            # 히드라 굴 있고 가스 충분하면 히드라 최우선
+            if self._requirements_met(UnitTypeId.HYDRALISK) and vespene >= 50:
+                hydra_count = self._count_unit_type(UnitTypeId.HYDRALISK)
+                # 히드라 비율 50%까지 올리기
+                if hydra_count < 15:  # 또는 비율 체크
+                    return [UnitTypeId.HYDRALISK, UnitTypeId.ROACH, UnitTypeId.ZERGLING]
+
         gas_priority = can_spend_gas and gas_ratio < self.gas_unit_ratio_target
         larva_gas_target = max(1, int(larva_count * self.larva_gas_ratio))
         gas_shortfall = gas_units < larva_gas_target
@@ -219,6 +300,14 @@ class UnitFactory:
             allow_mineral_mix = allow_mineral_mix or minerals >= self.min_mineral_reserve_for_gas * 2
 
         queue: List[object] = []
+
+        # ★ Strategy Manager에서 공중 위협 감지시 히드라 우선 ★
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if strategy and hasattr(strategy, "should_force_hydra") and strategy.should_force_hydra():
+            # 히드라 우선 순위로 배치
+            if self._requirements_met(UnitTypeId.HYDRALISK) and vespene >= 50:
+                queue.append(UnitTypeId.HYDRALISK)
+
         if gas_priority:
             queue.extend(self._filter_units(self._gas_unit_table(), vespene))
             if allow_mineral_mix:

@@ -12,10 +12,12 @@ from typing import List, Optional, Set, Tuple
 try:
     from sc2.ids.ability_id import AbilityId
     from sc2.ids.unit_typeid import UnitTypeId
+    from sc2.ids.upgrade_id import UpgradeId
     from sc2.position import Point2
 except ImportError:
     AbilityId = None
     UnitTypeId = None
+    UpgradeId = None
     Point2 = None
 
 
@@ -192,8 +194,19 @@ class BurrowController:
                 UnitTypeId.SWARMHOSTMP,
             }
 
+        # Baneling specific settings
+        self.baneling_unburrow_range = 4.5  # 맹독충 잠복 해제 거리 (스플래시 범위 고려)
+
+    def _can_burrow(self, bot) -> bool:
+        """잠복 업그레이드 확인"""
+        if not UpgradeId:
+            return False
+        if hasattr(bot, 'state') and hasattr(bot.state, 'upgrades'):
+            return UpgradeId.BURROW in bot.state.upgrades
+        return False
+
     async def handle_burrow(
-        self, units, enemy_units, iteration: int, do_actions_func
+        self, units, enemy_units, iteration: int, do_actions_func, bot=None
     ) -> Set[int]:
         """
         Process burrow/unburrow logic for all applicable units.
@@ -203,6 +216,7 @@ class BurrowController:
             enemy_units: Enemy units
             iteration: Current game iteration
             do_actions_func: Async function to execute actions
+            bot: Bot instance for upgrade checking
 
         Returns:
             Set of unit tags that should be skipped by movement logic
@@ -211,6 +225,10 @@ class BurrowController:
             return set()
 
         if iteration - self.last_check_frame < self.check_interval:
+            return set()
+
+        # 잠복 업그레이드 확인
+        if bot and not self._can_burrow(bot):
             return set()
 
         self.last_check_frame = iteration
@@ -250,9 +268,9 @@ class BurrowController:
         self, unit, enemy_units, health_ratio: float, enemy_nearby: bool, up_ability
     ):
         """Handle logic for currently burrowed units."""
-        # Banelings unburrow when enemies are very close
+        # Banelings unburrow when enemies are in optimal range
         if UnitTypeId and unit.type_id == UnitTypeId.BANELING:
-            if self._enemy_within(enemy_units, unit, 2.5):
+            if self._enemy_within(enemy_units, unit, self.baneling_unburrow_range):
                 if up_ability:
                     return unit(up_ability)
                 return None

@@ -137,7 +137,7 @@ class BoidsController:
         try:
             # Handle burrow abilities
             skip_units = await self.burrow_controller.handle_burrow(
-                units, enemy_units, iteration, self._do_actions
+                units, enemy_units, iteration, self._do_actions, bot=self.bot
             )
 
             # Apply main boids movement

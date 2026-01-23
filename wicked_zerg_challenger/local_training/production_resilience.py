@@ -84,10 +84,9 @@ class ProductionResilience:
                     print(f"[TRAIN_ERROR] Invalid unit for training {unit_type}")
                     return False
 
-                result = unit.train(unit_type)
-                # train() may return bool or coroutine
-                if hasattr(result, '__await__'):
-                    await result
+                # Create train action and execute it via bot.do()
+                action = unit.train(unit_type)
+                self.bot.do(action)  # bot.do() is not async, just call it
                 return True
 
             except Exception as e:
@@ -310,14 +309,15 @@ class ProductionResilience:
 
         # === AGGRESSIVE EXPANSION: When minerals > 400, prioritize expansion ===
         # Zerg needs expansions for macro advantage
-        if b.minerals > 400 and b.already_pending(UnitTypeId.HATCHERY) == 0:
+        # IMPROVED: 1분 이후 조기 확장 (자원 여유 시)
+        time = getattr(b, "time", 0.0)
+        if time >= 60 and b.minerals > 400 and b.already_pending(UnitTypeId.HATCHERY) == 0:
             bases = b.townhalls.amount if hasattr(b, "townhalls") else 1
             # Always try to have one more base building
             if b.can_afford(UnitTypeId.HATCHERY):
                 try:
                     if await self._try_expand():
-                        if b.iteration % 100 == 0:
-                            print(f"[AGGRESSIVE EXPAND] [{int(b.time)}s] Expanding due to mineral bank ({int(b.minerals)} > 400)")
+                        print(f"[EARLY_EXPAND] [{int(time)}s] Expanding at 1min+ with {int(b.minerals)} minerals (bases: {bases})")
                 except Exception:
                     pass
 
@@ -862,7 +862,7 @@ class ProductionResilience:
             await self._ensure_early_defense(time, supply_used)
 
             # Priority 1: Fast Spawning Pool (supply 13-15)
-                if not b.structures(UnitTypeId.SPAWNINGPOOL).exists and b.already_pending(UnitTypeId.SPAWNINGPOOL) == 0:
+            if not b.structures(UnitTypeId.SPAWNINGPOOL).exists and b.already_pending(UnitTypeId.SPAWNINGPOOL) == 0:
                     if b.can_afford(UnitTypeId.SPAWNINGPOOL) and b.townhalls.exists:
                         try:
                             main_base = b.townhalls.first
@@ -1217,14 +1217,16 @@ class ProductionResilience:
         """
         Build defense structures proactively.
 
-        Timeline:
-        - 3:00 (180s): First Spine Crawler
-        - 4:00 (240s): Second Spine Crawler
-        - 5:00 (300s): Spore Crawler (if air threat possible)
+        IMPROVED Timeline:
+        - 2:00 (120s): First Spine Crawler (러쉬 대비)
+        - 3:00 (180s): Second Spine Crawler
+        - 3:30 (210s): First Spore Crawler (오라클/뮤탈 대비)
+        - 4:00 (240s): Third Spine Crawler (중기 방어)
+        - 확장 기지마다 스파인 + 스포어 1개씩
         """
         game_time = getattr(b, "time", 0)
 
-        # Need Spawning Pool for Spine Crawlers
+        # Need Spawning Pool for defense structures
         if not b.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
             return
 
@@ -1232,17 +1234,35 @@ class ProductionResilience:
         spine_count = spine_crawlers.amount if hasattr(spine_crawlers, 'amount') else len(list(spine_crawlers))
         pending_spines = b.already_pending(UnitTypeId.SPINECRAWLER)
 
-        # Defense cooldown to prevent spam
+        spore_crawlers = b.structures(UnitTypeId.SPORECRAWLER)
+        spore_count = spore_crawlers.amount if hasattr(spore_crawlers, 'amount') else 0
+        pending_spores = b.already_pending(UnitTypeId.SPORECRAWLER)
+
+        # Defense cooldown to prevent spam (15초로 더 줄임)
         last_defense_time = getattr(self, "_last_defense_build_time", 0)
-        if game_time - last_defense_time < 30:  # 30 second cooldown
+        if game_time - last_defense_time < 15:
             return
 
-        # 3:00+ : First Spine Crawler
-        if game_time >= 180 and spine_count + pending_spines < 1:
+        # === 러쉬 감지 시 긴급 방어 ===
+        under_attack = self._detect_early_rush(b)
+        if under_attack and spine_count < 2:
             if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
                 try:
                     main_base = b.townhalls.first
-                    defense_pos = main_base.position.towards(b.game_info.map_center, 8)
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 6)
+                    await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                    self._last_defense_build_time = game_time
+                    print(f"[EMERGENCY DEFENSE] [{int(game_time)}s] RUSH DETECTED - Building Spine Crawler!")
+                    return
+                except Exception:
+                    pass
+
+        # 2:00+ : First Spine Crawler (더 빠른 방어)
+        if game_time >= 120 and spine_count + pending_spines < 1:
+            if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
+                try:
+                    main_base = b.townhalls.first
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 7)
                     await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
                     self._last_defense_build_time = game_time
                     print(f"[DEFENSE] [{int(game_time)}s] Building Spine Crawler #1")
@@ -1250,12 +1270,12 @@ class ProductionResilience:
                 except Exception:
                     pass
 
-        # 4:00+ : Second Spine Crawler
-        if game_time >= 240 and spine_count + pending_spines < 2:
+        # 3:00+ : Second Spine Crawler
+        if game_time >= 180 and spine_count + pending_spines < 2:
             if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
                 try:
                     main_base = b.townhalls.first
-                    defense_pos = main_base.position.towards(b.game_info.map_center, 10)
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 9)
                     await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
                     self._last_defense_build_time = game_time
                     print(f"[DEFENSE] [{int(game_time)}s] Building Spine Crawler #2")
@@ -1263,36 +1283,104 @@ class ProductionResilience:
                 except Exception:
                     pass
 
-        # 5:00+ : Spore Crawler for air defense
-        spore_crawlers = b.structures(UnitTypeId.SPORECRAWLER)
-        spore_count = spore_crawlers.amount if hasattr(spore_crawlers, 'amount') else 0
-        pending_spores = b.already_pending(UnitTypeId.SPORECRAWLER)
-
-        if game_time >= 300 and spore_count + pending_spores < 1:
+        # 3:30+ : First Spore Crawler (대공 방어 - 오라클/뮤탈 대비)
+        if game_time >= 210 and spore_count + pending_spores < 1:
             if b.can_afford(UnitTypeId.SPORECRAWLER) and b.townhalls.exists:
                 try:
+                    # 미네랄 라인 근처에 배치 (일꾼 보호)
                     main_base = b.townhalls.first
-                    await b.build(UnitTypeId.SPORECRAWLER, near=main_base.position)
+                    minerals = b.mineral_field.closer_than(10, main_base)
+                    if minerals:
+                        mineral_center = minerals.center
+                        defense_pos = main_base.position.towards(mineral_center, 4)
+                    else:
+                        defense_pos = main_base.position
+                    await b.build(UnitTypeId.SPORECRAWLER, near=defense_pos)
                     self._last_defense_build_time = game_time
-                    print(f"[DEFENSE] [{int(game_time)}s] Building Spore Crawler")
+                    print(f"[DEFENSE] [{int(game_time)}s] Building Spore Crawler #1 (anti-air)")
                     return
                 except Exception:
                     pass
 
-        if b.production:
-            await b.production._produce_overlord()
-        if b.production:
-            await b.production._produce_queen()
-        larvae = list(b.units(UnitTypeId.LARVA))
-        if larvae and b.supply_left >= 2:
-            if b.can_afford(UnitTypeId.ZERGLING):
-                spawning_pools = b.units(UnitTypeId.SPAWNINGPOOL).ready
-                if spawning_pools:
-                    import random
-                    # CRITICAL FIX: Use _safe_train instead of direct train() call
-                    larva = random.choice(larvae)
-                    if larva.is_ready:
-                        await self._safe_train(larva, UnitTypeId.ZERGLING)
+        # 4:00+ : Third Spine Crawler
+        if game_time >= 240 and spine_count + pending_spines < 3:
+            if b.can_afford(UnitTypeId.SPINECRAWLER) and b.townhalls.exists:
+                try:
+                    main_base = b.townhalls.first
+                    defense_pos = main_base.position.towards(b.game_info.map_center, 11)
+                    await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                    self._last_defense_build_time = game_time
+                    print(f"[DEFENSE] [{int(game_time)}s] Building Spine Crawler #3")
+                    return
+                except Exception:
+                    pass
+
+        # === 확장 기지 방어 (5분 이후) ===
+        if game_time >= 300:
+            await self._build_expansion_defense(b, game_time)
+
+    async def _build_expansion_defense(self, b, game_time: float) -> None:
+        """확장 기지에 방어 건물 건설"""
+        townhalls = b.townhalls.ready
+        if townhalls.amount <= 1:
+            return
+
+        # 확장 기지마다 스파인 1개 + 스포어 1개 목표
+        for th in townhalls:
+            if th == b.townhalls.first:
+                continue  # 메인 기지는 이미 처리
+
+            # 이 기지 주변 방어 건물 확인
+            nearby_spines = b.structures(UnitTypeId.SPINECRAWLER).closer_than(15, th)
+            nearby_spores = b.structures(UnitTypeId.SPORECRAWLER).closer_than(15, th)
+
+            spine_count = nearby_spines.amount if hasattr(nearby_spines, 'amount') else 0
+            spore_count = nearby_spores.amount if hasattr(nearby_spores, 'amount') else 0
+
+            # 스파인 크롤러 부족 시
+            if spine_count < 1:
+                if b.can_afford(UnitTypeId.SPINECRAWLER):
+                    try:
+                        defense_pos = th.position.towards(b.game_info.map_center, 6)
+                        await b.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                        self._last_defense_build_time = game_time
+                        print(f"[DEFENSE] [{int(game_time)}s] Building Spine at expansion")
+                        return
+                    except Exception:
+                        pass
+
+            # 스포어 크롤러 부족 시
+            if spore_count < 1:
+                if b.can_afford(UnitTypeId.SPORECRAWLER):
+                    try:
+                        await b.build(UnitTypeId.SPORECRAWLER, near=th.position)
+                        self._last_defense_build_time = game_time
+                        print(f"[DEFENSE] [{int(game_time)}s] Building Spore at expansion")
+                        return
+                    except Exception:
+                        pass
+
+    def _detect_early_rush(self, b) -> bool:
+        """초반 러쉬 감지"""
+        game_time = getattr(b, "time", 0)
+        if game_time > 180:  # 3분 이후는 일반 대응
+            return False
+
+        enemy_units = getattr(b, "enemy_units", [])
+        if not enemy_units:
+            return False
+
+        # 러쉬 유닛 목록
+        rush_units = {'ZERGLING', 'MARINE', 'ZEALOT', 'REAPER', 'ADEPT', 'ROACH'}
+
+        for enemy in enemy_units:
+            enemy_type = getattr(enemy.type_id, "name", "").upper()
+            if enemy_type in rush_units:
+                # 기지 근처에 있으면 러쉬로 판단
+                for th in b.townhalls:
+                    if enemy.distance_to(th.position) < 35:
+                        return True
+        return False
 
     async def build_terran_counters(self) -> None:
         b = self.bot
@@ -2013,22 +2101,35 @@ class ProductionResilience:
         # Check for larvae
         larvae = b.units(UnitTypeId.LARVA)
         if not larvae.exists:
-            # No larvae - try to build tech instead
+            # No larvae - try to build tech and MACRO HATCHERY for more larvae
             await self._build_gas_heavy_tech()
+            # Build macro hatchery when gas > 2000 and no larvae (desperate for larvae)
+            if gas > 2000 and b.minerals > 250 and b.already_pending(UnitTypeId.HATCHERY) < 2:
+                try:
+                    await b.expand_now()
+                    print(f"[GAS SINK] Building Macro Hatchery (no larvae, gas: {int(gas)})")
+                except Exception:
+                    pass
             return
 
         larvae_list = list(larvae.ready) if hasattr(larvae, 'ready') else list(larvae)
 
         # === PRIORITY 0: Build Overlords if supply blocked ===
-        if b.supply_left < 4 and gas > 1500:
+        # 더 공격적인 오버로드 생산: supply_left < 8 로 조정
+        overlords_needed = 0
+        if b.supply_left < 8:
+            # 가스가 높으면 더 많은 오버로드 생산 (미래 유닛 생산 대비)
+            overlords_needed = min(10, (gas - 1000) // 300)  # 가스 1300당 오버로드 1기
+            overlords_needed = max(overlords_needed, (8 - b.supply_left) // 2)  # 최소 서플라이 확보
+
             overlords_produced = 0
-            for larva in larvae_list[:5]:
+            for larva in larvae_list[:overlords_needed]:
                 if b.can_afford(UnitTypeId.OVERLORD):
                     if await self._safe_train(larva, UnitTypeId.OVERLORD):
                         overlords_produced += 1
                         larvae_list = [l for l in larvae_list if l.tag != larva.tag]
             if overlords_produced > 0:
-                print(f"[GAS SINK] Produced {overlords_produced} Overlords (supply blocked)")
+                print(f"[GAS SINK] Produced {overlords_produced} Overlords (supply: {int(b.supply_left)} -> {int(b.supply_left + overlords_produced * 8)})")
                 # Continue to produce gas units
 
         if not larvae_list:
@@ -2183,7 +2284,8 @@ class ProductionResilience:
                 for hatch in idle_hatcheries:
                     if b.can_afford(UnitTypeId.QUEEN):
                         try:
-                            await b.do(hatch.train(UnitTypeId.QUEEN))
+                            # bot.do() is NOT async in python-sc2
+                            b.do(hatch.train(UnitTypeId.QUEEN))
                             return
                         except Exception:
                             pass
@@ -2227,7 +2329,8 @@ class ProductionResilience:
 
         # Build Spire using existing method (200 gas)
         if has_lair:
-            if await self._build_spire():
+            result = await self._build_spire()
+            if result:
                 print(f"[GAS SINK] Building Spire (200 gas)")
                 return
 
@@ -2235,9 +2338,10 @@ class ProductionResilience:
         if has_lair and not b.structures(UnitTypeId.HYDRALISKDEN).exists and b.already_pending(UnitTypeId.HYDRALISKDEN) == 0:
             if b.can_afford(UnitTypeId.HYDRALISKDEN) and b.townhalls.exists:
                 try:
-                    await b.build(UnitTypeId.HYDRALISKDEN, near=b.townhalls.first.position)
-                    print(f"[GAS SINK] Building Hydralisk Den (100 gas)")
-                    return
+                    result = await b.build(UnitTypeId.HYDRALISKDEN, near=b.townhalls.first.position)
+                    if result is not None:  # Only print if build actually succeeded
+                        print(f"[GAS SINK] Building Hydralisk Den (100 gas)")
+                        return
                 except Exception:
                     pass
 
@@ -2246,9 +2350,10 @@ class ProductionResilience:
             if not b.structures(UnitTypeId.INFESTATIONPIT).exists and b.already_pending(UnitTypeId.INFESTATIONPIT) == 0:
                 if b.can_afford(UnitTypeId.INFESTATIONPIT) and b.townhalls.exists:
                     try:
-                        await b.build(UnitTypeId.INFESTATIONPIT, near=b.townhalls.first.position)
-                        print(f"[GAS SINK] Building Infestation Pit (100 gas)")
-                        return
+                        result = await b.build(UnitTypeId.INFESTATIONPIT, near=b.townhalls.first.position)
+                        if result is not None:
+                            print(f"[GAS SINK] Building Infestation Pit (100 gas)")
+                            return
                     except Exception:
                         pass
 

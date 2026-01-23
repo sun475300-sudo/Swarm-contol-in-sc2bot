@@ -41,6 +41,7 @@ class CombatManager:
     3. Boids 알고리즘 기반 군집 제어
     4. 진형 형성 (Concave, 길목 차단)
     5. 공중 유닛 전용 마이크로 (뮤탈리스크 하라스, 타겟 우선순위)
+    6. ★ 필수 기지 방어 시스템 ★
     """
 
     def __init__(self, bot):
@@ -57,7 +58,7 @@ class CombatManager:
         # === MULTITASKING SYSTEM ===
         # Task priorities (higher = more important)
         self.task_priorities = {
-            "base_defense": 100,      # Defend our base
+            "base_defense": 100,      # Defend our base - HIGHEST PRIORITY
             "worker_defense": 90,     # Protect workers
             "counter_attack": 70,     # Attack enemy attackers
             "air_harass": 60,         # Air unit harassment
@@ -73,12 +74,24 @@ class CombatManager:
         # Task cooldowns
         self._task_cooldowns = {}
 
+        # === COUNTER ATTACK SYSTEM ===
+        self._last_combat_time = 0  # Track when last combat occurred
+        self._counter_attack_cooldown = 15  # 15 seconds cooldown between counter attacks
+
         # === RALLY POINT SYSTEM ===
         # Rally point for army units to gather before attacking
         self._rally_point = None
         self._last_rally_update = 0
         self._rally_update_interval = 30  # Update rally point every 30 seconds
         self._min_army_for_attack = 15  # Minimum supply before attacking
+
+        # === ★ MANDATORY BASE DEFENSE SYSTEM ★ ===
+        self._base_defense_active = False
+        self._defense_rally_point = None
+        self._last_defense_check = 0
+        self._defense_check_interval = 5  # 5프레임마다 체크 (더 자주)
+        self._worker_defense_threshold = 5  # 적 5기 이상이면 일꾼도 방어
+        self._critical_defense_threshold = 8  # 적 8기 이상이면 모든 유닛 방어
 
         # 매니저 초기화
         self._initialize_managers()
@@ -110,10 +123,13 @@ class CombatManager:
         """
         매 프레임 호출되는 전투 로직 with multitasking support.
 
-        Multitasking Logic:
-        1. Evaluate all possible tasks and their priorities
-        2. Assign units to tasks based on priority
-        3. Execute all tasks in parallel
+        ★ IMPROVED: 필수 기지 방어 우선 ★
+
+        Priority:
+        1. ★ MANDATORY BASE DEFENSE - Always check first ★
+        2. Evaluate all possible tasks and their priorities
+        3. Assign units to tasks based on priority
+        4. Execute all tasks in parallel
 
         Args:
             iteration: 현재 게임 반복 횟수
@@ -122,13 +138,24 @@ class CombatManager:
             # Clean up stale unit assignments
             self._cleanup_assignments()
 
+            # ★ 필수 기지 방어 체크 - 항상 최우선 ★
+            base_threat = await self._check_mandatory_base_defense(iteration)
+
             # Skip if MicroController is handling movement
             # This prevents dual command conflicts (both issuing move/attack)
             if hasattr(self.bot, 'micro') and self.bot.micro is not None:
+                # ★ 기지 위협 시 MicroController도 방어 모드로 전환 ★
+                if base_threat and hasattr(self.bot.micro, 'set_defense_mode'):
+                    self.bot.micro.set_defense_mode(True, base_threat)
+
                 # CombatManager only updates targeting info, no direct commands
                 # MicroController will handle actual movement
                 # BUT still handle air unit harassment (multitasking)
                 await self._handle_air_units_separately(iteration)
+
+                # Also ensure burrow controller gets called for banelings
+                # even when MicroController is active
+                await self._ensure_baneling_burrow(iteration)
                 return
 
             # 아군 유닛과 적 유닛 확인
@@ -173,8 +200,30 @@ class CombatManager:
             if harass_target:
                 tasks_to_execute.append(("air_harass", harass_target, self.task_priorities["air_harass"]))
 
-        # === TASK 3: Main Army Attack ===
+        # === TASK 2.3: Early Zergling Harass (3-5분) ===
+        game_time = getattr(self.bot, 'time', 0)
+        if 180 <= game_time <= 300:  # 3-5분
+            try:
+                from sc2.ids.unit_typeid import UnitTypeId
+                zerglings = [u for u in army_units if hasattr(u, 'type_id') and u.type_id == UnitTypeId.ZERGLING]
+                if 6 <= len(zerglings) <= 24:
+                    harass_target = self._find_harass_target()
+                    if harass_target:
+                        # Priority 65 (between air_harass and counter_attack)
+                        tasks_to_execute.append(("early_harass", harass_target, 65))
+            except ImportError:
+                pass
+
+        # === TASK 2.5: Counter Attack (after winning a battle) ===
         ground_army = self._filter_ground_units(army_units)
+        if self._check_counterattack_opportunity(ground_army, enemy_units, game_time):
+            # Counter attack has priority 70 (same as counter_attack task priority)
+            enemy_base = self._get_enemy_base_location()
+            if enemy_base:
+                tasks_to_execute.append(("counter_attack", enemy_base, self.task_priorities["counter_attack"]))
+                print(f"[COUNTER_ATTACK] Detected victory - attacking enemy base!")
+
+        # === TASK 3: Main Army Attack ===
         if self._has_units(ground_army):
             attack_target = self._get_attack_target(enemy_units)
             if attack_target:
@@ -206,6 +255,35 @@ class CombatManager:
                     for u in harass_units:
                         available_air.discard(u.tag)
 
+            elif task_name == "early_harass":
+                # Use zerglings for early harassment
+                try:
+                    from sc2.ids.unit_typeid import UnitTypeId
+                    harass_zerglings = [u for u in ground_army
+                                       if u.tag in available_ground
+                                       and hasattr(u, 'type_id')
+                                       and u.type_id == UnitTypeId.ZERGLING]
+                    if harass_zerglings:
+                        await self._zergling_early_harass(harass_zerglings, enemy_units, iteration)
+                        for u in harass_zerglings:
+                            available_ground.discard(u.tag)
+                except ImportError:
+                    pass
+
+            elif task_name == "counter_attack":
+                # Use all available ground units for counter attack
+                attack_units = [u for u in ground_army if u.tag in available_ground]
+                if attack_units:
+                    # Attack enemy base directly
+                    for unit in attack_units:
+                        try:
+                            self.bot.do(unit.attack(target))
+                        except Exception:
+                            continue
+                    # Remove from available pool
+                    for u in attack_units:
+                        available_ground.discard(u.tag)
+
             elif task_name == "main_attack":
                 # Use remaining ground units for attack
                 attack_units = [u for u in ground_army if u.tag in available_ground]
@@ -220,17 +298,72 @@ class CombatManager:
             print(f"[MULTITASK] [{int(game_time)}s] Active tasks: {active_tasks}")
 
     def _evaluate_base_threat(self, enemy_units):
-        """Check if any base is threatened and return threat position."""
+        """
+        Check if any base is threatened and return threat info.
+
+        IMPROVED:
+        - 1 적만 있어도 감지 (스카우트 대응)
+        - 위협 수준 반환 (심각도에 따른 대응)
+        - 중후반 대규모 공격 감지
+        """
         if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.exists:
             return None
 
-        for th in self.bot.townhalls:
-            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < 25]
-            if len(nearby_enemies) >= 2:
-                # Return position of enemies
-                return self._get_enemy_center(nearby_enemies)
+        game_time = getattr(self.bot, "time", 0)
 
-        return None
+        # 고위협 유닛 (중후반 푸쉬의 핵심)
+        high_threat_units = {
+            "SIEGETANK", "SIEGETANKSIEGED", "THOR", "BATTLECRUISER",
+            "COLOSSUS", "DISRUPTOR", "IMMORTAL", "ARCHON",
+            "ULTRALISK", "BROODLORD", "RAVAGER", "LURKER"
+        }
+
+        # 위협 수준: light (1-2), medium (3-5), heavy (6+), critical (고위협 유닛 포함)
+        highest_threat = None
+        highest_threat_count = 0
+        highest_threat_score = 0
+        has_high_threat = False
+
+        for th in self.bot.townhalls:
+            # 중후반에는 더 넓은 감지 거리 (40)
+            detection_range = 25 if game_time < 300 else 40
+
+            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < detection_range]
+
+            if not nearby_enemies:
+                continue
+
+            # 위협 점수 계산
+            threat_score = 0
+            local_high_threat = False
+            for enemy in nearby_enemies:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+                if enemy_type in high_threat_units:
+                    threat_score += 5
+                    local_high_threat = True
+                else:
+                    threat_score += 1
+
+            # 가장 높은 위협 선택
+            if threat_score > highest_threat_score:
+                highest_threat_score = threat_score
+                highest_threat_count = len(nearby_enemies)
+                highest_threat = self._get_enemy_center(nearby_enemies)
+                has_high_threat = local_high_threat
+
+        # 위협이 있으면 디버그 출력
+        if highest_threat and self.bot.iteration % 50 == 0:
+            if has_high_threat:
+                threat_level = "CRITICAL"
+            elif highest_threat_count >= 6:
+                threat_level = "heavy"
+            elif highest_threat_count >= 3:
+                threat_level = "medium"
+            else:
+                threat_level = "light"
+            print(f"[DEFENSE] [{int(game_time)}s] Base threat: {highest_threat_count} enemies ({threat_level}, score={highest_threat_score})")
+
+        return highest_threat
 
     def _get_units_near_base(self, units, range_distance: float = 30):
         """Get units near our bases."""
@@ -257,13 +390,91 @@ class CombatManager:
         return None
 
     async def _execute_defense_task(self, units, threat_position):
-        """Execute base defense task."""
+        """
+        Execute base defense task.
+
+        IMPROVED:
+        - 퀸 우선 방어 (트랜스퓨전 사용 가능)
+        - 스파인 크롤러 자동 타겟팅
+        - 고위협 유닛 집중 공격 (시즈탱크, 콜로서스 등)
+        - 가까운 유닛부터 이동
+        """
         if not threat_position:
             return
 
-        for unit in units:
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+        except ImportError:
+            # Fallback to simple attack
+            for unit in units:
+                try:
+                    self.bot.do(unit.attack(threat_position))
+                except Exception:
+                    continue
+            return
+
+        # 고위협 유닛 목록 (우선 집중 공격)
+        high_priority_targets = {
+            "SIEGETANK", "SIEGETANKSIEGED", "COLOSSUS", "DISRUPTOR",
+            "HIGHTEMPLAR", "WIDOWMINE", "LIBERATOR", "LIBERATORAG",
+            "IMMORTAL", "THOR", "MEDIVAC"  # 메디박도 우선 제거
+        }
+
+        # 적 유닛 중 우선순위 타겟 찾기
+        priority_target = None
+        enemy_units = getattr(self.bot, "enemy_units", [])
+        if enemy_units:
+            for enemy in enemy_units:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+                if enemy_type in high_priority_targets and enemy.distance_to(threat_position) < 15:
+                    priority_target = enemy
+                    break
+
+        # 퀸을 먼저 보내기 (가장 빠른 방어 유닛)
+        queens = [u for u in units if hasattr(u, 'type_id') and u.type_id == UnitTypeId.QUEEN]
+        other_units = [u for u in units if u not in queens]
+
+        # 퀸 방어 우선
+        for queen in queens:
             try:
-                await self.bot.do(unit.attack(threat_position))
+                # 이미 가까이 있으면 공격, 아니면 이동
+                if queen.distance_to(threat_position) < 8:
+                    target = priority_target if priority_target else threat_position
+                    self.bot.do(queen.attack(target))
+                else:
+                    self.bot.do(queen.move(threat_position))
+            except Exception:
+                continue
+
+        # 스파인 크롤러 타겟팅 (고위협 유닛 우선)
+        if hasattr(self.bot, "structures"):
+            spines = self.bot.structures(UnitTypeId.SPINECRAWLER).ready
+            for spine in spines:
+                if spine.distance_to(threat_position) < 20:  # 범위 확대
+                    try:
+                        enemies_near = [e for e in enemy_units if e.distance_to(spine) < 12]
+                        if enemies_near:
+                            # 우선순위 타겟 먼저
+                            priority_enemies = [
+                                e for e in enemies_near
+                                if getattr(e.type_id, "name", "").upper() in high_priority_targets
+                            ]
+                            if priority_enemies:
+                                target = min(priority_enemies, key=lambda e: e.distance_to(spine))
+                            else:
+                                target = min(enemies_near, key=lambda e: e.distance_to(spine))
+                            self.bot.do(spine.attack(target))
+                    except Exception:
+                        pass
+
+        # 다른 유닛들 방어 (우선순위 타겟 집중)
+        for unit in other_units:
+            try:
+                if priority_target and unit.distance_to(priority_target) < 10:
+                    # 고위협 유닛에 집중
+                    self.bot.do(unit.attack(priority_target))
+                else:
+                    self.bot.do(unit.attack(threat_position))
             except Exception:
                 continue
 
@@ -360,7 +571,7 @@ class CombatManager:
                 # 유닛들을 진형 위치로 이동
                 for unit, target_pos in formation_positions[:10]:  # 최대 10개만
                     try:
-                        await self.bot.do(unit.move(target_pos))
+                        self.bot.do(unit.move(target_pos))
                     except Exception:
                         pass
             
@@ -375,7 +586,7 @@ class CombatManager:
                     if retreat_pos:
                         for unit in units[:10]:  # 최대 10개만
                             try:
-                                await self.bot.do(unit.move(retreat_pos))
+                                self.bot.do(unit.move(retreat_pos))
                             except Exception:
                                 pass
         
@@ -395,7 +606,7 @@ class CombatManager:
             for unit in list(units)[:20]:  # 최대 20개만 처리
                 closest_enemy = self._closest_enemy(enemy_units, unit)
                 if closest_enemy:
-                    await self.bot.do(unit.attack(closest_enemy))
+                    self.bot.do(unit.attack(closest_enemy))
         except Exception:
             pass
 
@@ -403,10 +614,13 @@ class CombatManager:
         """
         선제 공격 로직 - 적 유닛이 보이지 않을 때 적 기지 공격
 
+        ★ IMPROVED: 보이는 모든 적 기지 파괴 우선 ★
+
         Uses rally point system:
         1. Army gathers at rally point until minimum supply reached
         2. Once enough army, attack enemy base together
         3. Rally point is between our natural and center of map
+        4. ★ NEW: 보이는 적 건물(특히 기지) 우선 파괴
 
         Args:
             army_units: 아군 유닛들
@@ -428,12 +642,15 @@ class CombatManager:
                     await self._gather_at_rally_point(army_units, iteration)
                 return
 
-            # 적 시작 위치로 공격
-            enemy_start = None
-            if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
-                enemy_start = self.bot.enemy_start_locations[0]
+            # ★★★ 보이는 적 기지/건물 우선 파괴 ★★★
+            attack_target = self._find_priority_attack_target()
 
-            if not enemy_start:
+            if not attack_target:
+                # 적 시작 위치로 공격 (fallback)
+                if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
+                    attack_target = self.bot.enemy_start_locations[0]
+
+            if not attack_target:
                 return
 
             # Check if army is gathered (most units near rally point)
@@ -441,26 +658,154 @@ class CombatManager:
                 await self._gather_at_rally_point(army_units, iteration)
                 return
 
-            # 매 50 프레임마다 공격 명령 갱신
-            if iteration % 50 != 0:
+            # 매 30 프레임마다 공격 명령 갱신 (더 자주)
+            if iteration % 30 != 0:
                 return
 
-            # 아군 유닛들을 적 기지로 공격 명령
-            for unit in list(army_units)[:30]:  # 최대 30개 유닛
+            # 아군 유닛들을 적 타겟으로 공격 명령
+            for unit in list(army_units):  # 모든 유닛 공격
                 try:
                     if hasattr(unit, "is_idle") and unit.is_idle:
-                        await self.bot.do(unit.attack(enemy_start))
+                        self.bot.do(unit.attack(attack_target))
                     elif not hasattr(unit, "is_attacking") or not unit.is_attacking:
-                        await self.bot.do(unit.attack(enemy_start))
+                        self.bot.do(unit.attack(attack_target))
                 except Exception:
                     continue
 
             if iteration % 200 == 0:
-                print(f"[OFFENSIVE] [{int(self.bot.time)}s] Attacking enemy base with {army_supply} supply army")
+                target_name = getattr(attack_target, "name", str(attack_target)[:30])
+                print(f"[OFFENSIVE] [{int(self.bot.time)}s] Attacking {target_name} with {army_supply} supply army")
 
         except Exception as e:
             if iteration % 200 == 0:
                 print(f"[WARNING] Offensive attack error: {e}")
+
+    def _find_priority_attack_target(self):
+        """
+        ★ 우선 공격 타겟 찾기 - 보이는 적 기지 우선 ★
+
+        우선순위:
+        1. 적 기지 (타운홀) - 네서스, 사령부, 해처리 등
+        2. 적 생산 건물 - 배럭, 게이트웨이, 스포닝풀 등
+        3. 적 테크 건물 - 팩토리, 로보, 스파이어 등
+        4. 기타 적 건물
+        5. ★ 맵 수색 위치 (적 건물이 없을 때) ★
+        6. 적 시작 위치 (fallback)
+
+        Returns:
+            공격 타겟 위치 또는 유닛
+        """
+        enemy_structures = getattr(self.bot, "enemy_structures", None)
+
+        # 기지 타입 (최우선)
+        townhall_types = {
+            "NEXUS", "COMMANDCENTER", "COMMANDCENTERFLYING",
+            "ORBITALCOMMAND", "ORBITALCOMMANDFLYING", "PLANETARYFORTRESS",
+            "HATCHERY", "LAIR", "HIVE"
+        }
+
+        # 생산 건물 타입 (2순위)
+        production_types = {
+            "BARRACKS", "BARRACKSFLYING", "FACTORY", "FACTORYFLYING",
+            "STARPORT", "STARPORTFLYING",
+            "GATEWAY", "WARPGATE", "ROBOTICSFACILITY", "STARGATE",
+            "SPAWNINGPOOL", "ROACHWARREN", "HYDRALISKDEN", "SPIRE"
+        }
+
+        if enemy_structures and enemy_structures.exists:
+            # 우선순위별 타겟 찾기
+            townhall_targets = []
+            production_targets = []
+            other_targets = []
+
+            for struct in enemy_structures:
+                struct_type = getattr(struct.type_id, "name", "").upper()
+
+                if struct_type in townhall_types:
+                    townhall_targets.append(struct)
+                elif struct_type in production_types:
+                    production_targets.append(struct)
+                else:
+                    other_targets.append(struct)
+
+            # 1. 기지 우선 (가장 가까운 것)
+            if townhall_targets:
+                if hasattr(self.bot, "start_location"):
+                    return min(townhall_targets, key=lambda s: s.distance_to(self.bot.start_location))
+                return townhall_targets[0]
+
+            # 2. 생산 건물
+            if production_targets:
+                if hasattr(self.bot, "start_location"):
+                    return min(production_targets, key=lambda s: s.distance_to(self.bot.start_location))
+                return production_targets[0]
+
+            # 3. 기타 건물
+            if other_targets:
+                if hasattr(self.bot, "start_location"):
+                    return min(other_targets, key=lambda s: s.distance_to(self.bot.start_location))
+                return other_targets[0]
+
+        # ★★★ 적 건물이 보이지 않으면 맵 수색 ★★★
+        return self._get_map_search_target()
+
+    def _get_map_search_target(self):
+        """
+        ★ 맵 수색 타겟 - AI 상대 승리를 위해 모든 기지 탐색 ★
+
+        확장 위치들을 순회하며 적 기지를 찾습니다.
+        """
+        game_time = getattr(self.bot, "time", 0)
+
+        # 맵 수색 인덱스 초기화
+        if not hasattr(self, "_search_index"):
+            self._search_index = 0
+            self._last_search_time = 0
+
+        # 수색 위치 목록 생성
+        search_locations = []
+
+        # 1. 적 시작 위치
+        if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
+            search_locations.append(self.bot.enemy_start_locations[0])
+
+        # 2. 확장 위치들 (적 시작 위치에서 가까운 순)
+        if hasattr(self.bot, "expansion_locations_list"):
+            exp_list = list(self.bot.expansion_locations_list)
+
+            # 적 시작 위치에서 가까운 순으로 정렬
+            if search_locations:
+                enemy_start = search_locations[0]
+                exp_list.sort(key=lambda pos: pos.distance_to(enemy_start))
+
+            # 이미 점령한 위치 제외
+            our_bases = set()
+            if hasattr(self.bot, "townhalls"):
+                for th in self.bot.townhalls:
+                    our_bases.add(th.position)
+
+            for exp_pos in exp_list:
+                # 우리 기지 근처는 스킵
+                if any(exp_pos.distance_to(base) < 5 for base in our_bases):
+                    continue
+                search_locations.append(exp_pos)
+
+        # 3. 맵 중앙
+        if hasattr(self.bot, "game_info"):
+            search_locations.append(self.bot.game_info.map_center)
+
+        if not search_locations:
+            return None
+
+        # 30초마다 다음 수색 위치로 이동
+        if game_time - self._last_search_time > 30:
+            self._search_index = (self._search_index + 1) % len(search_locations)
+            self._last_search_time = game_time
+
+            if self.bot.iteration % 100 == 0:
+                print(f"[SEARCH] [{int(game_time)}s] Searching map location {self._search_index + 1}/{len(search_locations)}")
+
+        return search_locations[self._search_index]
 
     def _update_rally_point(self):
         """
@@ -512,9 +857,9 @@ class CombatManager:
                 distance_to_rally = unit.distance_to(self._rally_point)
 
                 if is_idle and distance_to_rally > 5:
-                    await self.bot.do(unit.move(self._rally_point))
+                    self.bot.do(unit.move(self._rally_point))
                 elif distance_to_rally > 20:  # Very far from rally
-                    await self.bot.do(unit.move(self._rally_point))
+                    self.bot.do(unit.move(self._rally_point))
             except Exception:
                 continue
 
@@ -636,7 +981,7 @@ class CombatManager:
         if target:
             for muta in mutalisks:
                 try:
-                    await self.bot.do(muta.attack(target))
+                    self.bot.do(muta.attack(target))
                 except Exception:
                     continue
 
@@ -717,7 +1062,93 @@ class CombatManager:
             # Move to harass target
             for muta in mutalisks:
                 try:
-                    await self.bot.do(muta.attack(self._air_harass_target))
+                    self.bot.do(muta.attack(self._air_harass_target))
+                except Exception:
+                    continue
+
+    async def _zergling_early_harass(self, zerglings, enemy_units, iteration: int):
+        """
+        초반 저글링 견제 로직 (3-5분)
+
+        게임 초반에 6-12 저글링으로 적 일꾼을 견제합니다.
+        방어 병력이 많으면 후퇴합니다.
+        """
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+        except ImportError:
+            return
+
+        game_time = getattr(self.bot, 'time', 0)
+
+        # 게임 시간 확인 (3-5분)
+        if game_time < 180 or game_time > 300:
+            return
+
+        # 저글링 수 확인 (6-12기)
+        if len(zerglings) < 6 or len(zerglings) > 24:
+            return
+
+        # 견제 타겟 찾기
+        harass_target = self._find_harass_target()
+        if not harass_target:
+            return
+
+        # 적 방어 병력 확인 (타겟 근처 15 거리)
+        enemy_combat_units = [
+            e for e in enemy_units
+            if hasattr(e, 'can_attack') and e.can_attack
+            and getattr(e.type_id, "name", "") not in ["SCV", "PROBE", "DRONE"]
+            and e.distance_to(harass_target) < 15
+        ]
+
+        # 방어 병력이 3기 이상이면 후퇴
+        if len(enemy_combat_units) >= 3:
+            await self._retreat_to_base(zerglings)
+            if iteration % 200 == 0:
+                print(f"[EARLY HARASS] [{int(game_time)}s] Zerglings retreating from defense")
+            return
+
+        # 일꾼 찾기
+        enemy_workers = [
+            e for e in enemy_units
+            if getattr(e.type_id, "name", "") in ["SCV", "PROBE", "DRONE"]
+            and e.distance_to(harass_target) < 20
+        ]
+
+        if enemy_workers:
+            # 일꾼 공격
+            for ling in zerglings:
+                closest_worker = min(enemy_workers, key=lambda w: w.distance_to(ling))
+                try:
+                    self.bot.do(ling.attack(closest_worker))
+                except Exception:
+                    continue
+            if iteration % 200 == 0:
+                print(f"[EARLY HARASS] [{int(game_time)}s] {len(zerglings)} Zerglings harassing workers")
+        else:
+            # 일꾼이 없으면 타겟 위치로 이동
+            for ling in zerglings:
+                try:
+                    self.bot.do(ling.attack(harass_target))
+                except Exception:
+                    continue
+
+    async def _retreat_to_base(self, units):
+        """유닛들을 본진으로 후퇴시킵니다."""
+        if not units:
+            return
+
+        # 본진 위치 찾기
+        main_base = None
+        if hasattr(self.bot, 'townhalls') and self.bot.townhalls:
+            main_base = self.bot.townhalls[0].position
+        elif hasattr(self.bot, 'start_location'):
+            main_base = self.bot.start_location
+
+        if main_base:
+            for unit in units:
+                try:
+                    self.bot.do(unit.move(main_base))
                 except Exception:
                     continue
 
@@ -759,7 +1190,7 @@ class CombatManager:
         # Attack the best clustered target
         for muta in mutalisks:
             try:
-                await self.bot.do(muta.attack(best_target))
+                self.bot.do(muta.attack(best_target))
             except Exception:
                 continue
 
@@ -776,7 +1207,7 @@ class CombatManager:
         if retreat_pos:
             for muta in mutalisks:
                 try:
-                    await self.bot.do(muta.move(retreat_pos))
+                    self.bot.do(muta.move(retreat_pos))
                 except Exception:
                     continue
 
@@ -788,7 +1219,7 @@ class CombatManager:
 
         for muta in mutalisks:
             try:
-                await self.bot.do(muta.attack(target))
+                self.bot.do(muta.attack(target))
             except Exception:
                 continue
 
@@ -855,7 +1286,7 @@ class CombatManager:
             if target:
                 for corr in corruptors:
                     try:
-                        await self.bot.do(corr.attack(target))
+                        self.bot.do(corr.attack(target))
                     except Exception:
                         continue
 
@@ -866,12 +1297,19 @@ class CombatManager:
                 target = min(ground_targets, key=lambda e: e.health)
                 for bl in broodlords:
                     try:
-                        await self.bot.do(bl.attack(target))
+                        self.bot.do(bl.attack(target))
                     except Exception:
                         continue
 
     def _is_base_under_attack(self) -> bool:
-        """Check if our base is under attack."""
+        """
+        Check if our base is under attack.
+
+        IMPROVED:
+        - 1기 이상의 적도 위협으로 감지 (초반 러쉬 대응)
+        - 게임 시간에 따른 동적 감지 (초반 더 민감)
+        - 고위협 유닛은 더 넓은 범위에서 감지
+        """
         if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.exists:
             return False
 
@@ -879,9 +1317,31 @@ class CombatManager:
         if not enemy_units:
             return False
 
+        game_time = getattr(self.bot, "time", 0)
+
+        # 고위협 유닛 목록 (더 넓은 감지 범위)
+        high_threat_names = {
+            "ZERGLING", "MARINE", "ZEALOT", "REAPER", "ADEPT",
+            "BANELING", "ROACH", "STALKER", "MARAUDER",
+            "SIEGETANK", "SIEGETANKSIEGED", "WIDOWMINE"
+        }
+
         for th in self.bot.townhalls:
-            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < 20]
-            if len(nearby_enemies) >= 3:
+            # 일반 감지 거리
+            base_range = 25 if game_time >= 180 else 30  # 초반 더 민감
+
+            # 일반 적 확인
+            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < base_range]
+
+            # 고위협 적은 더 넓은 범위에서 확인
+            high_threat_enemies = [
+                e for e in enemy_units
+                if getattr(e.type_id, "name", "").upper() in high_threat_names
+                and e.distance_to(th.position) < base_range + 10
+            ]
+
+            # 조건: 1기 이상의 적, 또는 고위협 적 감지
+            if len(nearby_enemies) >= 1 or high_threat_enemies:
                 return True
 
         return False
@@ -941,3 +1401,278 @@ class CombatManager:
                 closest_unit = enemy
                 closest_dist = dist
         return closest_unit
+
+    def _check_counterattack_opportunity(self, army_units, enemy_units, game_time: float) -> bool:
+        """
+        전투 후 역공격 기회 확인
+
+        조건:
+        1. 최근 교전이 있었음 (지난 5초 이내에 적을 본 적 있음)
+        2. 아군 서플라이 > 적 서플라이 * 2 (압도적 우위)
+        3. 최소 서플라이 10 이상
+        4. 쿨다운 지남 (15초)
+
+        Returns:
+            True if counter attack should be launched
+        """
+        # Track combat (update last combat time if enemies are visible)
+        if enemy_units and len(list(enemy_units)) > 0:
+            self._last_combat_time = game_time
+
+        # Check if there was recent combat
+        time_since_combat = game_time - self._last_combat_time
+        if time_since_combat > 5:  # No recent combat in last 5 seconds
+            return False
+
+        # Calculate army supplies
+        our_supply = sum(getattr(u, "supply_cost", 1) for u in army_units)
+        enemy_supply = sum(getattr(u, "supply_cost", 1) for u in enemy_units) if enemy_units else 0
+
+        # Check cooldown (prevent spamming counter attacks)
+        if not hasattr(self, "_last_counter_attack_time"):
+            self._last_counter_attack_time = 0
+
+        time_since_last_counter = game_time - self._last_counter_attack_time
+        if time_since_last_counter < self._counter_attack_cooldown:
+            return False
+
+        # Check if we have overwhelming advantage
+        if our_supply >= 10 and our_supply > enemy_supply * 2:
+            self._last_counter_attack_time = game_time  # Update cooldown
+            return True
+
+        return False
+
+    def _get_enemy_base_location(self):
+        """Get enemy base location for counter attack."""
+        if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
+            return self.bot.enemy_start_locations[0]
+        return None
+
+    async def _ensure_baneling_burrow(self, iteration: int):
+        """맹독충 잠복 로직이 항상 실행되도록 보장"""
+        try:
+            # MicroController의 burrow_controller를 사용
+            if not hasattr(self.bot, 'micro') or not self.bot.micro:
+                return
+
+            # UnitTypeId import 확인
+            try:
+                from sc2.ids.unit_typeid import UnitTypeId
+            except ImportError:
+                return
+
+            # 맹독충만 필터링
+            banelings = [u for u in getattr(self.bot, "units", [])
+                        if hasattr(u, 'type_id') and u.type_id == UnitTypeId.BANELING]
+
+            if not banelings:
+                return
+
+            # 적 유닛
+            enemy_units = getattr(self.bot, "enemy_units", [])
+
+            # BurrowController로 처리
+            if hasattr(self.bot.micro, 'burrow_controller'):
+                await self.bot.micro.burrow_controller.handle_burrow(
+                    banelings, enemy_units, iteration, self.bot.do_actions, bot=self.bot
+                )
+
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] Baneling burrow error: {e}")
+
+    # ============================================================
+    # ★★★ MANDATORY BASE DEFENSE SYSTEM ★★★
+    # ============================================================
+
+    async def _check_mandatory_base_defense(self, iteration: int):
+        """
+        ★ 필수 기지 방어 체크 - 항상 최우선 실행 ★
+
+        기지에 적이 침입하면:
+        1. 모든 군대 즉시 귀환
+        2. 일꾼도 필요시 방어 참여
+        3. 퀸 우선 방어
+        4. 스파인 크롤러 타겟팅
+
+        Returns:
+            위협 위치 (Point2) 또는 None
+        """
+        # 체크 간격 (5프레임마다)
+        if iteration - self._last_defense_check < self._defense_check_interval:
+            return self._defense_rally_point if self._base_defense_active else None
+        self._last_defense_check = iteration
+
+        if not hasattr(self.bot, "townhalls") or not hasattr(self.bot, "enemy_units"):
+            self._base_defense_active = False
+            return None
+
+        if not self.bot.townhalls.exists:
+            self._base_defense_active = False
+            return None
+
+        enemy_units = self.bot.enemy_units
+        if not enemy_units:
+            self._base_defense_active = False
+            self._defense_rally_point = None
+            return None
+
+        game_time = getattr(self.bot, "time", 0)
+
+        # 기지별 위협 평가
+        max_threat_score = 0
+        threat_position = None
+        threat_enemies = []
+
+        for th in self.bot.townhalls:
+            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < 30]
+
+            if not nearby_enemies:
+                continue
+
+            # 위협 점수 계산
+            threat_score = 0
+            for enemy in nearby_enemies:
+                if hasattr(enemy, "can_attack") and enemy.can_attack:
+                    threat_score += 2
+                else:
+                    threat_score += 1
+                # 공중 유닛 추가 점수
+                if getattr(enemy, "is_flying", False):
+                    threat_score += 1
+
+            if threat_score > max_threat_score:
+                max_threat_score = threat_score
+                threat_enemies = nearby_enemies
+                # 적 중심 계산
+                x_sum = sum(e.position.x for e in nearby_enemies)
+                y_sum = sum(e.position.y for e in nearby_enemies)
+                count = len(nearby_enemies)
+                try:
+                    from sc2.position import Point2
+                    threat_position = Point2((x_sum / count, y_sum / count))
+                except ImportError:
+                    threat_position = nearby_enemies[0].position
+
+        # 위협이 없으면 방어 모드 해제
+        if max_threat_score == 0:
+            if self._base_defense_active and iteration % 100 == 0:
+                print(f"[BASE DEFENSE] [{int(game_time)}s] Threat cleared - returning to normal")
+            self._base_defense_active = False
+            self._defense_rally_point = None
+            return None
+
+        # ★ 위협 감지 - 방어 모드 활성화 ★
+        self._base_defense_active = True
+        self._defense_rally_point = threat_position
+
+        enemy_count = len(threat_enemies)
+
+        # 로그 출력 (5초마다)
+        if iteration % 110 == 0:
+            print(f"[BASE DEFENSE] [{int(game_time)}s] ★ MANDATORY DEFENSE ★ "
+                  f"Enemies: {enemy_count}, Threat score: {max_threat_score}")
+
+        # ★ 모든 군대 즉시 방어 ★
+        await self._execute_mandatory_defense(threat_position, threat_enemies, iteration)
+
+        # ★ 위험 상황: 일꾼도 방어 참여 ★
+        if enemy_count >= self._worker_defense_threshold:
+            await self._worker_defense(threat_position, threat_enemies, iteration)
+
+        return threat_position
+
+    async def _execute_mandatory_defense(self, threat_position, threat_enemies, iteration: int):
+        """
+        ★ 필수 방어 실행 - 모든 군대 귀환 ★
+        """
+        if not hasattr(self.bot, "units"):
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+        except ImportError:
+            return
+
+        # 모든 군대 유닛 수집
+        army_types = {
+            UnitTypeId.ZERGLING, UnitTypeId.BANELING, UnitTypeId.ROACH,
+            UnitTypeId.RAVAGER, UnitTypeId.HYDRALISK, UnitTypeId.LURKER,
+            UnitTypeId.MUTALISK, UnitTypeId.CORRUPTOR, UnitTypeId.ULTRALISK,
+            UnitTypeId.BROODLORD, UnitTypeId.INFESTOR, UnitTypeId.VIPER
+        }
+
+        army_units = [u for u in self.bot.units if u.type_id in army_types]
+
+        if not army_units:
+            return
+
+        # 적 중 우선순위 타겟 찾기
+        priority_target = None
+        for enemy in threat_enemies:
+            enemy_type = getattr(enemy.type_id, "name", "").upper()
+            # 시즈탱크, 메디박, 콜로서스 등 우선 제거
+            if enemy_type in ["SIEGETANK", "SIEGETANKSIEGED", "MEDIVAC",
+                              "COLOSSUS", "IMMORTAL", "HIGHTEMPLAR", "DISRUPTOR"]:
+                priority_target = enemy
+                break
+
+        # 군대 유닛들에게 방어 명령
+        for unit in army_units:
+            try:
+                # 이미 위협 위치 근처면 공격
+                if unit.distance_to(threat_position) < 15:
+                    if priority_target:
+                        self.bot.do(unit.attack(priority_target))
+                    elif threat_enemies:
+                        closest = min(threat_enemies, key=lambda e: e.distance_to(unit))
+                        self.bot.do(unit.attack(closest))
+                    else:
+                        self.bot.do(unit.attack(threat_position))
+                else:
+                    # 멀리 있으면 위협 위치로 이동
+                    self.bot.do(unit.attack(threat_position))
+            except Exception:
+                continue
+
+        # 로그 (10초마다)
+        if iteration % 220 == 0:
+            print(f"[BASE DEFENSE] [{int(game_time)}s] {len(army_units)} units defending base")
+
+    async def _worker_defense(self, threat_position, threat_enemies, iteration: int):
+        """
+        ★ 일꾼 방어 - 위험 상황에서 일꾼도 싸움 ★
+        """
+        if not hasattr(self.bot, "workers"):
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+        workers = self.bot.workers
+
+        if not workers:
+            return
+
+        # 위협 근처 일꾼만 방어 (15 거리 내)
+        nearby_workers = [w for w in workers if w.distance_to(threat_position) < 15]
+
+        if not nearby_workers:
+            return
+
+        # 최대 6명까지만 방어 참여 (경제 보존)
+        defense_workers = nearby_workers[:6]
+
+        for worker in defense_workers:
+            try:
+                if threat_enemies:
+                    closest = min(threat_enemies, key=lambda e: e.distance_to(worker))
+                    self.bot.do(worker.attack(closest))
+                else:
+                    self.bot.do(worker.attack(threat_position))
+            except Exception:
+                continue
+
+        if iteration % 220 == 0:
+            print(f"[BASE DEFENSE] [{int(game_time)}s] ★ {len(defense_workers)} WORKERS DEFENDING ★")

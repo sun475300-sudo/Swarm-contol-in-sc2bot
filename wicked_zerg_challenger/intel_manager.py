@@ -29,9 +29,19 @@ class IntelManager:
         self._under_attack = False
         self._attack_position = None
         self._last_attack_time = 0.0
+        self._threat_level = "none"  # none, light, medium, heavy, critical
+        self._high_threat_units_detected = False
 
         # Enemy unit type counts
         self.enemy_unit_counts = {}
+
+        # High threat unit types
+        self._high_threat_types = {
+            "SIEGETANK", "SIEGETANKSIEGED", "THOR", "BATTLECRUISER",
+            "COLOSSUS", "DISRUPTOR", "IMMORTAL", "ARCHON",
+            "ULTRALISK", "BROODLORD", "RAVAGER", "LURKER", "LURKERMP",
+            "LIBERATOR", "LIBERATORAG", "WIDOWMINE", "HIGHTEMPLAR"
+        }
 
     async def on_step(self, iteration: int) -> None:
         if iteration - self.last_update < self.update_interval:
@@ -92,19 +102,23 @@ class IntelManager:
             if getattr(s.type_id, "name", "").upper() in base_types
         )
 
-        # Track tech buildings
+        # Track tech buildings with detailed categorization
         tech_buildings = {'FACTORY', 'STARPORT', 'ARMORY', 'FUSIONCORE',
                          'ROBOTICSFACILITY', 'STARGATE', 'DARKSHRINE',
-                         'TEMPLARARCHIVE', 'FLEETBEACON',
-                         'SPIRE', 'GREATERSPIRE', 'INFESTATIONPIT'}
+                         'TEMPLARARCHIVE', 'FLEETBEACON', 'TWILIGHTCOUNCIL',
+                         'SPIRE', 'GREATERSPIRE', 'INFESTATIONPIT',
+                         'BANELINGNEST', 'ROACHWARREN', 'HYDRALISKDEN'}
         self.enemy_tech_buildings = {
             getattr(s.type_id, "name", "").upper()
             for s in enemy_structures
             if getattr(s.type_id, "name", "").upper() in tech_buildings
         }
 
+        # Detect enemy build pattern
+        self._detect_enemy_build_pattern(enemy_structures, enemy_units)
+
     def _update_threat_status(self) -> None:
-        """Check if we're under attack."""
+        """Check if we're under attack with improved detection."""
         enemy_units = getattr(self.bot, "enemy_units", [])
         townhalls = getattr(self.bot, "townhalls", [])
 
@@ -114,15 +128,45 @@ class IntelManager:
 
         current_time = getattr(self.bot, "time", 0.0)
 
-        # Check for enemies near our bases
+        # High-threat unit types (detect earlier)
+        high_threat_units = {
+            'ZERGLING', 'MARINE', 'ZEALOT', 'REAPER', 'ADEPT',
+            'BANELING', 'ROACH', 'STALKER', 'MARAUDER',
+            'SIEGETANK', 'SIEGETANKSIEGED', 'LIBERATOR', 'WIDOWMINE'
+        }
+
+        # Check for enemies near our bases with dynamic range
         for th in townhalls:
             for enemy in enemy_units:
                 try:
-                    if enemy.distance_to(th.position) < 25:
+                    enemy_type = getattr(enemy.type_id, "name", "").upper()
+
+                    # Dynamic detection range based on threat level
+                    # High-threat units: 35 range (detect earlier)
+                    # Normal units: 30 range
+                    detection_range = 35 if enemy_type in high_threat_units else 30
+
+                    # Early game (< 3min): Even more sensitive detection
+                    if current_time < 180:
+                        detection_range = 40
+
+                    if enemy.distance_to(th.position) < detection_range:
                         self._under_attack = True
                         self._attack_position = enemy.position
                         self._last_attack_time = current_time
-                        return
+
+                        # Check if high threat unit
+                        if enemy_type in self._high_threat_types:
+                            self._high_threat_units_detected = True
+                            self._threat_level = "critical"
+                        elif self._threat_level not in ["critical", "heavy"]:
+                            self._threat_level = "medium"
+
+                        # Log early attack detection
+                        if current_time < 180 and self.bot.iteration % 100 == 0:
+                            print(f"[INTEL] [{int(current_time)}s] EARLY ATTACK: {enemy_type} detected at {detection_range} range!")
+
+                        # Continue checking other enemies to properly assess threat level
                 except Exception:
                     continue
 
@@ -130,6 +174,8 @@ class IntelManager:
         if current_time - self._last_attack_time > 10:
             self._under_attack = False
             self._attack_position = None
+            self._threat_level = "none"
+            self._high_threat_units_detected = False
 
     def is_under_attack(self) -> bool:
         """Check if any base is under attack."""
@@ -150,3 +196,130 @@ class IntelManager:
     def has_enemy_tech(self, tech_name: str) -> bool:
         """Check if enemy has specific tech building."""
         return tech_name.upper() in self.enemy_tech_buildings
+
+    def get_threat_level(self) -> str:
+        """Get current threat level: none, light, medium, heavy, critical."""
+        return self._threat_level
+
+    def has_high_threat_units(self) -> bool:
+        """Check if high-threat units (Siege Tanks, Colossi, etc.) are detected."""
+        return self._high_threat_units_detected
+
+    def is_major_attack(self) -> bool:
+        """Check if this is a major attack (critical threat level or high-threat units)."""
+        return self._threat_level == "critical" or self._high_threat_units_detected
+
+    def _detect_enemy_build_pattern(self, enemy_structures, enemy_units) -> None:
+        """
+        Detect enemy build pattern based on tech buildings and units.
+
+        Patterns:
+        - Terran: Bio (Barracks), Mech (Factory), Air (Starport)
+        - Protoss: Gateway, Robo, Stargate
+        - Zerg: Pool first, Hatch first, Ling/Bane, Roach/Hydra
+        """
+        game_time = getattr(self.bot, "time", 0)
+
+        # Count structures by type
+        structure_counts = {}
+        for s in enemy_structures:
+            name = getattr(s.type_id, "name", "").upper()
+            structure_counts[name] = structure_counts.get(name, 0) + 1
+
+        # Detect pattern
+        detected_pattern = "unknown"
+        recommended_response = []
+
+        # === TERRAN DETECTION ===
+        if "BARRACKS" in structure_counts:
+            barracks_count = structure_counts.get("BARRACKS", 0)
+            factory_count = structure_counts.get("FACTORY", 0)
+            starport_count = structure_counts.get("STARPORT", 0)
+
+            if starport_count >= 1 and factory_count >= 1:
+                # Mech or BC rush
+                detected_pattern = "terran_mech"
+                recommended_response = ["hydralisk", "corruptor", "viper"]
+            elif barracks_count >= 3:
+                # Bio (Marine/Marauder/Medivac)
+                detected_pattern = "terran_bio"
+                recommended_response = ["baneling", "zergling", "ultralisk"]
+            elif factory_count >= 2:
+                # Tank/Hellion
+                detected_pattern = "terran_factory"
+                recommended_response = ["mutalisk", "ravager", "swarmhost"]
+
+            # Early aggression detection
+            if barracks_count >= 2 and game_time < 180:
+                detected_pattern = "terran_rush"
+                recommended_response = ["zergling", "spine_crawler", "queen"]
+
+        # === PROTOSS DETECTION ===
+        elif "GATEWAY" in structure_counts or "NEXUS" in structure_counts:
+            gateway_count = structure_counts.get("GATEWAY", 0)
+            robo_count = structure_counts.get("ROBOTICSFACILITY", 0)
+            stargate_count = structure_counts.get("STARGATE", 0)
+            twilight = "TWILIGHTCOUNCIL" in structure_counts
+
+            if stargate_count >= 1:
+                # Stargate (Oracle, Void Ray, Carrier)
+                detected_pattern = "protoss_stargate"
+                recommended_response = ["hydralisk", "corruptor", "spore_crawler"]
+            elif robo_count >= 1:
+                # Robo (Immortal, Colossus)
+                detected_pattern = "protoss_robo"
+                recommended_response = ["hydralisk", "roach", "corruptor"]
+            elif twilight:
+                # Twilight (Blink Stalker, Charge Zealot)
+                detected_pattern = "protoss_twilight"
+                recommended_response = ["roach", "hydralisk", "lurker"]
+            elif gateway_count >= 3:
+                # Gateway all-in
+                detected_pattern = "protoss_gateway"
+                recommended_response = ["roach", "zergling", "spine_crawler"]
+
+            # Proxy detection
+            if gateway_count >= 1 and game_time < 150:
+                detected_pattern = "protoss_proxy"
+                recommended_response = ["zergling", "spine_crawler", "queen"]
+
+        # === ZERG DETECTION ===
+        elif "SPAWNINGPOOL" in structure_counts or "HATCHERY" in structure_counts:
+            baneling_nest = "BANELINGNEST" in structure_counts
+            roach_warren = "ROACHWARREN" in structure_counts
+            spire = "SPIRE" in structure_counts or "GREATERSPIRE" in structure_counts
+
+            if spire:
+                detected_pattern = "zerg_muta"
+                recommended_response = ["hydralisk", "spore_crawler", "queen"]
+            elif roach_warren and not baneling_nest:
+                detected_pattern = "zerg_roach"
+                recommended_response = ["roach", "ravager", "hydralisk"]
+            elif baneling_nest:
+                detected_pattern = "zerg_ling_bane"
+                recommended_response = ["baneling", "zergling", "roach"]
+
+            # 12 pool detection
+            pool_count = structure_counts.get("SPAWNINGPOOL", 0)
+            hatch_count = structure_counts.get("HATCHERY", 0) + structure_counts.get("LAIR", 0) + structure_counts.get("HIVE", 0)
+            if pool_count >= 1 and hatch_count <= 1 and game_time < 120:
+                detected_pattern = "zerg_12pool"
+                recommended_response = ["zergling", "spine_crawler", "queen"]
+
+        # Store detected pattern
+        self._enemy_build_pattern = detected_pattern
+        self._recommended_response = recommended_response
+
+        # Log detection (every 30 seconds)
+        if game_time > 0 and int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
+            if detected_pattern != "unknown":
+                print(f"[INTEL] [{int(game_time)}s] Enemy build: {detected_pattern}")
+                print(f"[INTEL] Recommended counter: {recommended_response}")
+
+    def get_enemy_build_pattern(self) -> str:
+        """Get detected enemy build pattern."""
+        return getattr(self, "_enemy_build_pattern", "unknown")
+
+    def get_recommended_response(self) -> list:
+        """Get recommended unit composition to counter enemy build."""
+        return getattr(self, "_recommended_response", [])

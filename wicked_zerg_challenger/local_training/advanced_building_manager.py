@@ -138,7 +138,7 @@ class AdvancedBuildingManager:
         Returns:
             변태 성공한 가시지옥 수
         """
-        hydralisks = self.bot.units(UnitTypeId.HYDRA).ready
+        hydralisks = self.bot.units(UnitTypeId.HYDRALISK).ready
         if not hydralisks.exists:
             return 0
         

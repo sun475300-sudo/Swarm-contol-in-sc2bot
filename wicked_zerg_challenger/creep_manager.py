@@ -31,17 +31,21 @@ class CreepManager:
     def __init__(self, bot):
         self.bot = bot
         self.last_update = 0
-        self.update_interval = 22
-        self.tumor_relay_interval = 16  # Check tumors more frequently
+        self.update_interval = 12  # 개선: 16 → 12 (더 자주 업데이트)
+        self.tumor_relay_interval = 8  # 개선: 12 → 8 (더 빠른 종양 릴레이)
         self.last_tumor_relay = 0
         self.cached_targets: List[object] = []
         self.tumor_spread_cooldowns: Dict[int, int] = {}  # tumor_tag -> last_spread_frame
+        self.max_tumors_per_cycle = 4  # 개선: 3 → 4 (한 번에 더 많은 종양 확장)
+        self.spread_directions = []  # 확장 방향 캐시
+        self._tumor_count_check_interval = 0
 
     async def on_step(self, iteration: int) -> None:
         """
         Main creep manager loop.
         - Refreshes creep targets periodically
         - Handles automatic tumor relay
+        - Tracks creep spread progress
         """
         if iteration - self.last_update < self.update_interval:
             if iteration - self.last_tumor_relay >= self.tumor_relay_interval:
@@ -51,6 +55,12 @@ class CreepManager:
         self.last_update = iteration
         self._refresh_targets()
         await self._handle_tumor_relay(iteration)
+
+        # 점막 확장 진행 상황 로그 (30초마다)
+        self._tumor_count_check_interval += 1
+        if self._tumor_count_check_interval >= 50:  # ~30초마다
+            self._tumor_count_check_interval = 0
+            await self._log_creep_progress(iteration)
 
     def get_creep_target(self, origin_unit) -> Optional[object]:
         if not self.cached_targets:
@@ -206,11 +216,12 @@ class CreepManager:
         if not scored_tumors:
             return
 
-        # Sort by score (highest first) and spread top 2 tumors
+        # Sort by score (highest first) and spread top tumors
         scored_tumors.sort(key=lambda x: x[1], reverse=True)
         actions = []
 
-        for tumor, _ in scored_tumors[:2]:  # Spread 2 outermost tumors per cycle
+        # 개선: 최대 4개 종양 확장 (적 방향 + 확장 방향)
+        for tumor, _ in scored_tumors[:self.max_tumors_per_cycle]:
             try:
                 # Calculate spread target toward enemy
                 spread_target = tumor.position.towards(direction_target, 9.0)
@@ -261,3 +272,52 @@ class CreepManager:
         dir_y /= dir_len
         projection = dx * dir_x + dy * dir_y
         return projection - dist * 0.15
+
+    async def _log_creep_progress(self, iteration: int) -> None:
+        """점막 확장 진행 상황 로그"""
+        if not UnitTypeId or not hasattr(self.bot, "structures"):
+            return
+
+        try:
+            game_time = getattr(self.bot, "time", 0)
+
+            # 종양 수 카운트
+            tumor_types = {
+                UnitTypeId.CREEPTUMOR,
+                UnitTypeId.CREEPTUMORBURROWED,
+                UnitTypeId.CREEPTUMORQUEEN,
+            }
+            tumors = [
+                t for t in self.bot.structures
+                if t.type_id in tumor_types
+            ]
+            tumor_count = len(tumors)
+
+            # 가장 먼 종양 위치 (적 방향 기준)
+            farthest_dist = 0
+            if tumors and hasattr(self.bot, "townhalls") and self.bot.townhalls:
+                our_base = self.bot.townhalls.first.position
+                for tumor in tumors:
+                    try:
+                        dist = tumor.position.distance_to(our_base)
+                        if dist > farthest_dist:
+                            farthest_dist = dist
+                    except Exception:
+                        continue
+
+            print(f"[CREEP] [{int(game_time)}s] Tumors: {tumor_count}, Farthest: {int(farthest_dist)} from base")
+
+        except Exception:
+            pass
+
+    def get_tumor_count(self) -> int:
+        """현재 종양 수 반환"""
+        if not UnitTypeId or not hasattr(self.bot, "structures"):
+            return 0
+
+        tumor_types = {
+            UnitTypeId.CREEPTUMOR,
+            UnitTypeId.CREEPTUMORBURROWED,
+            UnitTypeId.CREEPTUMORQUEEN,
+        }
+        return sum(1 for t in self.bot.structures if t.type_id in tumor_types)

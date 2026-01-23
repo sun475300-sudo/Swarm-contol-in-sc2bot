@@ -407,6 +407,16 @@ class RogueTacticsManager:
         """라바 세이빙 모드 여부 반환"""
         return self._larva_saving_mode
 
+    @property
+    def larva_saving_active(self) -> bool:
+        """라바 세이빙 모드 여부 (속성으로 접근)"""
+        return self._larva_saving_mode
+
+    @property
+    def preparing_baneling_drop(self) -> bool:
+        """맹독충 드랍 준비 중인지 여부"""
+        return self._can_execute_drop() and not self._drop_in_progress
+
     def get_enemy_on_creep_status(self) -> Tuple[bool, bool, Optional[Point2]]:
         """
         적이 점막에 있는지, 전진 중인지 반환

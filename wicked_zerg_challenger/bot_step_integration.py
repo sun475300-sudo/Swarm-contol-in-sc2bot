@@ -321,12 +321,27 @@ class BotStepIntegrator:
             if hasattr(self.bot, "strategy_manager") and self.bot.strategy_manager:
                 start_time = self._logic_tracker.start_logic("Strategy")
                 try:
+                    # Debug: 매니저 호출 확인
+                    if iteration == 1 or iteration % 500 == 0:
+                        print(f"[DEBUG] Calling strategy_manager.update() at iteration {iteration}")
                     self.bot.strategy_manager.update()
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Strategy Manager error: {e}")
                 finally:
                     self._logic_tracker.end_logic("Strategy", start_time)
+            else:
+                if iteration == 1:
+                    print(f"[WARNING] strategy_manager not found! hasattr={hasattr(self.bot, 'strategy_manager')}, value={getattr(self.bot, 'strategy_manager', None)}")
+
+            # 0.2 Aggressive Strategies (초반 공격 전략 - 12풀, 맹독충 올인 등)
+            if iteration % 4 == 0:  # 4프레임마다 실행
+                await self._safe_manager_step(
+                    getattr(self.bot, "aggressive_strategies", None),
+                    iteration,
+                    "Aggressive Strategies",
+                    method_name="execute",
+                )
 
             # 1. Intel (정보 수집)
             await self._safe_manager_step(self.bot.intel, iteration, "Intel")
@@ -425,11 +440,19 @@ class BotStepIntegrator:
                 finally:
                     self._logic_tracker.end_logic("AggressiveTech", start_time, success)
 
+            # 6.5. 긴급 방어 로직 (Strategy Manager 연동)
+            await self._handle_emergency_defense(iteration)
+
             # 7. Queen Manager (여왕 관리)
             await self._safe_manager_step(self.bot.queen_manager, iteration, "Queen Manager")
 
-            # 8. Combat (전투)
-            await self._safe_manager_step(self.bot.combat, iteration, "Combat")
+            # 8. Combat (전투) - 방어 모드 시 우선순위 높임
+            is_defense_mode = self._is_defense_mode()
+            if is_defense_mode:
+                # 방어 모드: 전투 먼저 실행
+                await self._safe_manager_step(self.bot.combat, iteration, "Combat (Defense)")
+            else:
+                await self._safe_manager_step(self.bot.combat, iteration, "Combat")
 
             # 9. Spell Units (Infestor/Viper)
             await self._safe_manager_step(
@@ -468,6 +491,13 @@ class BotStepIntegrator:
         except Exception as e:
             if iteration % 100 == 0:
                 print(f"[WARNING] Game logic execution error: {e}")
+        finally:
+            # Performance Optimizer 프레임 종료
+            if hasattr(self.bot, "performance_optimizer") and self.bot.performance_optimizer:
+                try:
+                    self.bot.performance_optimizer.end_frame()
+                except Exception:
+                    pass  # Silently ignore end_frame errors
 
     async def _safe_manager_step(
         self, manager, iteration: int, label: str, method_name: str = "on_step"
@@ -573,6 +603,214 @@ class BotStepIntegrator:
             return sequence
         except Exception:
             return []
+
+    def _is_defense_mode(self) -> bool:
+        """방어 모드 여부 확인"""
+        # Strategy Manager 확인
+        if hasattr(self.bot, "strategy_manager") and self.bot.strategy_manager:
+            from strategy_manager import StrategyMode
+            if self.bot.strategy_manager.current_mode in [StrategyMode.EMERGENCY, StrategyMode.DEFENSIVE]:
+                return True
+
+        # Intel Manager 확인
+        if hasattr(self.bot, "intel") and self.bot.intel:
+            if hasattr(self.bot.intel, "is_major_attack") and self.bot.intel.is_major_attack():
+                return True
+            if hasattr(self.bot.intel, "is_under_attack") and self.bot.intel.is_under_attack():
+                return True
+
+        return False
+
+    async def _handle_emergency_defense(self, iteration: int) -> None:
+        """
+        긴급 방어 로직 처리
+
+        Strategy Manager가 Emergency/Defense 모드일 때:
+        1. 긴급 스파인 크롤러 건설
+        2. 긴급 스포어 크롤러 건설
+        3. 방어 유닛 우선 생산 신호
+        """
+        if iteration % 22 != 0:  # 1초마다 확인
+            return
+
+        # Strategy Manager 확인
+        strategy = getattr(self.bot, "strategy_manager", None)
+        if not strategy:
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        try:
+            # 긴급 스파인 크롤러 건설
+            if getattr(strategy, "emergency_spine_requested", False):
+                if hasattr(self.bot, "structures") and hasattr(self.bot, "townhalls"):
+                    from sc2.ids.unit_typeid import UnitTypeId
+
+                    # 스파인 크롤러 현재 수 확인
+                    spines = self.bot.structures(UnitTypeId.SPINECRAWLER)
+                    spine_count = spines.amount if hasattr(spines, 'amount') else 0
+                    pending = self.bot.already_pending(UnitTypeId.SPINECRAWLER)
+
+                    # 스포닝 풀 필요
+                    pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+                    if pools.exists and spine_count + pending < 3 and self.bot.can_afford(UnitTypeId.SPINECRAWLER):
+                        if self.bot.townhalls.exists:
+                            main_base = self.bot.townhalls.first
+                            defense_pos = main_base.position.towards(self.bot.game_info.map_center, 7)
+                            await self.bot.build(UnitTypeId.SPINECRAWLER, near=defense_pos)
+                            print(f"[EMERGENCY] [{int(game_time)}s] Building emergency Spine Crawler!")
+                            strategy.emergency_spine_requested = False
+
+            # 긴급 스포어 크롤러 건설 (대공)
+            if getattr(strategy, "emergency_spore_requested", False):
+                if hasattr(self.bot, "structures") and hasattr(self.bot, "townhalls"):
+                    from sc2.ids.unit_typeid import UnitTypeId
+
+                    spores = self.bot.structures(UnitTypeId.SPORECRAWLER)
+                    spore_count = spores.amount if hasattr(spores, 'amount') else 0
+                    pending = self.bot.already_pending(UnitTypeId.SPORECRAWLER)
+
+                    pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+                    if pools.exists and spore_count + pending < 2 and self.bot.can_afford(UnitTypeId.SPORECRAWLER):
+                        if self.bot.townhalls.exists:
+                            main_base = self.bot.townhalls.first
+                            await self.bot.build(UnitTypeId.SPORECRAWLER, near=main_base.position)
+                            print(f"[EMERGENCY] [{int(game_time)}s] Building emergency Spore Crawler!")
+                            strategy.emergency_spore_requested = False
+
+            # === 공중 위협 대응: 히드라리스크 굴 건설 ===
+            if hasattr(strategy, "is_air_threat_detected") and strategy.is_air_threat_detected():
+                await self._build_anti_air_tech(iteration, game_time)
+
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] Emergency defense error: {e}")
+
+    async def _build_anti_air_tech(self, iteration: int, game_time: float) -> None:
+        """
+        공중 위협 대응 테크 건설 (강화 버전)
+
+        우선순위:
+        1. 스포어 크롤러 (모든 기지에 최소 1개, 위협시 2개)
+        2. 레어 진화 (히드라 굴 전제 조건)
+        3. 히드라리스크 굴 건설
+        4. 퀸 추가 생산 요청
+        """
+        if not hasattr(self.bot, "structures"):
+            return
+
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+
+            # === 0. 공중 위협 레벨 계산 ===
+            air_threat_level = self._calculate_air_threat_level()
+
+            # === 1. 스포어 크롤러 긴급 건설 (최우선) ===
+            spore_target = 2 if air_threat_level >= 2 else 1  # 위협 높으면 기지당 2개
+
+            for th in self.bot.townhalls:
+                nearby_spores = self.bot.structures(UnitTypeId.SPORECRAWLER).closer_than(15, th)
+                spore_count = nearby_spores.amount if hasattr(nearby_spores, 'amount') else 0
+                pending_spores = self.bot.already_pending(UnitTypeId.SPORECRAWLER)
+
+                if spore_count + pending_spores < spore_target and self.bot.can_afford(UnitTypeId.SPORECRAWLER):
+                    # 스포닝 풀 확인
+                    pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+                    if pools.exists:
+                        # 미네랄 라인 근처에 배치 (일꾼 보호)
+                        minerals = self.bot.mineral_field.closer_than(10, th)
+                        if minerals:
+                            mineral_center = minerals.center
+                            defense_pos = th.position.towards(mineral_center, 4)
+                        else:
+                            defense_pos = th.position
+
+                        await self.bot.build(UnitTypeId.SPORECRAWLER, near=defense_pos)
+                        print(f"[ANTI-AIR] [{int(game_time)}s] ★ Building Spore Crawler (threat level: {air_threat_level}) ★")
+                        return
+
+            # === 2. 레어 진화 확인 (히드라 굴 전제 조건) ===
+            lair = self.bot.structures(UnitTypeId.LAIR)
+            hive = self.bot.structures(UnitTypeId.HIVE)
+            has_lair_or_higher = lair.ready.exists or hive.ready.exists
+            lair_pending = self.bot.already_pending(UnitTypeId.LAIR) > 0
+
+            if not has_lair_or_higher and not lair_pending:
+                # 해처리에서 레어 진화 시작
+                hatcheries = self.bot.structures(UnitTypeId.HATCHERY).ready
+                pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+                if hatcheries.exists and pools.exists and self.bot.can_afford(UnitTypeId.LAIR):
+                    # idle 해처리 찾기
+                    for hatch in hatcheries:
+                        if hasattr(hatch, "is_idle") and hatch.is_idle:
+                            self.bot.do(hatch(UnitTypeId.LAIR))
+                            print(f"[ANTI-AIR] [{int(game_time)}s] ★ Upgrading to Lair for Hydralisk Den ★")
+                            return
+
+            # === 3. 히드라리스크 굴 건설 ===
+            hydra_dens = self.bot.structures(UnitTypeId.HYDRALISKDEN)
+            hydra_pending = self.bot.already_pending(UnitTypeId.HYDRALISKDEN)
+
+            if not hydra_dens.exists and hydra_pending == 0:
+                if has_lair_or_higher and self.bot.can_afford(UnitTypeId.HYDRALISKDEN):
+                    if self.bot.townhalls.exists:
+                        await self.bot.build(UnitTypeId.HYDRALISKDEN, near=self.bot.townhalls.first.position)
+                        print(f"[ANTI-AIR] [{int(game_time)}s] ★★ Building Hydralisk Den for anti-air! ★★")
+                        return
+
+            # === 4. 히드라 우선 생산 플래그 설정 ===
+            if hydra_dens.ready.exists:
+                # Unit Factory에 히드라 우선 생산 신호
+                if hasattr(self.bot, "unit_factory"):
+                    self.bot.unit_factory._force_hydra = True
+
+            # === 5. 퀸 추가 생산 요청 (대공 유닛) ===
+            if air_threat_level >= 2:
+                if hasattr(self.bot, "queen_manager"):
+                    # 퀸 보너스 증가
+                    self.bot.queen_manager.creep_queen_bonus = 4  # 3 → 4
+
+        except Exception as e:
+            if iteration % 200 == 0:
+                print(f"[WARNING] Anti-air tech build error: {e}")
+
+    def _calculate_air_threat_level(self) -> int:
+        """
+        공중 위협 레벨 계산
+
+        Returns:
+            0: 없음
+            1: 낮음 (1-2 공중 유닛)
+            2: 중간 (3-5 공중 유닛 또는 캐리어/무리군주)
+            3: 높음 (6+ 공중 유닛 또는 다수 고위협 유닛)
+        """
+        if not hasattr(self.bot, "enemy_units"):
+            return 0
+
+        air_count = 0
+        high_threat_air_count = 0
+
+        high_threat_air = {"CARRIER", "TEMPEST", "MOTHERSHIP", "BATTLECRUISER", "BROODLORD", "VOIDRAY"}
+
+        for enemy in self.bot.enemy_units:
+            try:
+                if getattr(enemy, "is_flying", False):
+                    air_count += 1
+                    enemy_type = getattr(enemy.type_id, "name", "").upper()
+                    if enemy_type in high_threat_air:
+                        high_threat_air_count += 1
+            except Exception:
+                continue
+
+        # 위협 레벨 결정
+        if air_count == 0:
+            return 0
+        elif high_threat_air_count >= 1 or air_count >= 6:
+            return 3
+        elif air_count >= 3:
+            return 2
+        else:
+            return 1
 
     async def _build_tech(self, tech_type):
         """테크 건물 건설 헬퍼 함수"""

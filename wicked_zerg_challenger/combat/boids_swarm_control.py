@@ -5,25 +5,40 @@ Boids Algorithm for Swarm Control.
 Implements separation, alignment, and cohesion for clustered micro.
 """
 
+from __future__ import annotations
+
 import math
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import numpy as np
 
 if TYPE_CHECKING:
-    try:
-        from sc2.position import Point2, Point3  # type: ignore[import-untyped]
-        from sc2.unit import Unit  # type: ignore[import-untyped]
-        from sc2.units import Units  # type: ignore[import-untyped]
-    except ImportError:
-        Units = object
-        Unit = object
-        Point2 = object
-        Point3 = object
+    from sc2.position import Point2, Point3
+    from sc2.unit import Unit
+    from sc2.units import Units
+
+# Runtime imports with fallback
+try:
+    from sc2.position import Point2 as _Point2
+except ImportError:
+    _Point2 = None  # type: ignore
 
 
 class BoidsSwarmController:
     """Boids-based swarm controller (separation/alignment/cohesion)."""
+
+    # 고위협 유닛 목록 (우선 회피/집중 공격)
+    HIGH_THREAT_UNITS = {
+        "SIEGETANK", "SIEGETANKSIEGED", "COLOSSUS", "DISRUPTOR",
+        "HIGHTEMPLAR", "WIDOWMINE", "LIBERATOR", "LIBERATORAG",
+        "BANELING", "LURKER", "LURKERMP", "RAVAGER"
+    }
+
+    # 스플래시 피해 유닛
+    SPLASH_UNITS = {
+        "SIEGETANKSIEGED", "COLOSSUS", "HIGHTEMPLAR", "DISRUPTOR",
+        "BANELING", "HELLION", "HELLBAT", "LURKERMP"
+    }
 
     def __init__(
         self,
@@ -55,10 +70,10 @@ class BoidsSwarmController:
 
     def calculate_swarm_velocity(
         self,
-        unit: "Unit",
-        neighbors: "Units",
-        target: Optional["Point2"] = None,
-        enemy_units: Optional["Units"] = None,
+        unit: Unit,
+        neighbors: Units,
+        target: Optional[Point2] = None,
+        enemy_units: Optional[Units] = None,
         separation_multiplier: float = 1.0,
         cohesion_multiplier: float = 1.0,
     ) -> Tuple[float, float]:
@@ -116,7 +131,7 @@ class BoidsSwarmController:
 
         return float(velocity[0]), float(velocity[1])
 
-    def _calculate_separation(self, unit: "Unit", neighbors: "Units") -> np.ndarray:
+    def _calculate_separation(self, unit: Unit, neighbors: Units) -> np.ndarray:
         """분리 힘 계산: 너무 가까운 이웃으로부터 멀어지기"""
         separation = np.array([0.0, 0.0])
         count = 0
@@ -146,7 +161,7 @@ class BoidsSwarmController:
 
         return separation
 
-    def _calculate_alignment(self, unit: "Unit", neighbors: "Units") -> np.ndarray:
+    def _calculate_alignment(self, unit: Unit, neighbors: Units) -> np.ndarray:
         """정렬 힘 계산: 이웃과 같은 방향으로 이동"""
         alignment = np.array([0.0, 0.0])
         count = 0
@@ -178,7 +193,7 @@ class BoidsSwarmController:
 
         return alignment
 
-    def _calculate_cohesion(self, unit: "Unit", neighbors: "Units") -> np.ndarray:
+    def _calculate_cohesion(self, unit: Unit, neighbors: Units) -> np.ndarray:
         """응집 힘 계산: 이웃들의 중심으로 이동"""
         cohesion = np.array([0.0, 0.0])
         count = 0
@@ -208,7 +223,7 @@ class BoidsSwarmController:
 
         return cohesion
 
-    def _calculate_target_seeking(self, unit: "Unit", target: "Point2") -> np.ndarray:
+    def _calculate_target_seeking(self, unit: Unit, target: Point2) -> np.ndarray:
         """목표 추구 힘 계산: 목표 지점으로 이동"""
         unit_pos = np.array([unit.position.x, unit.position.y])
         target_pos = np.array([target.x, target.y])
@@ -219,15 +234,21 @@ class BoidsSwarmController:
         if distance > 0:
             direction = direction / distance
             # 거리에 비례한 힘 적용 (가까워질수록 약해짐)
-            force = min(distance / 10.0, 1.0) * self.max_force
+            force = min(float(distance) / 10.0, 1.0) * self.max_force
             return direction * force
 
         return np.array([0.0, 0.0])
 
     def _calculate_enemy_avoidance(
-        self, unit: "Unit", enemy_units: "Units"
+        self, unit: Unit, enemy_units: Units
     ) -> np.ndarray:
-        """적 회피 힘 계산: 적 유닛으로부터 멀어지기"""
+        """
+        적 회피 힘 계산: 적 유닛으로부터 멀어지기
+
+        IMPROVED:
+        - 고위협 유닛 (시즈탱크, 콜로서스 등)은 더 큰 회피 반경
+        - 스플래시 유닛은 특히 더 넓은 회피
+        """
         avoidance = np.array([0.0, 0.0])
         count = 0
 
@@ -237,14 +258,34 @@ class BoidsSwarmController:
             enemy_pos = np.array([enemy.position.x, enemy.position.y])
             distance = np.linalg.norm(enemy_pos - unit_pos)
 
-            # 위험 반경 (유닛 공격 사거리 + 여유)
+            # 적 유닛 타입에 따른 위험 반경 조정
+            enemy_type = getattr(enemy.type_id, "name", "").upper()
+
+            # 기본 위험 반경
             danger_radius = 8.0
+
+            # 고위협 유닛은 더 넓은 회피 반경
+            if enemy_type in self.HIGH_THREAT_UNITS:
+                danger_radius = 12.0
+
+            # 스플래시 유닛은 더 넓게 회피
+            if enemy_type in self.SPLASH_UNITS:
+                danger_radius = 15.0
+
+            # 시즈모드 탱크는 특히 더 넓게
+            if enemy_type == "SIEGETANKSIEGED":
+                danger_radius = 18.0
 
             if distance < danger_radius:
                 # 적으로부터 멀어지는 벡터
                 diff = unit_pos - enemy_pos
                 # 거리가 가까울수록 더 강한 회피 힘
                 strength = (danger_radius - distance) / danger_radius
+
+                # 고위협 유닛은 회피 강도 증가
+                if enemy_type in self.HIGH_THREAT_UNITS:
+                    strength *= 1.5
+
                 diff = diff / (distance + 0.1)  # 0으로 나누기 방지
                 avoidance += diff * strength
                 count += 1
@@ -259,7 +300,7 @@ class BoidsSwarmController:
         return avoidance
 
     def _calculate_enemy_surrounding(
-        self, unit: "Unit", enemy_units: "Units", target: "Point2"
+        self, unit: Unit, enemy_units: Units, target: Point2
     ) -> np.ndarray:
         """적 포위 힘 계산: 적을 부채꼴 모양으로 이동"""
         if len(enemy_units) == 0:
@@ -303,10 +344,10 @@ class BoidsSwarmController:
 
     def apply_boids_to_units(
         self,
-        units: "Units",
-        target: Optional["Point2"] = None,
-        enemy_units: Optional["Units"] = None,
-    ) -> List[Tuple["Unit", "Point2"]]:
+        units: Units,
+        target: Optional[Point2] = None,
+        enemy_units: Optional[Units] = None,
+    ) -> List[Tuple[Any, Any]]:
         """
         모든 유닛에 Boids 알고리즘을 적용
 
@@ -331,10 +372,170 @@ class BoidsSwarmController:
 
             # 현재 위치에서 속도 벡터를 더해 목표 위치 계산
             current_pos = unit.position
-            target_pos = Point2(
-                (current_pos.x + velocity_x, current_pos.y + velocity_y)
-            )
+            new_x = current_pos.x + velocity_x
+            new_y = current_pos.y + velocity_y
+            # Point2는 (x, y) 두 개의 인자를 받음
+            if _Point2 is not None:
+                target_pos = _Point2(new_x, new_y)
+            else:
+                target_pos = (new_x, new_y)  # fallback for testing
 
             results.append((unit, target_pos))
 
         return results
+
+    def apply_defense_formation(
+        self,
+        units: Units,
+        defense_point: Point2,
+        enemy_units: Optional[Units] = None,
+        base_position: Optional[Point2] = None,
+    ) -> List[Tuple[Any, Any]]:
+        """
+        기지 방어용 진형 적용
+
+        방어 시:
+        - 스플래시 피해 회피를 위해 분리 가중치 증가
+        - 기지를 등지고 적을 향해 부채꼴 배치
+        - 고위협 유닛에 대한 회피 강화
+
+        Args:
+            units: 방어 유닛들
+            defense_point: 방어해야 할 위치 (적 위치)
+            enemy_units: 적 유닛들
+            base_position: 기지 위치 (방어 방향 설정용)
+
+        Returns:
+            [(unit, target_position), ...] 리스트
+        """
+        results = []
+
+        # 적 중에 스플래시 유닛이 있는지 확인
+        has_splash_threat = False
+        if enemy_units:
+            for enemy in enemy_units:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+                if enemy_type in self.SPLASH_UNITS:
+                    has_splash_threat = True
+                    break
+
+        # 스플래시 위협 시 분리 가중치 증가
+        separation_mult = 2.5 if has_splash_threat else 1.5
+
+        for i, unit in enumerate(units):
+            neighbors = units.closer_than(self.neighbor_radius, unit.position)
+
+            # 방어 모드: 응집력 감소, 분리력 증가
+            velocity_x, velocity_y = self.calculate_swarm_velocity(
+                unit=unit,
+                neighbors=neighbors,
+                target=defense_point,
+                enemy_units=enemy_units,
+                separation_multiplier=separation_mult,
+                cohesion_multiplier=0.5,  # 방어 시 응집력 감소
+            )
+
+            # 부채꼴 배치를 위한 각도 조정
+            if base_position and defense_point:
+                # 기지 → 적 방향
+                base_to_enemy = np.array([
+                    defense_point.x - base_position.x,
+                    defense_point.y - base_position.y
+                ])
+                base_angle = math.atan2(base_to_enemy[1], base_to_enemy[0])
+
+                # 유닛별 부채꼴 각도 (±45도 범위)
+                unit_count = len(units)
+                if unit_count > 1:
+                    spread_angle = math.pi / 4  # 45도
+                    angle_offset = spread_angle * (2 * i / (unit_count - 1) - 1)
+                else:
+                    angle_offset = 0
+
+                # 방어 거리 (기지와 적 사이)
+                defense_distance = 8.0
+                formation_x = base_position.x + math.cos(base_angle + angle_offset) * defense_distance
+                formation_y = base_position.y + math.sin(base_angle + angle_offset) * defense_distance
+
+                # 진형 위치로 부드럽게 이동
+                velocity_x = (velocity_x + (formation_x - unit.position.x) * 0.3)
+                velocity_y = (velocity_y + (formation_y - unit.position.y) * 0.3)
+
+            # 목표 위치 계산
+            current_pos = unit.position
+            new_x = current_pos.x + velocity_x
+            new_y = current_pos.y + velocity_y
+
+            if _Point2 is not None:
+                target_pos = _Point2(new_x, new_y)
+            else:
+                target_pos = (new_x, new_y)
+
+            results.append((unit, target_pos))
+
+        return results
+
+    def get_priority_target(
+        self, unit: Unit, enemy_units: Units
+    ) -> Optional[Any]:
+        """
+        우선순위 타겟 선정 (방어 시)
+
+        우선순위:
+        1. 가장 가까운 고위협 유닛 (시즈탱크, 콜로서스)
+        2. 가장 약한 적 (낮은 체력)
+        3. 가장 가까운 적
+
+        Args:
+            unit: 공격할 유닛
+            enemy_units: 적 유닛들
+
+        Returns:
+            우선순위 타겟 또는 None
+        """
+        if not enemy_units:
+            return None
+
+        unit_pos = np.array([unit.position.x, unit.position.y])
+
+        # 1. 고위협 유닛 찾기
+        high_threat_targets = []
+        for enemy in enemy_units:
+            enemy_type = getattr(enemy.type_id, "name", "").upper()
+            if enemy_type in self.HIGH_THREAT_UNITS:
+                enemy_pos = np.array([enemy.position.x, enemy.position.y])
+                distance = np.linalg.norm(enemy_pos - unit_pos)
+                if distance < 15:  # 공격 범위 내
+                    high_threat_targets.append((enemy, distance))
+
+        if high_threat_targets:
+            # 가장 가까운 고위협 유닛
+            high_threat_targets.sort(key=lambda x: x[1])
+            return high_threat_targets[0][0]
+
+        # 2. 가장 약한 적 (낮은 체력)
+        low_hp_targets = []
+        for enemy in enemy_units:
+            if hasattr(enemy, "health") and hasattr(enemy, "health_max"):
+                hp_ratio = enemy.health / max(enemy.health_max, 1)
+                if hp_ratio < 0.3:  # 30% 이하 체력
+                    enemy_pos = np.array([enemy.position.x, enemy.position.y])
+                    distance = np.linalg.norm(enemy_pos - unit_pos)
+                    if distance < 10:
+                        low_hp_targets.append((enemy, hp_ratio))
+
+        if low_hp_targets:
+            low_hp_targets.sort(key=lambda x: x[1])
+            return low_hp_targets[0][0]
+
+        # 3. 가장 가까운 적
+        closest = None
+        closest_dist = float('inf')
+        for enemy in enemy_units:
+            enemy_pos = np.array([enemy.position.x, enemy.position.y])
+            distance = np.linalg.norm(enemy_pos - unit_pos)
+            if distance < closest_dist:
+                closest_dist = distance
+                closest = enemy
+
+        return closest

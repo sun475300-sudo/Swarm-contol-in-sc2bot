@@ -22,7 +22,22 @@
       "Bash(powershell -Command \"Get-ChildItem ''D:\\\\replays\\\\replays'' -Filter ''*.SC2Replay'' | Select-Object -First 20 Name\")",
       "Bash(pip install:*)",
       "Bash(grep:*)",
-      "Bash(^d \")"
+      "Bash(^d \")",
+      "Bash(powershell -Command \"irm https://claude.ai/install.ps1 | iex\")",
+      "Bash(claude config set:*)",
+      "Bash(claude doctor)",
+      "Bash(claude --version)",
+      "Bash(where:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(reg query:*)",
+      "Bash(test:*)",
+      "Bash(xargs kill:*)",
+      "Bash(powershell -Command \"Get-Process | Where-Object {$_ProcessName -like ''*SC2*''} | Stop-Process -Force\")",
+      "Bash(timeout:*)",
+      "Bash(Get-Content \"C:\\\\Users\\\\sun47\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Swarm-contol-in-sc2bot\\\\tasks\\\\b14db65.output\" -Tail 100)",
+      "Bash(more:*)",
+      "Bash(powershell \"Stop-Process -Name SC2_x64 -Force\")",
+      "Bash(powershell \"Stop-Process -Id 8676,22660 -Force -ErrorAction SilentlyContinue\")"
     ]
   }
 }

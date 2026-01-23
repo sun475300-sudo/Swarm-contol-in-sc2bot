@@ -146,7 +146,7 @@ class SpellUnitManager:
                         target = nearby_targets[0]
                         if infestor.energy >= 100:  # Neural Parasite costs 100 energy
                             try:
-                                await b.do(
+                                b.do(
                                     infestor(
                                         AbilityId.NEURALPARASITE_NEURALPARASITE, target
                                     )
@@ -175,7 +175,7 @@ class SpellUnitManager:
                     )
                     if best_target and infestor.energy >= 75:  # Fungal costs 75 energy
                         try:
-                            await b.do(
+                            b.do(
                                 infestor(
                                     AbilityId.FUNGALGROWTH_FUNGALGROWTH, best_target
                                 )
@@ -218,7 +218,7 @@ class SpellUnitManager:
                     consume_target = self._find_consume_target(viper)
                     if consume_target:
                         try:
-                            await b.do(viper(consume_ability, consume_target))
+                            b.do(viper(consume_ability, consume_target))
                             self.viper_last_consume[viper_tag] = current_time
                             continue
                         except Exception:
@@ -254,7 +254,7 @@ class SpellUnitManager:
                         target = nearby_targets[0]
                         if viper.energy >= 75:  # Abduct costs 75 energy
                             try:
-                                await b.do(viper(AbilityId.ABDUCT_ABDUCT, target))
+                                b.do(viper(AbilityId.ABDUCT_ABDUCT, target))
                                 self.viper_last_spell[viper_tag] = current_time
                                 continue
                             except Exception:
@@ -289,7 +289,7 @@ class SpellUnitManager:
                         target = nearby_air[0]
                         if viper.energy >= 125:  # Parasitic Bomb costs 125 energy
                             try:
-                                await b.do(
+                                b.do(
                                     viper(AbilityId.PARASITICBOMB_PARASITICBOMB, target)
                                 )
                                 self.viper_last_spell[viper_tag] = current_time
@@ -330,7 +330,7 @@ class SpellUnitManager:
                             best_position and viper.energy >= 100
                         ):  # Blinding Cloud costs 100 energy
                             try:
-                                await b.do(
+                                b.do(
                                     viper(
                                         AbilityId.BLINDINGCLOUD_BLINDINGCLOUD,
                                         best_position,

@@ -96,10 +96,15 @@ class StrategyManager:
 
         # Emergency Mode 비율 (방어 우선)
         self.emergency_ratios = {
-            "zergling": 0.6,
-            "roach": 0.3,
-            "queen": 0.1,  # 퀸 추가 생산
+            "zergling": 0.5,
+            "roach": 0.25,
+            "baneling": 0.15,  # 맹독충 추가 (러쉬 방어용)
+            "queen": 0.1,  # 퀸 추가 생산 (트랜스퓨전 + 방어)
         }
+
+        # 방어 건물 긴급 건설 플래그
+        self.emergency_spine_requested = False
+        self.emergency_spore_requested = False
 
         # Rogue Tactics 연동
         self.rogue_tactics_active = False
@@ -112,6 +117,8 @@ class StrategyManager:
         self._check_rush_detection()
         self._check_rogue_tactics()
         self._update_strategy_mode()
+        self._update_counter_build()  # 적 빌드에 따른 대응
+        self._detect_direct_air_threat()  # ★ 직접 공중 유닛 감지 ★
 
     def _detect_enemy_race(self) -> None:
         """상대 종족 감지"""
@@ -144,7 +151,7 @@ class StrategyManager:
             self.game_phase = GamePhase.LATE
 
     def _check_rush_detection(self) -> None:
-        """러시/치즈 감지"""
+        """러시/치즈 감지 (초반 + 중후반)"""
         game_time = getattr(self.bot, "time", 0.0)
 
         # 이미 Emergency Mode면 스킵
@@ -154,10 +161,18 @@ class StrategyManager:
                 self._end_emergency_mode()
             return
 
-        # 러시 감지 조건
-        is_rush = self._detect_early_aggression(game_time)
-        if is_rush:
-            self._activate_emergency_mode(game_time)
+        # 초반 러시 감지 (3분 이전)
+        if game_time < self.rush_detection_threshold:
+            is_rush = self._detect_early_aggression(game_time)
+            if is_rush:
+                self._activate_emergency_mode(game_time)
+                return
+
+        # 중후반 대규모 공격 감지 (4분 이후)
+        if game_time >= 240:
+            is_major_attack = self._detect_major_attack(game_time)
+            if is_major_attack:
+                self._activate_defense_mode(game_time)
 
     def _detect_early_aggression(self, game_time: float) -> bool:
         """초반 공격 감지"""
@@ -184,6 +199,312 @@ class StrategyManager:
 
         return False
 
+    def _detect_major_attack(self, game_time: float) -> bool:
+        """
+        중후반 대규모 공격 감지
+
+        조건:
+        1. 적 군대가 우리 기지 근처에 있음
+        2. 적 군대 규모가 일정 수준 이상
+        3. 고위협 유닛 (시즈탱크, 콜로서스 등) 포함
+        """
+        if not hasattr(self.bot, "enemy_units") or not hasattr(self.bot, "townhalls"):
+            return False
+
+        if not self.bot.townhalls.exists:
+            return False
+
+        enemy_units = self.bot.enemy_units
+        if not enemy_units:
+            return False
+
+        # 고위협 유닛 목록 (중후반 푸쉬의 핵심)
+        high_threat_units = {
+            # 테란
+            "SIEGETANK", "SIEGETANKSIEGED", "THOR", "BATTLECRUISER",
+            "LIBERATOR", "LIBERATORAG", "CYCLONE", "WIDOWMINE",
+            # 프로토스
+            "COLOSSUS", "DISRUPTOR", "IMMORTAL", "ARCHON",
+            "CARRIER", "TEMPEST", "VOIDRAY", "HIGHTEMPLAR",
+            # 저그
+            "ULTRALISK", "BROODLORD", "RAVAGER", "LURKER", "LURKERMP"
+        }
+
+        total_threat_score = 0
+        high_threat_count = 0
+        enemies_near_base = []
+
+        for th in self.bot.townhalls:
+            for enemy in enemy_units:
+                try:
+                    if enemy.distance_to(th.position) < 40:  # 기지 40 거리 내
+                        enemies_near_base.append(enemy)
+
+                        # 위협 점수 계산
+                        enemy_type = getattr(enemy.type_id, "name", "").upper()
+
+                        if enemy_type in high_threat_units:
+                            high_threat_count += 1
+                            total_threat_score += 10  # 고위협 유닛
+                        elif enemy.can_attack:
+                            total_threat_score += 2  # 일반 전투 유닛
+                except Exception:
+                    continue
+
+        # 대규모 공격 판정
+        # 조건: 위협 점수 20 이상 또는 고위협 유닛 2개 이상
+        if total_threat_score >= 20 or high_threat_count >= 2:
+            print(f"[STRATEGY] [{int(game_time)}s] MAJOR ATTACK DETECTED! "
+                  f"Threat score: {total_threat_score}, High-threat units: {high_threat_count}")
+            return True
+
+        return False
+
+    def _activate_defense_mode(self, game_time: float) -> None:
+        """
+        중후반 방어 모드 활성화
+
+        Emergency Mode와 다르게:
+        1. 드론 생산은 계속 (경제 유지)
+        2. 군대 집결 우선
+        3. 방어 건물 추가 건설
+        """
+        # 이미 방어 모드면 스킵
+        if self.current_mode == StrategyMode.DEFENSIVE:
+            return
+
+        self.current_mode = StrategyMode.DEFENSIVE
+
+        print(f"[STRATEGY] [{int(game_time)}s] DEFENSE MODE ACTIVATED - Major attack incoming!")
+
+        # 군대 집결 신호
+        self._request_army_rally()
+
+        # 확장 기지 방어 건물 추가 요청
+        self.emergency_spine_requested = True
+
+        # 적 공중 유닛 체크
+        if hasattr(self.bot, "enemy_units"):
+            air_threats = ["MUTALISK", "VOIDRAY", "ORACLE", "PHOENIX",
+                         "BATTLECRUISER", "CARRIER", "LIBERATOR", "BROODLORD"]
+            for enemy in self.bot.enemy_units:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+                if enemy_type in air_threats:
+                    self.emergency_spore_requested = True
+                    break
+
+    def _request_army_rally(self) -> None:
+        """군대 집결 요청"""
+        # Combat Manager에 집결 신호 전송
+        combat = getattr(self.bot, "combat_manager", None)
+        if combat:
+            # 집결 포인트를 위협받는 기지 근처로 설정
+            if hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
+                rally_pos = self.bot.townhalls.first.position
+                combat._rally_point = rally_pos
+                combat._min_army_for_attack = 999  # 공격 중지, 방어 우선
+                print(f"[STRATEGY] Army rallying to defend base!")
+
+    def _update_counter_build(self) -> None:
+        """
+        적 빌드에 따른 대응 빌드 업데이트
+
+        Intel Manager에서 감지한 적 빌드 패턴에 따라
+        아군 유닛 비율을 조정합니다.
+        """
+        intel = getattr(self.bot, "intel", None)
+        if not intel:
+            return
+
+        enemy_pattern = ""
+        if hasattr(intel, "get_enemy_build_pattern"):
+            enemy_pattern = intel.get_enemy_build_pattern()
+
+        if enemy_pattern == "unknown":
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        # === 적 빌드별 대응 유닛 비율 설정 ===
+
+        # 테란 바이오 (해병/의무관)
+        if enemy_pattern == "terran_bio":
+            self.race_unit_ratios[self.detected_enemy_race] = {
+                GamePhase.EARLY: {"zergling": 0.3, "baneling": 0.5, "roach": 0.2},
+                GamePhase.MID: {"zergling": 0.2, "baneling": 0.4, "mutalisk": 0.3, "ultralisk": 0.1},
+                GamePhase.LATE: {"zergling": 0.2, "baneling": 0.3, "ultralisk": 0.3, "mutalisk": 0.2},
+            }
+
+        # 테란 메카닉 (탱크/토르)
+        elif enemy_pattern == "terran_mech":
+            self.race_unit_ratios[self.detected_enemy_race] = {
+                GamePhase.EARLY: {"zergling": 0.4, "roach": 0.4, "ravager": 0.2},
+                GamePhase.MID: {"roach": 0.2, "hydra": 0.4, "mutalisk": 0.3, "corruptor": 0.1},
+                GamePhase.LATE: {"hydra": 0.3, "corruptor": 0.3, "broodlord": 0.2, "viper": 0.2},
+            }
+
+        # 프로토스 스타게이트 (공중 유닛)
+        elif enemy_pattern == "protoss_stargate":
+            self._handle_air_threat()
+            self.race_unit_ratios[self.detected_enemy_race] = {
+                GamePhase.EARLY: {"zergling": 0.3, "queen": 0.2, "hydra": 0.5},
+                GamePhase.MID: {"hydra": 0.5, "corruptor": 0.3, "queen": 0.2},
+                GamePhase.LATE: {"hydra": 0.4, "corruptor": 0.4, "viper": 0.2},
+            }
+
+        # 프로토스 로보 (불멸자/거신)
+        elif enemy_pattern == "protoss_robo":
+            self.race_unit_ratios[self.detected_enemy_race] = {
+                GamePhase.EARLY: {"zergling": 0.3, "roach": 0.5, "ravager": 0.2},
+                GamePhase.MID: {"roach": 0.3, "hydra": 0.4, "corruptor": 0.3},
+                GamePhase.LATE: {"hydra": 0.3, "corruptor": 0.3, "broodlord": 0.2, "viper": 0.2},
+            }
+
+        # 저그 뮤탈 (공중)
+        elif enemy_pattern == "zerg_muta":
+            self._handle_air_threat()
+            self.race_unit_ratios[self.detected_enemy_race] = {
+                GamePhase.EARLY: {"zergling": 0.3, "queen": 0.3, "hydra": 0.4},
+                GamePhase.MID: {"hydra": 0.5, "queen": 0.2, "mutalisk": 0.3},
+                GamePhase.LATE: {"hydra": 0.4, "corruptor": 0.3, "infestor": 0.3},
+            }
+
+        # 러쉬 대응 (공통)
+        elif "rush" in enemy_pattern or "proxy" in enemy_pattern or "12pool" in enemy_pattern:
+            self.emergency_ratios = {
+                "zergling": 0.5,
+                "roach": 0.3,
+                "queen": 0.2,
+            }
+            self.emergency_spine_requested = True
+
+        # 로그 출력 (30초마다)
+        if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
+            print(f"[STRATEGY] [{int(game_time)}s] Counter build for {enemy_pattern}")
+
+    def _handle_air_threat(self) -> None:
+        """
+        공중 위협 대응
+
+        적 공중 유닛 감지 시:
+        1. 스포어 크롤러 건설 요청
+        2. 히드라리스크 우선 생산
+        3. 퀸 추가 생산 (대공 + 트랜스퓨전)
+        """
+        game_time = getattr(self.bot, "time", 0)
+
+        # 스포어 크롤러 긴급 건설
+        self.emergency_spore_requested = True
+
+        # 히드라 굴 건설 확인
+        if hasattr(self.bot, "structures"):
+            try:
+                from sc2.ids.unit_typeid import UnitTypeId
+
+                hydra_dens = self.bot.structures(UnitTypeId.HYDRALISKDEN)
+                if not hydra_dens.exists and self.bot.already_pending(UnitTypeId.HYDRALISKDEN) == 0:
+                    # 히드라 굴 건설 요청
+                    if hasattr(self.bot, "production") and self.bot.production:
+                        print(f"[STRATEGY] [{int(game_time)}s] ★ Air threat! Building Hydralisk Den ★")
+            except Exception:
+                pass
+
+        # 로그 쿨다운 (10초마다만 출력)
+        if not hasattr(self, "_last_air_log_time"):
+            self._last_air_log_time = 0
+        if game_time - self._last_air_log_time >= 10:
+            print(f"[STRATEGY] [{int(game_time)}s] ★★ AIR THREAT DETECTED - Building anti-air ★★")
+            self._last_air_log_time = game_time
+
+    def _detect_direct_air_threat(self) -> None:
+        """
+        ★ 직접 공중 유닛 감지 및 대응 ★
+
+        빌드 패턴이 아닌 실제 공중 유닛이 보이면 즉시 대응
+        """
+        if not hasattr(self.bot, "enemy_units"):
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        # 공중 위협 유닛 목록
+        air_threat_units = {
+            # 테란
+            "BANSHEE", "BATTLECRUISER", "LIBERATOR", "LIBERATORAG",
+            "VIKINGFIGHTER", "RAVEN", "MEDIVAC",
+            # 프로토스
+            "VOIDRAY", "ORACLE", "PHOENIX", "CARRIER", "TEMPEST",
+            "MOTHERSHIP", "INTERCEPTOR",
+            # 저그
+            "MUTALISK", "CORRUPTOR", "BROODLORD", "VIPER"
+        }
+
+        # 공중 유닛 카운트
+        air_unit_count = 0
+        detected_air_types = set()
+
+        for enemy in self.bot.enemy_units:
+            try:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+                if enemy_type in air_threat_units or getattr(enemy, "is_flying", False):
+                    air_unit_count += 1
+                    detected_air_types.add(enemy_type)
+            except Exception:
+                continue
+
+        # 공중 유닛 2기 이상 감지시 대응 활성화
+        if air_unit_count >= 2:
+            self._air_threat_active = True
+            self.emergency_spore_requested = True
+
+            # 30초마다 로그
+            if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
+                print(f"[STRATEGY] [{int(game_time)}s] ★★★ AIR THREAT ACTIVE: {air_unit_count} air units detected! ★★★")
+                print(f"[STRATEGY] Air types: {detected_air_types}")
+
+            # 히드라 우선 생산 설정
+            self._force_hydra_production = True
+
+            # 현재 페이즈에 히드라 비율 증가
+            current_ratios = self.get_unit_ratios()
+            if "hydra" in current_ratios:
+                current_ratios["hydra"] = max(current_ratios.get("hydra", 0), 0.4)
+            else:
+                current_ratios["hydra"] = 0.4
+
+            # 공중 위협 대응 호출
+            self._handle_air_threat()
+
+        elif air_unit_count == 0:
+            # 공중 위협 해제 (일정 시간 유지)
+            if hasattr(self, "_air_threat_active") and self._air_threat_active:
+                if not hasattr(self, "_air_threat_clear_time"):
+                    self._air_threat_clear_time = game_time
+                elif game_time - self._air_threat_clear_time > 60:  # 60초 후 해제
+                    self._air_threat_active = False
+                    self._force_hydra_production = False
+                    print(f"[STRATEGY] [{int(game_time)}s] Air threat cleared")
+
+    def is_air_threat_detected(self) -> bool:
+        """공중 위협 감지 여부"""
+        # ★ 직접 감지 우선 체크 ★
+        if getattr(self, "_air_threat_active", False):
+            return True
+
+        intel = getattr(self.bot, "intel", None)
+        if not intel:
+            return False
+
+        enemy_pattern = ""
+        if hasattr(intel, "get_enemy_build_pattern"):
+            enemy_pattern = intel.get_enemy_build_pattern()
+
+        return enemy_pattern in ["protoss_stargate", "zerg_muta", "terran_mech"]
+
+    def should_force_hydra(self) -> bool:
+        """히드라 강제 생산 여부"""
+        return getattr(self, "_force_hydra_production", False)
+
     def _activate_emergency_mode(self, game_time: float) -> None:
         """Emergency Mode 활성화"""
         self.emergency_active = True
@@ -195,6 +516,19 @@ class StrategyManager:
         # Economy Manager에 알림
         if hasattr(self.bot, "economy"):
             self.bot.economy._emergency_mode = True
+
+        # 긴급 방어 건물 건설 요청
+        self.emergency_spine_requested = True
+        self.emergency_spore_requested = False  # 지상 러쉬면 스파인 우선
+
+        # 적 공중 유닛이 있으면 스포어도 요청
+        if hasattr(self.bot, "enemy_units"):
+            for enemy in self.bot.enemy_units:
+                if hasattr(enemy, "is_flying") and enemy.is_flying:
+                    self.emergency_spore_requested = True
+                    break
+
+        print(f"[STRATEGY] Emergency defense requested: Spine={self.emergency_spine_requested}, Spore={self.emergency_spore_requested}")
 
     def _end_emergency_mode(self) -> None:
         """Emergency Mode 종료"""
