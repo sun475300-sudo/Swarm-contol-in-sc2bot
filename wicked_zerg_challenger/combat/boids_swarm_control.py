@@ -8,20 +8,31 @@ Implements separation, alignment, and cohesion for clustered micro.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from sc2.position import Point2, Point3
+    from sc2.position import Point2
     from sc2.unit import Unit
     from sc2.units import Units
+else:
+    # Runtime type aliases for type checker
+    Point2 = Any
+    Unit = Any
+    Units = Any
 
 # Runtime imports with fallback
 try:
     from sc2.position import Point2 as _Point2
 except ImportError:
     _Point2 = None  # type: ignore
+
+
+def _get_pos(obj: Any) -> Tuple[float, float]:
+    """유닛이나 위치 객체에서 (x, y) 좌표를 안전하게 추출합니다."""
+    pos = getattr(obj, "position", obj)
+    return (float(getattr(pos, "x", 0.0)), float(getattr(pos, "y", 0.0)))
 
 
 class BoidsSwarmController:
@@ -136,13 +147,13 @@ class BoidsSwarmController:
         separation = np.array([0.0, 0.0])
         count = 0
 
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         for neighbor in neighbors:
             if neighbor.tag == unit.tag:
                 continue
 
-            neighbor_pos = np.array([neighbor.position.x, neighbor.position.y])
+            neighbor_pos = np.array(_get_pos(neighbor))
             distance = np.linalg.norm(neighbor_pos - unit_pos)
 
             if 0 < distance < self.separation_radius:
@@ -166,25 +177,25 @@ class BoidsSwarmController:
         alignment = np.array([0.0, 0.0])
         count = 0
 
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         for neighbor in neighbors:
             if neighbor.tag == unit.tag:
                 continue
 
-            neighbor_pos = np.array([neighbor.position.x, neighbor.position.y])
+            neighbor_pos = np.array(_get_pos(neighbor))
             distance = np.linalg.norm(neighbor_pos - unit_pos)
 
             if 0 < distance < self.neighbor_radius:
                 # 이웃의 속도 벡터 (현재는 위치 기반으로 단순화)
                 # 실제로는 유닛 방향을 고려해야 하지만, 여기서는 단순화
-                alignment += np.array([neighbor.position.x, neighbor.position.y])
+                alignment += np.array(_get_pos(neighbor))
                 count += 1
 
         if count > 0:
             alignment = alignment / count
             # 현재 위치와 이웃들의 평균 위치의 차이
-            unit_pos = np.array([unit.position.x, unit.position.y])
+            unit_pos = np.array(_get_pos(unit))
             alignment = alignment - unit_pos
             # 정규화
             magnitude = np.linalg.norm(alignment)
@@ -198,13 +209,13 @@ class BoidsSwarmController:
         cohesion = np.array([0.0, 0.0])
         count = 0
 
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         for neighbor in neighbors:
             if neighbor.tag == unit.tag:
                 continue
 
-            neighbor_pos = np.array([neighbor.position.x, neighbor.position.y])
+            neighbor_pos = np.array(_get_pos(neighbor))
             distance = np.linalg.norm(neighbor_pos - unit_pos)
 
             if 0 < distance < self.neighbor_radius:
@@ -225,8 +236,8 @@ class BoidsSwarmController:
 
     def _calculate_target_seeking(self, unit: Unit, target: Point2) -> np.ndarray:
         """목표 추구 힘 계산: 목표 지점으로 이동"""
-        unit_pos = np.array([unit.position.x, unit.position.y])
-        target_pos = np.array([target.x, target.y])
+        unit_pos = np.array(_get_pos(unit))
+        target_pos = np.array(_get_pos(target))
 
         direction = target_pos - unit_pos
         distance = np.linalg.norm(direction)
@@ -252,10 +263,10 @@ class BoidsSwarmController:
         avoidance = np.array([0.0, 0.0])
         count = 0
 
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         for enemy in enemy_units:
-            enemy_pos = np.array([enemy.position.x, enemy.position.y])
+            enemy_pos = np.array(_get_pos(enemy))
             distance = np.linalg.norm(enemy_pos - unit_pos)
 
             # 적 유닛 타입에 따른 위험 반경 조정
@@ -309,11 +320,11 @@ class BoidsSwarmController:
         # 적군의 중심 계산
         enemy_center = np.array([0.0, 0.0])
         for enemy in enemy_units:
-            enemy_center += np.array([enemy.position.x, enemy.position.y])
+            enemy_center += np.array(_get_pos(enemy))
         enemy_center = enemy_center / len(enemy_units)
 
         # 유닛의 현재 위치
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         # 적 중심을 기준으로 한 각도 계산
         to_enemy = enemy_center - unit_pos
@@ -371,9 +382,9 @@ class BoidsSwarmController:
             )
 
             # 현재 위치에서 속도 벡터를 더해 목표 위치 계산
-            current_pos = unit.position
-            new_x = current_pos.x + velocity_x
-            new_y = current_pos.y + velocity_y
+            cur_x, cur_y = _get_pos(unit)
+            new_x = cur_x + velocity_x
+            new_y = cur_y + velocity_y
             # Point2는 (x, y) 두 개의 인자를 받음
             if _Point2 is not None:
                 target_pos = _Point2(new_x, new_y)
@@ -438,9 +449,11 @@ class BoidsSwarmController:
             # 부채꼴 배치를 위한 각도 조정
             if base_position and defense_point:
                 # 기지 → 적 방향
+                defense_x, defense_y = _get_pos(defense_point)
+                base_x, base_y = _get_pos(base_position)
                 base_to_enemy = np.array([
-                    defense_point.x - base_position.x,
-                    defense_point.y - base_position.y
+                    defense_x - base_x,
+                    defense_y - base_y
                 ])
                 base_angle = math.atan2(base_to_enemy[1], base_to_enemy[0])
 
@@ -454,17 +467,18 @@ class BoidsSwarmController:
 
                 # 방어 거리 (기지와 적 사이)
                 defense_distance = 8.0
-                formation_x = base_position.x + math.cos(base_angle + angle_offset) * defense_distance
-                formation_y = base_position.y + math.sin(base_angle + angle_offset) * defense_distance
+                formation_x = base_x + math.cos(base_angle + angle_offset) * defense_distance
+                formation_y = base_y + math.sin(base_angle + angle_offset) * defense_distance
 
                 # 진형 위치로 부드럽게 이동
-                velocity_x = (velocity_x + (formation_x - unit.position.x) * 0.3)
-                velocity_y = (velocity_y + (formation_y - unit.position.y) * 0.3)
+                unit_x, unit_y = _get_pos(unit)
+                velocity_x = (velocity_x + (formation_x - unit_x) * 0.3)
+                velocity_y = (velocity_y + (formation_y - unit_y) * 0.3)
 
             # 목표 위치 계산
-            current_pos = unit.position
-            new_x = current_pos.x + velocity_x
-            new_y = current_pos.y + velocity_y
+            cur_x, cur_y = _get_pos(unit)
+            new_x = cur_x + velocity_x
+            new_y = cur_y + velocity_y
 
             if _Point2 is not None:
                 target_pos = _Point2(new_x, new_y)
@@ -496,14 +510,14 @@ class BoidsSwarmController:
         if not enemy_units:
             return None
 
-        unit_pos = np.array([unit.position.x, unit.position.y])
+        unit_pos = np.array(_get_pos(unit))
 
         # 1. 고위협 유닛 찾기
         high_threat_targets = []
         for enemy in enemy_units:
             enemy_type = getattr(enemy.type_id, "name", "").upper()
             if enemy_type in self.HIGH_THREAT_UNITS:
-                enemy_pos = np.array([enemy.position.x, enemy.position.y])
+                enemy_pos = np.array(_get_pos(enemy))
                 distance = np.linalg.norm(enemy_pos - unit_pos)
                 if distance < 15:  # 공격 범위 내
                     high_threat_targets.append((enemy, distance))
@@ -519,7 +533,7 @@ class BoidsSwarmController:
             if hasattr(enemy, "health") and hasattr(enemy, "health_max"):
                 hp_ratio = enemy.health / max(enemy.health_max, 1)
                 if hp_ratio < 0.3:  # 30% 이하 체력
-                    enemy_pos = np.array([enemy.position.x, enemy.position.y])
+                    enemy_pos = np.array(_get_pos(enemy))
                     distance = np.linalg.norm(enemy_pos - unit_pos)
                     if distance < 10:
                         low_hp_targets.append((enemy, hp_ratio))
@@ -532,7 +546,7 @@ class BoidsSwarmController:
         closest = None
         closest_dist = float('inf')
         for enemy in enemy_units:
-            enemy_pos = np.array([enemy.position.x, enemy.position.y])
+            enemy_pos = np.array(_get_pos(enemy))
             distance = np.linalg.norm(enemy_pos - unit_pos)
             if distance < closest_dist:
                 closest_dist = distance
