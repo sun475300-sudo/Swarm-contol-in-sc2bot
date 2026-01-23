@@ -79,6 +79,14 @@ class EconomyManager:
             self.last_macro_hatch_check = iteration
             await self._build_macro_hatchery_if_needed()
 
+        # ★ NEW: 자원 낭비 방지 (미네랄/가스 과잉 시 대응) ★
+        if iteration % 44 == 0:  # ~2초마다
+            await self._prevent_resource_banking()
+
+        # ★ NEW: 가스 타이밍 최적화 ★
+        if iteration % 33 == 0:  # ~1.5초마다
+            await self._optimize_gas_timing()
+
     async def _optimize_early_worker_split(self) -> None:
         """
         초반 일꾼 분할 최적화.
@@ -972,3 +980,192 @@ class EconomyManager:
             if hasattr(self.bot, "get_next_expansion"):
                 return await self.bot.get_next_expansion()
             return None
+
+    # ============================================================
+    # ★★★ 자원 관리 최적화 시스템 ★★★
+    # ============================================================
+
+    async def _prevent_resource_banking(self) -> None:
+        """
+        ★ 자원 낭비 방지 ★
+
+        미네랄/가스가 과잉 축적되면 추가 생산 구조물 건설:
+        - 미네랄 1000+ & 라바 부족 → 매크로 해처리
+        - 미네랄 2000+ → 확장 또는 테크 업그레이드
+        - 가스 500+ & 미네랄 부족 → 가스 일꾼 감소
+        """
+        if not hasattr(self.bot, "minerals") or not hasattr(self.bot, "vespene"):
+            return
+
+        minerals = self.bot.minerals
+        gas = self.bot.vespene
+        game_time = getattr(self.bot, "time", 0)
+
+        try:
+            # ★ 미네랄 과잉 (1000+) ★
+            if minerals > 1000:
+                # 라바 부족 체크
+                larva_count = 0
+                if hasattr(self.bot, "larva"):
+                    larva_count = self.bot.larva.amount if hasattr(self.bot.larva, "amount") else len(self.bot.larva)
+
+                hatch_count = self.bot.townhalls.amount if hasattr(self.bot, "townhalls") else 1
+                avg_larva = larva_count / max(1, hatch_count)
+
+                # 미네랄 과잉 로그 (30초마다)
+                if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
+                    print(f"[ECONOMY] [{int(game_time)}s] Resource banking: {minerals}M / {gas}G")
+                    print(f"[ECONOMY]   Larva: {larva_count}, Avg per base: {avg_larva:.1f}")
+
+                # 미네랄 2000+ → 확장 우선
+                if minerals > 2000:
+                    if hatch_count < 5 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
+                        try:
+                            exp_pos = await self.bot.get_next_expansion()
+                            if exp_pos and await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
+                                await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
+                                print(f"[ECONOMY] [{int(game_time)}s] ★ Building expansion to spend minerals ★")
+                        except Exception:
+                            pass
+
+                # 미네랄 1500+ & 라바 부족 → 매크로 해처리
+                elif minerals > 1500 and avg_larva < 3:
+                    await self._build_macro_hatchery_if_needed()
+
+            # ★ 가스 과잉 & 미네랄 부족 ★
+            if gas > 500 and minerals < 300:
+                # 가스 일꾼 감소 (3명 → 2명)
+                await self._reduce_gas_workers()
+
+            # ★ 미네랄 과잉 & 가스 부족 → 가스 확장 ★
+            if minerals > 800 and gas < 100:
+                await self._build_extractors()
+
+        except Exception as e:
+            if self.bot.iteration % 200 == 0:
+                print(f"[ECONOMY] Resource banking prevention error: {e}")
+
+    async def _reduce_gas_workers(self) -> None:
+        """가스 일꾼 감소 (과잉 가스 방지)"""
+        try:
+            if not hasattr(self.bot, "gas_buildings") or not self.bot.gas_buildings.ready:
+                return
+
+            for extractor in self.bot.gas_buildings.ready:
+                if extractor.assigned_harvesters >= 3:
+                    # 가스에서 일꾼 1명 이동
+                    workers_on_gas = self.bot.workers.filter(
+                        lambda w: w.is_gathering and w.order_target == extractor.tag
+                    )
+                    if workers_on_gas:
+                        worker = workers_on_gas.first
+                        # 가까운 미네랄로 이동
+                        closest_mineral = self.bot.mineral_field.closest_to(worker)
+                        if closest_mineral:
+                            self.bot.do(worker.gather(closest_mineral))
+                            return  # 한 번에 하나만
+
+        except Exception:
+            pass
+
+    async def _build_extractors(self) -> None:
+        """가스 익스트랙터 건설 (가스 부족 시)"""
+        try:
+            if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.ready:
+                return
+
+            if not self.bot.can_afford(UnitTypeId.EXTRACTOR):
+                return
+
+            for th in self.bot.townhalls.ready:
+                # 해당 기지 근처 가스 체크
+                vespene_geysers = self.bot.vespene_geyser.closer_than(10, th)
+
+                for geyser in vespene_geysers:
+                    # 이미 익스트랙터가 있는지 체크
+                    if self.bot.gas_buildings.closer_than(1, geyser).exists:
+                        continue
+
+                    # 건설 가능 여부 체크
+                    workers = self.bot.workers.closer_than(20, geyser)
+                    if workers:
+                        worker = workers.closest_to(geyser)
+                        self.bot.do(worker.build_gas(geyser))
+                        print(f"[ECONOMY] Building extractor (gas shortage)")
+                        return  # 한 번에 하나만
+
+        except Exception:
+            pass
+
+    async def _optimize_gas_timing(self) -> None:
+        """
+        ★ 가스 타이밍 최적화 ★
+
+        게임 시간에 따른 최적 가스 일꾼 수:
+        - 0-2분: 첫 가스 3명
+        - 2-4분: 두 번째 가스 건설
+        - 4분+: 모든 가스 가동
+        """
+        if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.ready:
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        try:
+            # ★ 첫 가스 타이밍 (게임 시작 시 자동 건설) ★
+            if game_time >= 60 and game_time < 90:  # 1분-1분30초
+                # 첫 가스 확인
+                if not hasattr(self.bot, "gas_buildings") or self.bot.gas_buildings.amount == 0:
+                    if self.bot.already_pending(UnitTypeId.EXTRACTOR) == 0:
+                        if self.bot.can_afford(UnitTypeId.EXTRACTOR):
+                            await self._build_extractors()
+                            print(f"[ECONOMY] [{int(game_time)}s] ★ First gas timing ★")
+
+            # ★ 두 번째 가스 타이밍 (2분) ★
+            elif game_time >= 120 and game_time < 150:  # 2분-2분30초
+                gas_count = self.bot.gas_buildings.amount if hasattr(self.bot, "gas_buildings") else 0
+                pending_gas = self.bot.already_pending(UnitTypeId.EXTRACTOR)
+
+                if gas_count + pending_gas < 2:
+                    if self.bot.can_afford(UnitTypeId.EXTRACTOR):
+                        await self._build_extractors()
+                        print(f"[ECONOMY] [{int(game_time)}s] ★ Second gas timing ★")
+
+            # ★ 확장 가스 (4분 이후) ★
+            elif game_time >= 240:
+                # 모든 기지에 가스 건설 확인
+                if hasattr(self.bot, "townhalls"):
+                    for th in self.bot.townhalls.ready:
+                        vespene_geysers = self.bot.vespene_geyser.closer_than(10, th)
+                        extractors_near = self.bot.gas_buildings.closer_than(10, th) if hasattr(self.bot, "gas_buildings") else []
+
+                        # 가이저가 있고 익스트랙터가 부족하면 건설
+                        if vespene_geysers.amount > len(extractors_near):
+                            if self.bot.can_afford(UnitTypeId.EXTRACTOR):
+                                for geyser in vespene_geysers:
+                                    if not self.bot.gas_buildings.closer_than(1, geyser).exists:
+                                        workers = self.bot.workers.closer_than(20, geyser)
+                                        if workers:
+                                            worker = workers.closest_to(geyser)
+                                            self.bot.do(worker.build_gas(geyser))
+                                            return
+
+        except Exception as e:
+            pass
+
+    def get_resource_status(self) -> dict:
+        """현재 자원 상태 반환"""
+        minerals = getattr(self.bot, "minerals", 0)
+        gas = getattr(self.bot, "vespene", 0)
+        workers = self.bot.workers.amount if hasattr(self.bot, "workers") else 0
+        bases = self.bot.townhalls.amount if hasattr(self.bot, "townhalls") else 0
+
+        return {
+            "minerals": minerals,
+            "gas": gas,
+            "workers": workers,
+            "bases": bases,
+            "mineral_income": workers * 40,  # 대략적 수입
+            "gas_income": min(bases * 6, workers // 3) * 35,
+            "is_banking": minerals > 1000 or gas > 500,
+        }

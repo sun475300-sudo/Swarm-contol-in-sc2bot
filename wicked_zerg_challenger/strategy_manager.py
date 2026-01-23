@@ -70,17 +70,25 @@ class StrategyManager:
         self.rush_detection_threshold = 150.0  # 2:30 이전 공격 = 러시
         self.cheese_detection_threshold = 120.0  # 2분 이전 공격 = 치즈
 
-        # 종족별 유닛 비율 (ZERGLING, ROACH, HYDRA, MUTALISK, BANELING)
+        # 종족별 유닛 비율 (ZERGLING, ROACH, HYDRA, MUTALISK, BANELING, RAVAGER, CORRUPTOR)
         self.race_unit_ratios = {
             EnemyRace.TERRAN: {
                 GamePhase.EARLY: {"zergling": 0.3, "roach": 0.4, "baneling": 0.3},
                 GamePhase.MID: {"zergling": 0.2, "roach": 0.3, "hydra": 0.2, "mutalisk": 0.3},
                 GamePhase.LATE: {"zergling": 0.1, "roach": 0.2, "hydra": 0.3, "mutalisk": 0.4},
             },
+            # ★★★ 프로토스 상대 전략 강화 ★★★
+            # 불멸자 → 레이바저 담즙, 저글링 포위
+            # 콜로서스 → 커럽터, 레이바저 담즙
+            # 차원분광기 → 퀸, 히드라
+            # 보호막 배터리 → 레이바저 담즙
             EnemyRace.PROTOSS: {
-                GamePhase.EARLY: {"zergling": 0.4, "roach": 0.4, "baneling": 0.2},
-                GamePhase.MID: {"zergling": 0.1, "roach": 0.3, "hydra": 0.5, "mutalisk": 0.1},
-                GamePhase.LATE: {"zergling": 0.1, "roach": 0.2, "hydra": 0.5, "mutalisk": 0.2},
+                # 초반: 저글링 압박 + 레이바저 담즙으로 포스필드/배터리 견제
+                GamePhase.EARLY: {"zergling": 0.3, "roach": 0.3, "ravager": 0.3, "queen": 0.1},
+                # 중반: 히드라 중심 + 레이바저 담즙 + 커럽터 (콜로서스/공허)
+                GamePhase.MID: {"roach": 0.15, "ravager": 0.2, "hydra": 0.4, "corruptor": 0.25},
+                # 후반: 히드라 + 커럽터/감염충 (강화장막/둥지벌레)
+                GamePhase.LATE: {"hydra": 0.35, "corruptor": 0.3, "ravager": 0.15, "infestor": 0.2},
             },
             EnemyRace.ZERG: {
                 GamePhase.EARLY: {"zergling": 0.5, "baneling": 0.5},
@@ -119,6 +127,7 @@ class StrategyManager:
         self._update_strategy_mode()
         self._update_counter_build()  # 적 빌드에 따른 대응
         self._detect_direct_air_threat()  # ★ 직접 공중 유닛 감지 ★
+        self._counter_protoss_units()  # ★ 프로토스 유닛 카운터 ★
 
     def _detect_enemy_race(self) -> None:
         """상대 종족 감지"""
@@ -551,6 +560,149 @@ class StrategyManager:
             enemy_pattern = intel.get_enemy_build_pattern()
 
         return enemy_pattern in ["protoss_stargate", "zerg_muta", "terran_mech"]
+
+    def _counter_protoss_units(self) -> None:
+        """
+        ★★★ 프로토스 유닛별 카운터 로직 ★★★
+
+        감지된 프로토스 유닛에 따라 유닛 비율 동적 조정:
+        - 불멸자(Immortal): 레이바저 담즙, 저글링 포위
+        - 콜로서스(Colossus): 커럽터 필수, 레이바저 담즙
+        - 공허 포격기(VoidRay): 히드라, 퀸
+        - 아둔의 창(Adept): 바퀴, 저글링 수비
+        - 고위 기사(HighTemplar): 분산, 링/바퀴 돌진
+        - 추적자(Stalker): 저글링 포위, 바퀴
+        """
+        if self.detected_enemy_race != EnemyRace.PROTOSS:
+            return
+
+        if not hasattr(self.bot, "enemy_units"):
+            return
+
+        game_time = getattr(self.bot, "time", 0)
+
+        # 프로토스 핵심 유닛 카운트
+        immortal_count = 0
+        colossus_count = 0
+        voidray_count = 0
+        disruptor_count = 0
+        high_templar_count = 0
+        archon_count = 0
+        carrier_count = 0
+        stalker_count = 0
+
+        for enemy in self.bot.enemy_units:
+            try:
+                enemy_type = getattr(enemy.type_id, "name", "").upper()
+
+                if enemy_type == "IMMORTAL":
+                    immortal_count += 1
+                elif enemy_type == "COLOSSUS":
+                    colossus_count += 1
+                elif enemy_type == "VOIDRAY":
+                    voidray_count += 1
+                elif enemy_type == "DISRUPTOR":
+                    disruptor_count += 1
+                elif enemy_type == "HIGHTEMPLAR":
+                    high_templar_count += 1
+                elif enemy_type == "ARCHON":
+                    archon_count += 1
+                elif enemy_type == "CARRIER":
+                    carrier_count += 1
+                elif enemy_type == "STALKER":
+                    stalker_count += 1
+            except Exception:
+                continue
+
+        # ★ 유닛별 대응 전략 ★
+
+        # 불멸자 2기 이상 → 레이바저 담즙 강화
+        if immortal_count >= 2:
+            if not hasattr(self, "_immortal_counter_active"):
+                self._immortal_counter_active = False
+
+            if not self._immortal_counter_active:
+                self._immortal_counter_active = True
+                print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ IMMORTAL DETECTED ({immortal_count}) - Ravager bile priority ★")
+
+            # 레이바저 비율 증가
+            self._adjust_unit_ratio("ravager", 0.35)
+            self._adjust_unit_ratio("zergling", 0.35)  # 포위용
+            self._adjust_unit_ratio("roach", 0.1)  # 바퀴 감소 (불멸자 약점)
+
+        # 콜로서스 1기 이상 → 커럽터 필수
+        if colossus_count >= 1:
+            if not hasattr(self, "_colossus_counter_active"):
+                self._colossus_counter_active = False
+
+            if not self._colossus_counter_active:
+                self._colossus_counter_active = True
+                print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★★★ COLOSSUS DETECTED ({colossus_count}) - Corruptor PRIORITY ★★★")
+
+            # 커럽터 + 레이바저 담즙
+            self._adjust_unit_ratio("corruptor", 0.4)
+            self._adjust_unit_ratio("ravager", 0.2)
+            self._adjust_unit_ratio("hydra", 0.3)
+
+            # 스파이어 긴급 건설
+            self._request_spire_build()
+
+        # 공허 포격기/캐리어 → 대공 강화
+        if voidray_count >= 2 or carrier_count >= 1:
+            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ AIR THREAT - VoidRay/Carrier detected ★")
+            self._handle_air_threat()
+            self._adjust_unit_ratio("hydra", 0.5)
+            self._adjust_unit_ratio("corruptor", 0.3)
+
+        # 디스럽터 → 분산 필요, 빠른 공격
+        if disruptor_count >= 1:
+            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ DISRUPTOR DETECTED - Split micro needed ★")
+            # 빠른 유닛으로 우회 공격
+            self._adjust_unit_ratio("zergling", 0.3)
+            self._adjust_unit_ratio("mutalisk", 0.3)
+
+        # 고위 기사/아콘 → 분산, 빠른 돌진
+        if high_templar_count >= 1 or archon_count >= 2:
+            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★")
+            self._adjust_unit_ratio("zergling", 0.4)
+            self._adjust_unit_ratio("ravager", 0.3)  # 담즙으로 폭풍 지역 회피
+
+    def _adjust_unit_ratio(self, unit_type: str, target_ratio: float) -> None:
+        """유닛 비율 동적 조정"""
+        current_ratios = self.race_unit_ratios[self.detected_enemy_race].get(
+            self.game_phase, {}
+        )
+
+        if unit_type in current_ratios:
+            # 기존 비율보다 높으면 업데이트
+            if target_ratio > current_ratios[unit_type]:
+                current_ratios[unit_type] = target_ratio
+        else:
+            current_ratios[unit_type] = target_ratio
+
+    def _request_spire_build(self) -> None:
+        """스파이어 긴급 건설 요청"""
+        if not hasattr(self.bot, "structures"):
+            return
+
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+
+            spires = self.bot.structures(UnitTypeId.SPIRE)
+            greater_spires = self.bot.structures(UnitTypeId.GREATERSPIRE)
+
+            if not spires.exists and not greater_spires.exists:
+                if self.bot.already_pending(UnitTypeId.SPIRE) == 0:
+                    # 레어 체크
+                    lairs = self.bot.structures(UnitTypeId.LAIR)
+                    hives = self.bot.structures(UnitTypeId.HIVE)
+
+                    if (lairs.exists or hives.exists) and self.bot.can_afford(UnitTypeId.SPIRE):
+                        game_time = getattr(self.bot, "time", 0)
+                        print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★★★ BUILDING SPIRE FOR CORRUPTORS ★★★")
+
+        except Exception as e:
+            pass
 
     def should_force_hydra(self) -> bool:
         """히드라 강제 생산 여부"""

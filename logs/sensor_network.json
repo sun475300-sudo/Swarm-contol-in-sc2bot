@@ -1,145 +1,46 @@
 [
   {
-    "time": "510.71",
-    "iteration": 2860,
+    "time": "157.14",
+    "iteration": 880,
     "game_id": "unknown",
-    "unit_tag": 4372037633,
+    "unit_tag": 4335075329,
     "unit_type": "OVERLORD",
-    "pos_x": 69.939208984375,
-    "pos_y": 145.38134765625,
-    "target_x": 88.0,
-    "target_y": 39.599999999999994
+    "pos_x": 79.900634765625,
+    "pos_y": 114.927978515625,
+    "target_x": 111.6,
+    "target_y": 80.0
   },
   {
-    "time": "510.71",
-    "iteration": 2860,
+    "time": "157.14",
+    "iteration": 880,
     "game_id": "unknown",
-    "unit_tag": 4377280513,
+    "unit_tag": 4341366785,
     "unit_type": "OVERLORD",
-    "pos_x": 88.0,
-    "pos_y": 130.063232421875,
-    "target_x": 41.526523073419135,
-    "target_y": 138.84910392436075
+    "pos_x": 100.482421875,
+    "pos_y": 92.073486328125,
+    "target_x": 72.0,
+    "target_y": 124.0
   },
   {
-    "time": "510.71",
-    "iteration": 2860,
+    "time": "157.14",
+    "iteration": 880,
     "game_id": "unknown",
-    "unit_tag": 4377804801,
+    "unit_tag": 4341628929,
     "unit_type": "OVERLORD",
-    "pos_x": 109.303466796875,
-    "pos_y": 102.602294921875,
-    "target_x": 43.539784610128706,
-    "target_y": 138.52365588654112
+    "pos_x": 42.727294921875,
+    "pos_y": 72.236572265625,
+    "target_x": 72.0,
+    "target_y": 36.0
   },
   {
-    "time": "510.71",
-    "iteration": 2860,
+    "time": "157.14",
+    "iteration": 880,
     "game_id": "unknown",
-    "unit_tag": 4378853377,
+    "unit_tag": 4340056066,
     "unit_type": "OVERLORD",
-    "pos_x": 53.5263671875,
-    "pos_y": 138.848876953125,
-    "target_x": 53.526523073419135,
-    "target_y": 138.84910392436075
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4395106305,
-    "unit_type": "OVERLORD",
-    "pos_x": 71.365966796875,
-    "pos_y": 114.938232421875,
-    "target_x": 63.45974953945704,
-    "target_y": 151.82193202210607
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4388552706,
-    "unit_type": "OVERLORD",
-    "pos_x": 48.63427734375,
-    "pos_y": 96.8291015625,
-    "target_x": 88.0,
-    "target_y": 136.4
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4386979844,
-    "unit_type": "OVERSEER",
-    "pos_x": 26.509033203125,
-    "pos_y": 153.883544921875,
-    "target_x": 26.509200105266963,
-    "target_y": 153.8835583949472
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4398776322,
-    "unit_type": "OVERLORD",
-    "pos_x": 30.47607421875,
-    "pos_y": 150.972900390625,
-    "target_x": 75.43369231645215,
-    "target_y": 141.12724018909813
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4399824909,
-    "unit_type": "OVERLORD",
-    "pos_x": 86.947021484375,
-    "pos_y": 114.71337890625,
-    "target_x": 39.599999999999994,
-    "target_y": 88.0
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4401397776,
-    "unit_type": "OVERLORD",
-    "pos_x": 60.405517578125,
-    "pos_y": 128.72021484375,
-    "target_x": 90.38396155379128,
-    "target_y": 142.34767033092174
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4392222724,
-    "unit_type": "OVERLORD",
-    "pos_x": 39.599853515625,
-    "pos_y": 88.0,
-    "target_x": 39.599999999999994,
-    "target_y": 88.0
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4404805636,
-    "unit_type": "OVERLORD",
-    "pos_x": 104.19189453125,
-    "pos_y": 115.8701171875,
-    "target_x": 136.4,
-    "target_y": 88.0
-  },
-  {
-    "time": "510.71",
-    "iteration": 2860,
-    "game_id": "unknown",
-    "unit_tag": 4407164937,
-    "unit_type": "ZERGLING",
-    "pos_x": 113.955078125,
-    "pos_y": 119.091064453125,
-    "target_x": 153.5,
-    "target_y": 147.5
+    "pos_x": 60.882568359375,
+    "pos_y": 48.073486328125,
+    "target_x": 32.4,
+    "target_y": 80.0
   }
 ]
