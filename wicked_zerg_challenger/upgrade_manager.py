@@ -31,8 +31,8 @@ class EvolutionUpgradeManager:
     def __init__(self, bot):
         self.bot = bot
         self.last_update = 0
-        self.update_interval = 22  # 더 자주 체크 (1초마다)
-        self.gas_reserve_threshold = 200
+        self.update_interval = 11  # ★ 더 자주 체크 (22→11, 0.5초마다) ★
+        self.gas_reserve_threshold = 150  # ★ 가스 임계값 낮춤 (200→150) ★
 
         # 0순위 업그레이드 상태 추적
         self._zergling_speed_started = False
@@ -57,11 +57,11 @@ class EvolutionUpgradeManager:
         # === ★★★ 테크 변이: 해처리 → 레어 → 군락 ★★★ ===
         await self._upgrade_tech_buildings(iteration)
 
-        # === 1순위: Evolution Chamber 업그레이드 (4분 이후) ===
-        if game_time >= 240:
-            # Build Evolution Chamber if missing
-            await self._build_evolution_chamber()
+        # === ★ IMPROVED: Evolution Chamber 2분 30초부터 건설 ★ ===
+        await self._build_evolution_chamber()
 
+        # === 1순위: Evolution Chamber 업그레이드 (3분 이후) ===
+        if game_time >= 180:  # ★ 4분 → 3분으로 앞당김 ★
             evo_chambers = self.bot.structures(UnitTypeId.EVOLUTIONCHAMBER).ready
             if not evo_chambers:
                 return
@@ -378,6 +378,11 @@ class EvolutionUpgradeManager:
         if not self._overlord_speed_started and game_time >= 180:
             await self._research_overlord_speed(iteration)
 
+        # === 3순위: 배주머니 (Ventral Sacs - 수송) ===
+        # 레어 완성 후, 5분 이후 연구 (Rogue Tactics 활성화)
+        if self._has_lair() and game_time >= 300:
+            await self._research_ventral_sacs(iteration)
+
         # === 4순위: 맹독충 발업 (Centrifugal Hooks) - Lair 필요 ===
         # 공격 +1 이후 연구 (Evolution Chamber에서 공1업 먼저)
         if self._has_lair():
@@ -484,6 +489,38 @@ class EvolutionUpgradeManager:
                     self._overlord_speed_started = True
                     game_time = getattr(self.bot, "time", 0)
                     self.logger.info(f"[{int(game_time)}s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★")
+                    return
+                except Exception:
+                    continue
+
+    async def _research_ventral_sacs(self, iteration: int) -> None:
+        """배주머니 (Ventral Sacs) 연구 - 대군주 수송"""
+        ventral_sacs = getattr(UpgradeId, "OVERLORDTRANSPORT", None)
+        if not ventral_sacs:
+            return
+
+        if self._is_upgrade_done(ventral_sacs):
+            return
+
+        if self.bot.already_pending_upgrade(ventral_sacs) > 0:
+            return
+
+        # 레어 필요
+        if not self._has_lair():
+            return
+
+        # 가스 100 필요
+        if not self.bot.can_afford(ventral_sacs):
+            return
+
+        # 연구 시작 (해처리/레어/하이브)
+        townhalls = self.bot.townhalls.ready
+        for th in townhalls:
+            if hasattr(th, "is_idle") and th.is_idle:
+                try:
+                    self.bot.do(th.research(ventral_sacs))
+                    game_time = getattr(self.bot, "time", 0)
+                    self.logger.info(f"[{int(game_time)}s] ★★★ 배주머니 (대군주 수송) 연구 시작! ★★★")
                     return
                 except Exception:
                     continue
@@ -706,9 +743,10 @@ class EvolutionUpgradeManager:
 
     async def _build_evolution_chamber(self) -> bool:
         """Build Evolution Chamber for upgrades."""
-        # ★ AGGRESSIVE: 진화장 더 빨리 (공격력 업그레이드 우선)
-        # Check time (after 3 minutes)
-        if getattr(self.bot, "time", 0) < 180:  # 240 → 180 (3분)
+        # ★ ULTRA-AGGRESSIVE: 진화장 2분 30초부터 건설 (프로 타이밍)
+        # Check time (after 2 minutes 30 seconds)
+        game_time = getattr(self.bot, "time", 0)
+        if game_time < 150:  # ★ 180초(3분) → 150초(2분 30초)로 앞당김 ★
             return False
 
         # Check if already exists or pending
@@ -716,12 +754,17 @@ class EvolutionUpgradeManager:
         if evo_chambers.exists or self.bot.already_pending(UnitTypeId.EVOLUTIONCHAMBER) > 0:
             return False
 
-        # Check resources
-        if not self.bot.can_afford(UnitTypeId.EVOLUTIONCHAMBER):
-            return False
-
         # Need Spawning Pool first
         if not self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready.exists:
+            return False
+
+        # ★ 2베이스 이상 있어야 진화장 건설 (경제 안정화 후) ★
+        base_count = self.bot.townhalls.amount if hasattr(self.bot, "townhalls") else 0
+        if base_count < 2:
+            return False
+
+        # Check resources
+        if not self.bot.can_afford(UnitTypeId.EVOLUTIONCHAMBER):
             return False
 
         # Build near townhall

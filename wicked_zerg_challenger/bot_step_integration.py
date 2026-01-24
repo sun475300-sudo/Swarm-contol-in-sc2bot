@@ -135,7 +135,7 @@ class BotStepIntegrator:
                 self.bot.performance_optimizer.start_frame()
 
             # 0.03 ★★★ Build Order System (빌드 오더 - 최최우선) ★★★
-            if self.bot.time < 180.0:  # 3분 이내
+            if self.bot.time < 300.0:  # 5분 이내 (Roach Rush 지원)
                 if not hasattr(self.bot, "build_order_system"):
                     try:
                         from build_order_system import BuildOrderSystem
@@ -327,13 +327,17 @@ class BotStepIntegrator:
                 finally:
                     self._logic_tracker.end_logic("Production", start_time, success)
 
-            # 4.2. Unit Factory (fallback when production manager missing)
-            if hasattr(self.bot, "unit_factory") and self.bot.production is None:
+            # 4.2. Unit Factory (Army Production)
+            # ★ CRITICAL FIX: Always run UnitFactory to produce army!
+            if hasattr(self.bot, "unit_factory"):
+                start_time = self._logic_tracker.start_logic("UnitFactory")
                 try:
                     await self.bot.unit_factory.on_step(iteration)
                 except Exception as e:
                     if iteration % 200 == 0:
                         print(f"[WARNING] Unit factory error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("UnitFactory", start_time)
 
             # 4.5. Evolution Upgrades (공방 업그레이드)
             await self._safe_manager_step(
@@ -355,9 +359,13 @@ class BotStepIntegrator:
                         if surplus_results and iteration % 100 == 0:
                             print(f"[RESOURCE SURPLUS] Handled: {surplus_results}")
 
-                    # 방어 건물 최적 위치에 건설
+                    # 방어 건물 최적 위치에 건설 - ★ 3베이스 이후에만! ★
                     if iteration % 44 == 0:  # 매 2초마다
-                        await self.bot.advanced_building_manager.build_defense_buildings_optimally()
+                        # ★ CRITICAL: 초반 확장 우선! 3분 이후 + 3베이스 이후에만 방어 건물 건설 ★
+                        game_time = getattr(self.bot, "time", 0)
+                        base_count = self.bot.townhalls.amount if hasattr(self.bot, "townhalls") else 1
+                        if game_time >= 180 and base_count >= 3:
+                            await self.bot.advanced_building_manager.build_defense_buildings_optimally()
                 except Exception as e:
                     success = False
                     if iteration % 200 == 0:

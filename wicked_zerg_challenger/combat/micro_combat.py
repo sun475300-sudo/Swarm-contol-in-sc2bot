@@ -311,6 +311,70 @@ class MicroCombat:
                  
         return False
 
+    def harass_workers(self, units: Iterable, nearby_enemies: Iterable) -> None:
+        """
+        Smart Harassment Logic:
+        1. Target workers specifically.
+        2. Ignore combat units unless cornered.
+        3. Retreat if health is low.
+        """
+        actions = []
+        if not nearby_enemies:
+            # No enemies nearby? Attack closest base or worker
+            # This part is usually handled by the caller (finding a target position),
+            # but if we are here, we just look for targets in vision.
+            return
+
+        enemy_workers = [
+            e for e in nearby_enemies 
+            if getattr(e.type_id, "name", "") in ["SCV", "PROBE", "DRONE", "MULE"]
+        ]
+        
+        enemy_combat = [
+            e for e in nearby_enemies
+            if getattr(e.type_id, "name", "") not in ["SCV", "PROBE", "DRONE", "MULE", "LARVA", "EGG"]
+        ]
+
+        for unit in units:
+            # 1. Survival Check: Low HP -> Run away from combat units
+            if unit.health_percentage < 0.3:
+                threats = enemy_combat if enemy_combat else enemy_workers
+                rep_x, rep_y = self.anti_splash.repulsion_vector(unit, threats)
+                
+                # If no specific repulsion, just run away from closest threat
+                if not rep_x and not rep_y and threats:
+                    closest_threat = self._closest_enemy(unit, threats)
+                    if closest_threat:
+                         move_target = unit.position.towards(closest_threat.position, -4)
+                         actions.append(unit.move(move_target))
+                         continue
+                
+                if rep_x or rep_y:
+                    move_target = self._offset_position(unit, rep_x, rep_y)
+                    if move_target:
+                        actions.append(unit.move(move_target))
+                        continue
+
+            # 2. Worker Hunting
+            if enemy_workers:
+                target = self._closest_enemy(unit, enemy_workers)
+                if target:
+                    actions.append(unit.attack(target))
+                    continue
+            
+            # 3. If no workers, fight back or run (Kiting logic)
+            if enemy_combat:
+                target = self._closest_enemy(unit, enemy_combat)
+                if target:
+                     # Simple optimization: Attack if close, otherwise maybe run?
+                     # For now, just attack to clear way
+                     actions.append(unit.attack(target))
+            else:
+                # No workers, no combat units... attack buildings?
+                pass
+
+        self._issue_actions(actions)
+
     def _find_center_of_mass(self, units) -> Optional[Point2]:
         if not units or not Point2:
             return None

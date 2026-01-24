@@ -216,8 +216,16 @@ class ProductionResilience:
                 threshold = self.enemy_near_base_distance * self.enemy_near_base_scale
                 enemy_near_base = any(e.distance_to(base.position) < threshold for e in b.enemy_units)
 
-        # AGGRESSIVE EXPANSION: If minerals > 400, bypass most safety checks
-        aggressive_expand = b.minerals > 400
+        # AGGRESSIVE EXPANSION: If minerals > 300, bypass most safety checks
+        # Especially if we don't have a natural expansion yet (bases < 2)
+        bases = b.townhalls.amount if hasattr(b, "townhalls") else 1
+        aggressive_expand = b.minerals >= 300 or (bases < 2 and b.minerals >= 200)
+
+        # Critical: Bypass enemy check if it's just 1-2 units (likely scouts)
+        if enemy_near_base and not under_attack:
+            enemy_count = sum(1 for e in b.enemy_units if e.distance_to(b.townhalls.first.position) < 30)
+            if enemy_count <= 2:
+                enemy_near_base = False  # Ignore scouts
 
         if under_attack and not aggressive_expand:
             return False, "under_attack"
@@ -226,18 +234,19 @@ class ProductionResilience:
 
         # Relax army requirement - Zerg needs expansions for macro
         supply_army = getattr(b, "supply_army", 0)
-        if not aggressive_expand and supply_army < self.min_army_supply and b.time > self.min_army_time:
+        # Only check army if we have at least 2 bases
+        if not aggressive_expand and bases >= 2 and supply_army < self.min_army_supply and b.time > self.min_army_time:
             return False, "low_army"
 
         # Relax drone requirement when banking minerals
         drones = b.workers.amount if hasattr(b, "workers") else 0
-        bases = b.townhalls.amount if hasattr(b, "townhalls") else 1
         if not aggressive_expand and drones < bases * self.min_drones_per_base:
             return False, "low_drones"
 
         # Reduce cooldown when banking minerals
         now = getattr(b, "time", 0.0)
-        effective_cooldown = self.expansion_retry_cooldown / 2 if aggressive_expand else self.expansion_retry_cooldown
+        # If no natural, almost zero cooldown
+        effective_cooldown = 10.0 if bases < 2 else (self.expansion_retry_cooldown / 2 if aggressive_expand else self.expansion_retry_cooldown)
         if now - self.last_expansion_attempt < effective_cooldown:
             return False, "cooldown"
 

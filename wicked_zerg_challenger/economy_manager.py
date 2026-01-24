@@ -100,6 +100,10 @@ class EconomyManager:
         if iteration % 22 == 0:
             await self.check_economic_recovery()
 
+        # ★ NEW: 공중 위협 대응 시스템 (Anti-Air Response) ★
+        if iteration % 44 == 0:
+            await self._check_air_threat_response()
+
         # ★ IMPROVED: Extreme Gas Imbalance Fix (덜 공격적) ★
         # Gas > 3000 and Minerals < 200 -> 일부 가스 일꾼만 미네랄로 이동
         if iteration % 88 == 0:  # 4초마다 (2초 → 4초, 덜 빈번하게)
@@ -599,7 +603,7 @@ class EconomyManager:
         Logic:
         1. If Minerals > 1000 and Larva < 3:
            - Build Extra Queens (Injects/Defense)
-           - Build Static Defense (Spines/Spores)
+           - Build Static Defense (Spines/Spores) - ONLY AFTER 3+ BASES
         """
         if not hasattr(self.bot, "minerals"):
             return
@@ -607,6 +611,12 @@ class EconomyManager:
         minerals = self.bot.minerals
         vespene = self.bot.vespene
         larva_count = len(self.bot.larva) if hasattr(self.bot, "larva") else 0
+        game_time = getattr(self.bot, "time", 0)
+        base_count = self.bot.townhalls.amount if hasattr(self.bot, "townhalls") else 1
+
+        # ★ CRITICAL: 초반 (3분 이전) 또는 3베이스 이전에는 방어 건물 금지! ★
+        # 확장이 최우선이므로 미네랄 낭비 방지
+        can_build_defense = (game_time >= 180 and base_count >= 3) or minerals > 2000
 
         # 임계값: 미네랄 1000, 라바 부족 시
         if minerals > 1000 and larva_count < 3:
@@ -617,8 +627,8 @@ class EconomyManager:
                          self.bot.do(th.train(UnitTypeId.QUEEN))
                          if minerals < 800: break
 
-            # 2. 방어 건물 건설 (본진/멀티)
-            if minerals > 1500 and hasattr(self.bot, "workers") and self.bot.workers:
+            # 2. 방어 건물 건설 (본진/멀티) - ★ 3베이스 이후에만! ★
+            if can_build_defense and minerals > 1500 and hasattr(self.bot, "workers") and self.bot.workers:
                 for th in self.bot.townhalls.ready:
                     # 기지 당 포자촉수 1개, 가시촉수 1개 유지
                     spores = self.bot.structures(UnitTypeId.SPORECRAWLER).closer_than(10, th)
@@ -630,7 +640,7 @@ class EconomyManager:
                                 await self.bot.build(UnitTypeId.SPORECRAWLER, near=pos)
                                 minerals -= 75
                             except: pass
-                    
+
                     if minerals > 2000:
                         spines = self.bot.structures(UnitTypeId.SPINECRAWLER).closer_than(10, th)
                         if not spines.exists and self.bot.can_afford(UnitTypeId.SPINECRAWLER):
@@ -742,24 +752,34 @@ class EconomyManager:
         game_time = self.bot.time
         minerals = getattr(self.bot, "minerals", 0)
 
-        # ★ 강제 확장 조건 (시간 대비 기지 수) ★
+        # ★ 강제 확장 조건 (시간 대비 기지 수) - ULTRA AGGRESSIVE ★
         force_expand = False
         reason = ""
 
-        # ★ 1분 (60초): 최소 2베이스 필요 (강제) ★
-        if game_time >= 60 and base_count < 2:
+        # ★ 15초: 앞마당이 없고 미네랄 충분하면 즉시 확장 ★
+        if game_time >= 15 and base_count < 2 and minerals >= 300:
             force_expand = True
-            reason = "1min with only 1 base - FORCING natural!"
+            reason = "15sec with minerals - FORCING natural IMMEDIATELY!"
 
-        # ★ 30초: 앞마당이 없으면 강제 확장 (더 빠르게) ★
-        elif game_time >= 30 and base_count < 2 and minerals >= 200:
+        # ★ 25초: 앞마당이 없으면 강제 확장 (낮은 미네랄도 OK) ★
+        elif game_time >= 25 and base_count < 2 and minerals >= 250:
             force_expand = True
-            reason = "30sec with only 1 base - FORCING natural ASAP!"
+            reason = "25sec with only 1 base - FORCING natural ASAP!"
 
-        # ★ 2분: 여전히 1베이스면 긴급 확장 (미네랄 무시) ★
+        # ★ 40초: 앞마당이 없으면 긴급 확장 (미네랄 더 낮은 임계값) ★
+        elif game_time >= 40 and base_count < 2 and minerals >= 200:
+            force_expand = True
+            reason = "40sec with only 1 base - EMERGENCY natural!"
+
+        # ★ 1분: 여전히 1베이스면 절대 확장 (미네랄 무시) ★
+        elif game_time >= 60 and base_count < 2:
+            force_expand = True
+            reason = "1min with only 1 base - ABSOLUTE EMERGENCY!"
+
+        # ★ 2분: 여전히 1베이스면 최종 긴급 확장 ★
         elif game_time >= 120 and base_count < 2:
             force_expand = True
-            reason = "2min with only 1 base - EMERGENCY EXPANSION!"
+            reason = "2min with only 1 base - CRITICAL EXPANSION!"
 
         # ★ 3분 (180초): 최소 3베이스 필요 (절대적!) ★
         elif game_time >= 180 and base_count < 3:
@@ -794,20 +814,30 @@ class EconomyManager:
         if not force_expand:
             return
 
-        # ★ 비용 체크 (앞마당 없으면 150만 있어도 시도) ★
-        min_minerals = 150 if base_count < 2 else 300
+        # ★ 비용 체크 (앞마당 없으면 최소 비용으로 시도) ★
+        # 1분 안 확장을 위해 매우 낮은 임계값 사용
+        min_minerals = 200 if base_count < 2 else 300
         if minerals < min_minerals:
             if int(game_time) % 30 == 0:  # 30초마다만 로그
                 print(f"[FORCE EXPAND] ★ {reason} BUT cannot afford (minerals: {minerals}/{min_minerals}) ★")
             return
 
-        # ★ CRITICAL: 앞마당 없으면 pending 무시하고 강제 확장 ★
+        # ★ CRITICAL: Pending check with ULTRA-AGGRESSIVE Override ★
         pending = getattr(self.bot, "already_pending", lambda x: 0)(UnitTypeId.HATCHERY)
 
-        # 앞마당(2베이스) 확보는 절대적 우선순위 - pending 무시
-        if base_count >= 2 and pending >= 1:
-            if int(game_time) % 30 == 0:  # 30초마다만 로그
-                print(f"[FORCE EXPAND] ★ {reason} BUT {pending} already pending ★")
+        # Emergency Retry: 40초 지났는데 앞마당 없으면 pending 무시하고 재시도 (일꾼 사망 대비)
+        max_pending = 1
+        if game_time > 40 and base_count < 2:
+             max_pending = 2  # 2개까지 동시 시도 허용
+             reason += " (Emergency Retry)"
+        if game_time > 60 and base_count < 2:
+             max_pending = 3  # 1분 넘으면 3개까지 시도
+             reason += " (CRITICAL Retry)"
+
+        # 이미 건설 중인 해처리가 max_pending 이상이면 중단
+        if pending >= max_pending:
+            if int(game_time) % 30 == 0:
+                print(f"[FORCE EXPAND] {reason} but already expanding (pending: {pending}/{max_pending})")
             return
 
         # ★ 강제 확장 실행 ★
@@ -849,13 +879,15 @@ class EconomyManager:
         expand_reason = ""
         minerals = self.bot.minerals if hasattr(self.bot, "minerals") else 0
 
-        # 1베이스 → 2베이스 (내츄럴): 30초 (빠른 내츄럴)
+        # 1베이스 → 2베이스 (내츄럴): 초고속 확장 (1분 안에 자원 확보)
         if base_count == 1:
             worker_count = self.bot.workers.amount if hasattr(self.bot, "workers") else 0
-            # ★ 1분 안에 앞마당: 17초부터 시도, 일꾼 12마리면 OK ★
-            if (game_time >= 17 and worker_count >= 12) or game_time >= 30:
+            # ★ ULTRA-FAST NATURAL: 10초부터 시도, 일꾼 10마리면 즉시 확장 ★
+            # 해처리 건설 시간 ~100초 고려, 10초 시작 = 110초 완료 (약 1분 50초)
+            # 더 빠르게: 게임 시작 5초만 지나면 미네랄만 있으면 시도
+            if (game_time >= 5 and minerals >= 300) or (game_time >= 10 and worker_count >= 10):
                 should_expand = True
-                expand_reason = f"Natural expansion ASAP (time: {int(game_time)}s, workers: {worker_count})"
+                expand_reason = f"ULTRA-FAST Natural (time: {int(game_time)}s, workers: {worker_count}, minerals: {minerals})"
 
         # ★ 2베이스 → 3베이스: 1분 30초 (초고속 3베이스) ★
         elif base_count == 2:
@@ -905,11 +937,15 @@ class EconomyManager:
         # ★ DEBUG: 확장 시도 로그 ★
         print(f"[EXPANSION] [{int(game_time)}s] Trying to expand: {expand_reason}")
 
-        # ★ FAST EXPANSION: 동시 확장 허용 (최대 3개) ★
+        # ★ ULTRA-FAST EXPANSION: 동시 확장 허용 - 앞마당은 무조건 우선 ★
         if hasattr(self.bot, "already_pending"):
             pending = self.bot.already_pending(UnitTypeId.HATCHERY)
-            # 미네랄이 풍부하면 최대 3개까지 동시 건설 허용
-            max_pending = 3 if minerals > 1000 else 2 if minerals > 600 else 1
+            # 앞마당(1->2베이스)은 최대 2개까지 허용 (일꾼 사망 대비)
+            # 그 외는 미네랄에 따라 동시 건설 허용
+            if base_count == 1:
+                max_pending = 2  # 앞마당은 2개까지 동시 시도
+            else:
+                max_pending = 3 if minerals > 1000 else 2 if minerals > 600 else 1
             if pending >= max_pending:
                 print(f"[EXPANSION] [{int(game_time)}s] Already {pending} pending, max is {max_pending}")
                 return
@@ -1609,3 +1645,49 @@ class EconomyManager:
     def get_target_drone_count(self) -> int:
         """목표 드론 수"""
         return getattr(self, "_target_drone_count", 66)
+
+    async def _check_air_threat_response(self) -> None:
+        """
+        ★ 공중 위협 대응 시스템 (Automatic Anti-Air Defense) ★
+
+        적 공중 유닛이 감지되면:
+        1. 모든 기지에 포자 촉수(Spore Crawler) 1개씩 강제 건설
+        2. 히드라리스크 덴 우선 건설
+        """
+        if not hasattr(self.bot, "enemy_units") or not self.bot.enemy_units:
+            return
+
+        # 적 공중 유닛 감지 (오버로드/감시군주 제외)
+        air_threats = [u for u in self.bot.enemy_units if u.is_flying and u.type_id not in {UnitTypeId.OVERLORD, UnitTypeId.OVERSEER}]
+        if not air_threats:
+            return
+
+        # 기지가 없으면 리턴
+        if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.ready:
+            return
+
+        # 1. 모든 기지에 포자 촉수 건설 Check
+        if self.bot.can_afford(UnitTypeId.SPORECRAWLER):
+            for th in self.bot.townhalls.ready:
+                # 기지 근처 10거리 내에 포자 촉수가 없으면 건설
+                spores = self.bot.structures(UnitTypeId.SPORECRAWLER).closer_than(10, th)
+                if not spores.exists and self.bot.already_pending(UnitTypeId.SPORECRAWLER) == 0:
+                    # 일꾼 찾기
+                    workers = self.bot.workers.closer_than(20, th)
+                    if workers:
+                        # 미네랄 쪽으로 약간 붙여서 건설 (일꾼 보호)
+                        pos = th.position.towards(self.bot.game_info.map_center, 4)
+                        worker = workers.closest_to(pos)
+                        if worker:
+                            self.bot.do(worker.build(UnitTypeId.SPORECRAWLER, pos))
+                            print(f"[DEFENSE] ★ Anti-Air Detected! Building Spore Crawler at {th.position} ★")
+                            return # 한 번에 하나씩
+
+        # 2. 히드라리스크 덴 테크 올리기 (지상 대공 핵심)
+        if hasattr(self.bot, "structures"):
+            hydra_den = self.bot.structures(UnitTypeId.HYDRALISKDEN)
+            if not hydra_den.exists and self.bot.already_pending(UnitTypeId.HYDRALISKDEN) == 0:
+                if self.bot.structures(UnitTypeId.LAIR).ready.exists or self.bot.structures(UnitTypeId.HIVE).ready.exists:
+                     if self.bot.can_afford(UnitTypeId.HYDRALISKDEN):
+                        await self.bot.build(UnitTypeId.HYDRALISKDEN, near=self.bot.townhalls.first)
+                        print(f"[DEFENSE] ★ Anti-Air Tech: Building Hydralisk Den! ★")

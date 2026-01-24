@@ -1,6 +1,12 @@
 {
-  "enemy_race_name": "Terran",
-  "enemy_unit_counts": {},
+  "enemy_race_name": "Protoss",
+  "enemy_unit_counts": {
+    "ADEPT": 2,
+    "IMMORTAL": 1,
+    "ARCHON": 2,
+    "OBSERVER": 1,
+    "STALKER": 2
+  },
   "enemy_tech_buildings": [],
   "scouted_locations": [
     [
@@ -54,6 +60,10 @@
     [
       50.5,
       65.5
+    ],
+    [
+      45.5,
+      20.5
     ],
     [
       82.5,

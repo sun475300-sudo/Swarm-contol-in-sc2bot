@@ -1,0 +1,35 @@
+{
+  "enemy_race_name": "Terran",
+  "enemy_unit_counts": {
+    "RAVEN": 3,
+    "MEDIVAC": 1
+  },
+  "enemy_tech_buildings": [],
+  "scouted_locations": [
+    [
+      126.5,
+      71.5
+    ],
+    [
+      36.5,
+      55.5
+    ],
+    [
+      124.5,
+      151.5
+    ],
+    [
+      127.5,
+      57.5
+    ],
+    [
+      122.5,
+      96.5
+    ],
+    [
+      80.5,
+      56.5
+    ]
+  ],
+  "enemy_build_pattern": "unknown"
+}

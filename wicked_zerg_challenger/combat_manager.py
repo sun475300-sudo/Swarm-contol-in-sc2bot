@@ -202,7 +202,9 @@ class CombatManager:
 
         except Exception as e:
             if iteration % 200 == 0:
-                self.logger.error(f"Combat manager error: {e}")
+                # 유니코드 에러 방지 - ASCII로 변환
+                error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+                self.logger.error(f"Combat manager error: {error_msg}")
 
     async def _execute_multitasking(self, army_units, air_units, enemy_units, iteration: int):
         """
@@ -251,18 +253,18 @@ class CombatManager:
             if harass_target:
                 tasks_to_execute.append(("air_harass", harass_target, self.task_priorities["air_harass"]))
 
-        # === TASK 2.3: ★ AGGRESSIVE Early Zergling Harass (2-7분) ★ ===
+        # === TASK 2.3: ★ ULTRA-AGGRESSIVE Early Zergling Harass (1분-7분) ★ ===
         game_time = getattr(self.bot, 'time', 0)
-        if 120 <= game_time <= 420:  # ★ 2-7분 (기존 3-5분 → 확장)
+        if 60 <= game_time <= 420:  # ★ 1분-7분 (2분 → 1분으로 조기 시작)
             try:
                 from sc2.ids.unit_typeid import UnitTypeId
                 zerglings = [u for u in army_units if hasattr(u, 'type_id') and u.type_id == UnitTypeId.ZERGLING]
-                # ★ 저글링 4마리부터 하라스 시작 (기존 6마리 → 4마리)
-                if 4 <= len(zerglings) <= 24:
+                # ★ 저글링 6마리부터 하라스 시작 (더 빠른 압박)
+                if 6 <= len(zerglings) <= 24:
                     harass_target = self._find_harass_target()
                     if harass_target:
-                        # Priority 65 (between air_harass and counter_attack)
-                        tasks_to_execute.append(("early_harass", harass_target, 65))
+                        # Priority 75 (더 높은 우선순위 - 일꾼 제거가 중요!)
+                        tasks_to_execute.append(("early_harass", harass_target, 75))
             except ImportError:
                 pass
 
@@ -282,8 +284,8 @@ class CombatManager:
                 from sc2.ids.unit_typeid import UnitTypeId
                 zerglings = [u for u in ground_army if hasattr(u, 'type_id') and u.type_id == UnitTypeId.ZERGLING]
 
-                # ★ 저글링 8마리 이상이면 압박 (안정적인 병력)
-                if len(zerglings) >= 8:
+                # ★ 저글링 4마리 이상이면 압박 (기존 8마리 -> 4마리로 완화)
+                if len(zerglings) >= 4:
                     enemy_base = self._get_enemy_base_location()
                     if enemy_base:
                         # Priority 75
@@ -372,20 +374,37 @@ class CombatManager:
                 # ★ 우선순위를 50으로 올림 (기존 40 → 50, 더 자주 실행)
                 tasks_to_execute.append(("main_attack", attack_target, 50))
             else:
-                 # ★ TASK: Clear Rocks (Destructibles) ★
-                 # 공격 대상이 없고 유닛이 놀고 있을 때, 주변의 바위(중립 건물) 파괴
+                 # ★ TASK: Clear Rocks (Destructibles) - IMPROVED ★
+                 # 확장 경로의 암석을 우선적으로 파괴 (확장 전에 미리 파괴)
                 if hasattr(self.bot, "destructables") and self.bot.destructables:
-                    # 아군 유닛 근처의 바위 찾기
-                    nearby_rocks = []
-                    for u in ground_army:
-                        rocks = self.bot.destructables.closer_than(5, u)
-                        if rocks:
-                             nearby_rocks.extend(rocks)
-                    
-                    if nearby_rocks:
-                        # 가장 가까운 바위 타겟
-                        rock_target = nearby_rocks[0]
-                        tasks_to_execute.append(("clear_rocks", rock_target, 25)) # Priority 25
+                    game_time = getattr(self.bot, 'time', 0)
+
+                    # ★ 확장 위치 근처의 암석 우선 파괴 ★
+                    expansion_rocks = []
+                    if hasattr(self.bot, "expansion_locations_list"):
+                        for exp_loc in self.bot.expansion_locations_list[:4]:  # 가까운 4개 확장 위치
+                            nearby_rocks = self.bot.destructables.closer_than(15, exp_loc)
+                            if nearby_rocks:
+                                expansion_rocks.extend(nearby_rocks)
+
+                    if expansion_rocks and game_time < 600:  # 10분 이내
+                        # 본진에서 가장 가까운 확장 경로 암석
+                        if hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
+                            main_base = self.bot.townhalls.first
+                            closest_rock = min(expansion_rocks, key=lambda r: r.distance_to(main_base))
+                            # ★ 높은 우선순위 (55) - 확장 전에 미리 암석 제거! ★
+                            tasks_to_execute.append(("clear_rocks", closest_rock, 55))
+                    else:
+                        # 유닛 근처의 일반 암석 파괴
+                        nearby_rocks = []
+                        for u in ground_army[:10]:  # 처음 10개 유닛만 체크 (성능 최적화)
+                            rocks = self.bot.destructables.closer_than(8, u)  # 거리 확장: 5→8
+                            if rocks:
+                                 nearby_rocks.extend(rocks)
+
+                        if nearby_rocks:
+                            rock_target = nearby_rocks[0]
+                            tasks_to_execute.append(("clear_rocks", rock_target, 40))  # 우선순위 상승: 25→40
 
                 # ★ FALLBACK: RALLY (IDLE UNITS) ★
                 # 적이 안 보이면 랠리 포인트로 집결
@@ -447,19 +466,21 @@ class CombatManager:
                         available_air.discard(u.tag)
 
             elif task_name == "early_harass":
-                # Use zerglings for early harassment
+                # Use zerglings for early harassment (Smart Worker Hunt)
                 try:
                     from sc2.ids.unit_typeid import UnitTypeId
                     harass_zerglings = [u for u in ground_army
                                        if u.tag in available_ground
                                        and hasattr(u, 'type_id')
                                        and u.type_id == UnitTypeId.ZERGLING]
-                    if harass_zerglings:
-                        await self._zergling_early_harass(harass_zerglings, enemy_units, iteration)
+                    if harass_zerglings and self.micro_combat:
+                        # ★ Use Smart Worker Hunting Logic ★
+                        self.micro_combat.harass_workers(harass_zerglings, enemy_units)
                         for u in harass_zerglings:
                             available_ground.discard(u.tag)
-                except ImportError:
-                    pass
+                except Exception as e:
+                    if iteration % 200 == 0:
+                        self.logger.warning(f"Early harass error: {e}")
 
             elif task_name == "early_pressure":
                 # ★ 초반 압박: 적 기지 공격 ★
@@ -895,10 +916,24 @@ class CombatManager:
             enemy_units: 적 유닛들
         """
         try:
-            for unit in list(units)[:20]:  # 최대 20개만 처리
-                closest_enemy = self._closest_enemy(enemy_units, unit)
-                if closest_enemy:
-                    self.bot.do(unit.attack(closest_enemy))
+            # ★ Anti-Air Prioritization for Queens/Hydras ★
+            can_shoot_up = {UnitTypeId.QUEEN, UnitTypeId.HYDRALISK, UnitTypeId.CORRUPTOR, UnitTypeId.MUTALISK, UnitTypeId.SPORECRAWLER}
+            
+            for unit in list(units)[:30]:  # 최대 30개만 처리
+                target = None
+                
+                # 대공 가능 유닛은 공중 유닛 우선 타겟팅
+                if unit.type_id in can_shoot_up:
+                    air_enemies = [e for e in enemy_units if e.is_flying]
+                    if air_enemies:
+                        target = min(air_enemies, key=lambda e: e.distance_to(unit))
+                
+                # 공중 유닛 없으면 가장 가까운 적
+                if not target:
+                     target = self._closest_enemy(enemy_units, unit)
+                     
+                if target:
+                    self.bot.do(unit.attack(target))
         except Exception as e:
             self.logger.warning(f"Basic attack error: {e}")
 

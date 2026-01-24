@@ -75,7 +75,14 @@ class StrategyManager:
         # ★★★ 로그 스팸 방지 ★★★
         self.last_air_threat_log = 0
         self.last_major_attack_log = 0
+        self.last_high_templar_log = 0  # 하이템플러/아콘 로그 쿨다운
+        self.last_disruptor_log = 0  # 디스럽터 로그 쿨다운
         self.log_cooldown = 5.0  # 5초마다만 로그
+
+        # ★★★ 4분 이전 견제 시스템 ★★★
+        self.early_harassment_active = False
+        self.last_harassment_time = 0
+        self.harassment_interval = 30.0  # 30초마다 견제
 
         # 종족별 유닛 비율 (ZERGLING, ROACH, HYDRA, MUTALISK, BANELING, RAVAGER, CORRUPTOR)
         self.race_unit_ratios = {
@@ -673,14 +680,20 @@ class StrategyManager:
 
         # 디스럽터 → 분산 필요, 빠른 공격
         if disruptor_count >= 1:
-            self.logger.warning(f"[{int(game_time)}s] ★ DISRUPTOR DETECTED - Split micro needed ★")
+            # 로그 스팸 방지
+            if game_time - self.last_disruptor_log > self.log_cooldown:
+                self.logger.warning(f"[{int(game_time)}s] DISRUPTOR DETECTED - Split micro needed")
+                self.last_disruptor_log = game_time
             # 빠른 유닛으로 우회 공격
             self._adjust_unit_ratio("zergling", 0.3)
             self._adjust_unit_ratio("mutalisk", 0.3)
 
         # 고위 기사/아콘 → 분산, 빠른 돌진
         if high_templar_count >= 1 or archon_count >= 2:
-            self.logger.warning(f"[{int(game_time)}s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★")
+            # 로그 스팸 방지
+            if game_time - self.last_high_templar_log > self.log_cooldown:
+                self.logger.warning(f"[{int(game_time)}s] HIGH TEMPLAR/ARCHON - Rush them!")
+                self.last_high_templar_log = game_time
             self._adjust_unit_ratio("zergling", 0.4)
             self._adjust_unit_ratio("ravager", 0.3)  # 담즙으로 폭풍 지역 회피
 
