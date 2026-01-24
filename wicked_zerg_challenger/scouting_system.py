@@ -8,6 +8,7 @@ from typing import Dict, List
 from pathlib import Path
 import json
 import csv
+from utils.logger import get_logger
 
 try:
     from sc2.ids.unit_typeid import UnitTypeId
@@ -29,6 +30,7 @@ except ImportError:
 class ScoutingSystem:
     def __init__(self, bot):
         self.bot = bot
+        self.logger = get_logger("ScoutingSystem")
         self.intel_manager = None
         self.last_scout_update = 0
         self.last_overseer_morph = 0
@@ -80,7 +82,7 @@ class ScoutingSystem:
             self._log_sensor_snapshot(iteration)
         except Exception as e:
             if iteration % 200 == 0:
-                print(f"[WARNING] Scouting system error: {e}")
+                self.logger.error(f"Scouting system error: {e}")
 
     async def _update_overlord_network(self):
         if not hasattr(self.bot, "units"):
@@ -152,8 +154,8 @@ class ScoutingSystem:
                 try:
                     self.bot.do(target(AbilityId.MORPH_OVERSEER))
                     self.last_overseer_morph = self.bot.time
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"Failed to morph overseer: {e}")
 
     async def _move_scouts(self):
         # Get nearby enemy detection to avoid interfering with combat
@@ -179,8 +181,8 @@ class ScoutingSystem:
             if unit.is_idle and not has_enemies_nearby:
                 try:
                     self.bot.do(unit.move(target_pos))
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"Failed to move scout {unit.tag}: {e}")
 
     def _compute_perimeter_points(self, center: Point2, ratio: float) -> List[Point2]:
         if not hasattr(self.bot, "game_info"):
@@ -241,8 +243,8 @@ class ScoutingSystem:
                     try:
                         # 확장 위치 정찰 정보 기록
                         self.intel_manager.record_scouted_location(target_expansion)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        self.logger.warning(f"Failed to record scouted location: {e}")
 
     async def _check_proxy_locations(self):
         """
@@ -298,8 +300,8 @@ class ScoutingSystem:
                 self.scout_assignments[scout.tag] = target
                 try:
                     self.bot.do(scout.move(target))
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"Failed to move proxy scout: {e}")
 
     def _log_sensor_snapshot(self, iteration: int) -> None:
         if iteration - self.last_sensor_log < self.log_interval:
@@ -350,12 +352,12 @@ class ScoutingSystem:
                     if write_header:
                         writer.writeheader()
                     writer.writerows(rows)
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f"Failed to write sensor CSV: {e}")
 
             try:
                 json_path = Path(self.sensor_json_path)
                 json_path.parent.mkdir(parents=True, exist_ok=True)
                 json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f"Failed to write sensor JSON: {e}")

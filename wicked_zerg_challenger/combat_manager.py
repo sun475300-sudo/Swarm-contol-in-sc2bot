@@ -21,6 +21,8 @@ else:
         Unit = object
         Point2 = tuple
 
+from utils.logger import get_logger
+
 # Import common helpers to reduce code duplication
 try:
     from utils.common_helpers import (
@@ -46,6 +48,7 @@ class CombatManager:
 
     def __init__(self, bot):
         self.bot = bot
+        self.logger = get_logger("CombatManager")
         self.targeting = None
         self.micro_combat = None
         self.boids = None
@@ -83,7 +86,8 @@ class CombatManager:
         self._rally_point = None
         self._last_rally_update = 0
         self._rally_update_interval = 30  # Update rally point every 30 seconds
-        self._min_army_for_attack = 15  # Minimum supply before attacking
+        self._min_army_for_attack = 15  # Minimum supply before attacking (후반)
+        self._early_game_min_attack = 4  # ★ NEW: 초반(0-4분) 최소 서플라이 (저글링 2마리)
 
         # === ★ MANDATORY BASE DEFENSE SYSTEM ★ ===
         self._base_defense_active = False
@@ -103,6 +107,13 @@ class CombatManager:
         self._known_enemy_expansions = set()  # 발견한 적 확장 위치
         self._last_expansion_check = 0  # 마지막 확장 체크 시간
 
+        # === ★★★ EXPANSION DEFENSE SYSTEM ★★★ ===
+        self._expansion_under_attack = {}  # 확장 기지 tag -> 공격 시작 시간
+        self._expansion_destroyed_positions = []  # 파괴된 확장 기지 위치
+        self._last_expansion_defense_check = 0
+        self._expansion_defense_check_interval = 10  # 10프레임마다 확장 방어 체크
+        self._expansion_defense_force_size = 8  # 확장 방어에 투입할 최소 유닛 수
+
         # 매니저 초기화
         self._initialize_managers()
     
@@ -113,21 +124,21 @@ class CombatManager:
             self.targeting = Targeting(self.bot)
         except ImportError:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
-                print("[WARNING] Targeting system not available")
+                self.logger.warning("Targeting system not available")
         
         try:
             from combat.micro_combat import MicroCombat
             self.micro_combat = MicroCombat(self.bot)
         except ImportError:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
-                print("[WARNING] Micro combat not available")
+                self.logger.warning("Micro combat not available")
         
         try:
             from combat.boids_swarm_control import BoidsSwarmController
             self.boids = BoidsSwarmController()
         except ImportError:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
-                print("[WARNING] Boids controller not available")
+                self.logger.warning("Boids controller not available")
     
     async def on_step(self, iteration: int):
         """
@@ -155,6 +166,11 @@ class CombatManager:
 
             # ★ 필수 기지 방어 체크 - 항상 최우선 ★
             base_threat = await self._check_mandatory_base_defense(iteration)
+
+            # ★★★ 확장 기지 방어 및 파괴 대응 ★★★
+            if iteration - self._last_expansion_defense_check > self._expansion_defense_check_interval:
+                await self._check_expansion_defense(iteration)
+                self._last_expansion_defense_check = iteration
 
             # Skip if MicroController is handling movement
             # This prevents dual command conflicts (both issuing move/attack)
@@ -186,7 +202,7 @@ class CombatManager:
 
         except Exception as e:
             if iteration % 200 == 0:
-                print(f"[WARNING] Combat manager error: {e}")
+                self.logger.error(f"Combat manager error: {e}")
 
     async def _execute_multitasking(self, army_units, air_units, enemy_units, iteration: int):
         """
@@ -236,7 +252,7 @@ class CombatManager:
             enemy_base = self._get_enemy_base_location()
             if enemy_base:
                 tasks_to_execute.append(("counter_attack", enemy_base, self.task_priorities["counter_attack"]))
-                print(f"[COUNTER_ATTACK] Detected victory - attacking enemy base!")
+                self.logger.info("Detected victory - attacking enemy base!")
 
         # === TASK 3: Main Army Attack ===
         if self._has_units(ground_army):
@@ -310,7 +326,7 @@ class CombatManager:
         # Log multitasking status periodically
         if iteration % 200 == 0 and tasks_to_execute:
             active_tasks = [t[0] for t in tasks_to_execute]
-            print(f"[MULTITASK] [{int(game_time)}s] Active tasks: {active_tasks}")
+            self.logger.info(f"[{int(game_time)}s] Active tasks: {active_tasks}")
 
     def _evaluate_base_threat(self, enemy_units):
         """
@@ -376,7 +392,7 @@ class CombatManager:
                 threat_level = "medium"
             else:
                 threat_level = "light"
-            print(f"[DEFENSE] [{int(game_time)}s] Base threat: {highest_threat_count} enemies ({threat_level}, score={highest_threat_score})")
+            self.logger.info(f"[{int(game_time)}s] Base threat: {highest_threat_count} enemies ({threat_level}, score={highest_threat_score})")
 
         return highest_threat
 
@@ -545,7 +561,7 @@ class CombatManager:
         
         except Exception as e:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 200 == 0:
-                print(f"[WARNING] Combat execution error: {e}")
+                self.logger.warning(f"Combat execution error: {e}")
             # 에러 발생 시 기본 공격
             await self._basic_attack(units, enemy_units)
     
@@ -607,7 +623,7 @@ class CombatManager:
         
         except Exception as e:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 200 == 0:
-                print(f"[WARNING] Formation error: {e}")
+                self.logger.warning(f"Formation error: {e}")
     
     async def _basic_attack(self, units: Units, enemy_units):
         """
@@ -622,8 +638,8 @@ class CombatManager:
                 closest_enemy = self._closest_enemy(enemy_units, unit)
                 if closest_enemy:
                     self.bot.do(unit.attack(closest_enemy))
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.warning(f"Basic attack error: {e}")
 
     async def _offensive_attack(self, army_units, iteration: int):
         """
@@ -651,9 +667,13 @@ class CombatManager:
             # 최소 군대 서플라이 확인
             army_supply = sum(getattr(u, "supply_cost", 1) for u in army_units)
 
-            # If army is small, gather at rally point
-            if army_supply < self._min_army_for_attack:
-                if self._rally_point:
+            # ★ 초반(0-4분)에는 더 낮은 최소 서플라이 사용 (저글링 즉시 활동)
+            min_attack_threshold = self._early_game_min_attack if game_time < 240 else self._min_army_for_attack
+
+            # If army is small, gather at rally point (초반 제외)
+            if army_supply < min_attack_threshold:
+                # ★ 초반에는 바로 공격, 중후반에만 랠리 포인트 집결
+                if game_time >= 240 and self._rally_point:
                     await self._gather_at_rally_point(army_units, iteration)
                 return
 
@@ -689,17 +709,18 @@ class CombatManager:
 
             if iteration % 200 == 0:
                 target_name = getattr(attack_target, "name", str(attack_target)[:30])
-                print(f"[OFFENSIVE] [{int(self.bot.time)}s] Attacking {target_name} with {army_supply} supply army")
+                self.logger.info(f"[{int(self.bot.time)}s] Attacking {target_name} with {army_supply} supply army")
 
         except Exception as e:
             if iteration % 200 == 0:
-                print(f"[WARNING] Offensive attack error: {e}")
+                self.logger.warning(f"Offensive attack error: {e}")
 
     def _find_priority_attack_target(self):
         """
-        ★ 우선 공격 타겟 찾기 - 보이는 적 기지 우선 ★
+        ★ 우선 공격 타겟 찾기 - 파괴 가능한 구조물 + 적 기지 우선 ★
 
         우선순위:
+        0. ★★★ 파괴 가능한 중립 구조물 (초반 확장 경로 개방) ★★★
         1. ★★★ 승리 푸시 모드: 가장 가까운 적 건물 (거리 우선) ★★★
         2. 적 기지 (타운홀) - 네서스, 사령부, 해처리 등
         3. 적 생산 건물 - 배럭, 게이트웨이, 스포닝풀 등
@@ -711,6 +732,21 @@ class CombatManager:
         Returns:
             공격 타겟 위치 또는 유닛
         """
+        game_time = getattr(self.bot, "time", 0)
+
+        # ★ 0. 파괴 가능한 중립 구조물 (초반 6분, 확장 경로 개방 목적)
+        if game_time < 360 and hasattr(self.bot, "intel") and hasattr(self.bot.intel, "get_destructible_rocks"):
+            destructible_rocks = self.bot.intel.get_destructible_rocks()
+            if destructible_rocks and hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
+                our_base = self.bot.townhalls.first.position
+                # 기지에서 가까운 구조물 (확장 경로 차단 가능성 높음)
+                close_rocks = [rock for rock in destructible_rocks if rock.distance_to(our_base) < 50]
+                if close_rocks:
+                    closest_rock = min(close_rocks, key=lambda r: r.distance_to(our_base))
+                    if self.bot.iteration % 200 == 0:
+                        self.logger.info(f"[{int(game_time)}s] Targeting destructible rock for expansion")
+                    return closest_rock.position
+
         enemy_structures = getattr(self.bot, "enemy_structures", None)
 
         # 기지 타입 (최우선)
@@ -1970,3 +2006,207 @@ class CombatManager:
                 continue
 
         return int(total_supply)
+
+    async def _check_expansion_defense(self, iteration: int):
+        """
+        ★★★ 확장 기지 방어 및 파괴 대응 시스템 ★★★
+
+        기능:
+        1. 확장 기지가 공격받는지 감지
+        2. 확장 기지 파괴 감지 및 대응
+        3. 확장 기지 방어 병력 자동 파견
+        4. 파괴된 확장 기지 재건 준비
+
+        우선순위:
+        - 메인 기지보다는 낮지만, 일반 공격보다는 높음
+        - 확장 기지 방어 병력: 8-12 유닛
+        """
+        if not hasattr(self.bot, "townhalls"):
+            return
+
+        townhalls = self.bot.townhalls
+        current_time = getattr(self.bot, "time", 0)
+        enemy_units = getattr(self.bot, "enemy_units", [])
+
+        if not enemy_units:
+            return
+
+        # === STEP 1: 확장 기지 파괴 감지 ===
+        # 이전에 있던 기지가 사라졌는지 확인
+        current_bases = set(th.tag for th in townhalls)
+        previous_bases = set(self._expansion_under_attack.keys())
+
+        destroyed_bases = previous_bases - current_bases
+        if destroyed_bases:
+            for base_tag in destroyed_bases:
+                # 파괴 시간 기록
+                attack_start_time = self._expansion_under_attack.get(base_tag, current_time)
+
+                # 로그 출력
+                print(f"[EXPANSION DESTROYED] [{int(current_time)}s] ⚠️ Expansion base destroyed after {int(current_time - attack_start_time)}s of attack!")
+
+                # 파괴된 기지 정보 제거
+                if base_tag in self._expansion_under_attack:
+                    del self._expansion_under_attack[base_tag]
+
+            # ★ 대응: 반격 병력 투입 (파괴된 기지 주변 적 섬멸)
+            await self._counterattack_after_base_loss(destroyed_bases, iteration)
+
+        # === STEP 2: 확장 기지 공격 감지 ===
+        # 메인 기지가 아닌 확장 기지들만 체크
+        if not townhalls.exists or len(townhalls) < 2:
+            return
+
+        # 첫 번째 기지 = 메인, 나머지 = 확장
+        main_base = townhalls.first
+        expansions = [th for th in townhalls if th.tag != main_base.tag]
+
+        for expansion in expansions:
+            expansion_tag = expansion.tag
+
+            # 확장 기지 주변 30 거리 내 적 확인
+            nearby_enemies = [e for e in enemy_units if e.distance_to(expansion.position) < 30]
+
+            if nearby_enemies:
+                # 공격받고 있음
+                if expansion_tag not in self._expansion_under_attack:
+                    # 처음 공격받음
+                    self._expansion_under_attack[expansion_tag] = current_time
+                    print(f"[EXPANSION DEFENSE] [{int(current_time)}s] ⚠️ Expansion under attack! {len(nearby_enemies)} enemies detected")
+
+                # ★ 대응: 방어 병력 파견
+                await self._defend_expansion(expansion, nearby_enemies, iteration)
+
+            else:
+                # 공격받지 않음 - 공격 기록 제거
+                if expansion_tag in self._expansion_under_attack:
+                    attack_duration = current_time - self._expansion_under_attack[expansion_tag]
+                    print(f"[EXPANSION DEFENSE] [{int(current_time)}s] ✓ Expansion secured after {int(attack_duration)}s")
+                    del self._expansion_under_attack[expansion_tag]
+
+    async def _defend_expansion(self, expansion, nearby_enemies, iteration: int):
+        """
+        확장 기지 방어 병력 파견
+
+        전략:
+        1. 근처 유닛 8-12기 파견
+        2. 퀸 우선 투입 (트랜스퓨전 가능)
+        3. 고위협 유닛 집중 공격
+        """
+        if not hasattr(self.bot, "units"):
+            return
+
+        try:
+            from sc2.ids.unit_typeid import UnitTypeId
+        except ImportError:
+            return
+
+        army_units = self._filter_army_units(self.bot.units)
+        if not army_units:
+            return
+
+        # 확장 기지에서 가까운 유닛들 찾기 (50 거리 이내)
+        nearby_army = [u for u in army_units if u.distance_to(expansion.position) < 50]
+
+        # 최소 8기, 최대 12기 파견
+        defense_force = nearby_army[:12] if len(nearby_army) >= 8 else nearby_army
+
+        if not defense_force:
+            # 근처에 병력이 없으면 멀리서라도 파견
+            defense_force = sorted(army_units, key=lambda u: u.distance_to(expansion.position))[:8]
+
+        if not defense_force:
+            return
+
+        # 고위협 유닛 우선 타겟
+        high_priority_targets = {
+            "SIEGETANK", "SIEGETANKSIEGED", "COLOSSUS", "IMMORTAL",
+            "THOR", "BATTLECRUISER", "ARCHON", "DISRUPTOR"
+        }
+
+        priority_target = None
+        for enemy in nearby_enemies:
+            enemy_type = getattr(enemy.type_id, "name", "").upper()
+            if enemy_type in high_priority_targets:
+                priority_target = enemy
+                break
+
+        # 적 중심 위치
+        threat_center = self._get_enemy_center(nearby_enemies)
+
+        # 퀸 우선 투입
+        queens = [u for u in defense_force if hasattr(u, 'type_id') and u.type_id == UnitTypeId.QUEEN]
+        other_units = [u for u in defense_force if u not in queens]
+
+        # 퀸 방어
+        for queen in queens:
+            try:
+                target = priority_target if priority_target else threat_center
+                if queen.distance_to(expansion.position) < 15:
+                    self.bot.do(queen.attack(target))
+                else:
+                    self.bot.do(queen.move(expansion.position))
+            except Exception:
+                continue
+
+        # 다른 유닛 방어
+        for unit in other_units:
+            try:
+                target = priority_target if priority_target else threat_center
+                self.bot.do(unit.attack(target))
+            except Exception:
+                continue
+
+        # 로그 (10초마다)
+        if iteration % 220 == 0:
+            current_time = getattr(self.bot, "time", 0)
+            print(f"[EXPANSION DEFENSE] [{int(current_time)}s] {len(defense_force)} units defending expansion (enemies: {len(nearby_enemies)})")
+
+    async def _counterattack_after_base_loss(self, destroyed_base_tags, iteration: int):
+        """
+        확장 기지 파괴 후 반격
+
+        전략:
+        1. 파괴된 기지 주변 적 섬멸
+        2. 반격 병력: 15-20 유닛
+        3. 적 확장 기지 파괴 (복수)
+        """
+        if not hasattr(self.bot, "units") or not hasattr(self.bot, "enemy_structures"):
+            return
+
+        current_time = getattr(self.bot, "time", 0)
+        print(f"[COUNTERATTACK] [{int(current_time)}s] 🔥 Launching counterattack after base loss!")
+
+        army_units = self._filter_army_units(self.bot.units)
+        if not army_units:
+            return
+
+        # 반격 병력: 가능한 많이 (최소 10기)
+        counterattack_force = army_units[:20] if len(army_units) >= 10 else army_units
+
+        if not counterattack_force:
+            return
+
+        # 타겟: 적 확장 기지 또는 가장 가까운 적 건물
+        enemy_structures = getattr(self.bot, "enemy_structures", [])
+        if enemy_structures and enemy_structures.exists:
+            # 가장 가까운 적 건물
+            target = min(enemy_structures, key=lambda s: s.distance_to(self.bot.start_location))
+
+            # 모든 반격 병력 투입
+            for unit in counterattack_force:
+                try:
+                    self.bot.do(unit.attack(target))
+                except Exception:
+                    continue
+
+            print(f"[COUNTERATTACK] [{int(current_time)}s] {len(counterattack_force)} units attacking enemy structure for revenge!")
+        else:
+            # 적 시작 위치로 공격
+            if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
+                target = self.bot.enemy_start_locations[0]
+                for unit in counterattack_force:
+                    try:
+                        self.bot.do(unit.attack(target))
+                    except Exception:
+                        continue

@@ -58,10 +58,10 @@ class QueenManager:
         self.max_inject_distance = 4.0
         self.max_queen_travel_distance = 10.0
 
-        # Creep settings - ★★★ 점막 확장 강화 ★★★
+        # Creep settings - ★ 개선: 과도한 확장 방지 ★
         self.creep_energy_threshold = 25
-        self.creep_spread_cooldown = 8.0  # ★ 개선: 12초 → 8초 (더 공격적인 확장) ★
-        self.inject_queen_creep_threshold = 40  # ★ 개선: 50 → 40 (더 빠른 점막 생성) ★
+        self.creep_spread_cooldown = 12.0  # ★ 수정: 8초 → 12초 (과도한 확장 방지)
+        self.inject_queen_creep_threshold = 50  # ★ 수정: 40 → 50 (인젝트 우선)
 
         # Queen production - ★ 기지당 2마리 배치 ★
         self.max_queens_per_base = 2  # 개선: 1 → 2 (기지당 2마리)
@@ -697,26 +697,32 @@ class QueenManager:
 
     async def _inject_queens_spread_creep(self, queens, iteration: int) -> None:
         """
-        인젝트 퀸이 에너지 여유가 있을 때 점막 확장.
+        ★ 수정: 인젝트 퀸이 에너지 여유가 있을 때 점막 확장 (조건 강화)
 
         조건:
-        1. 에너지 50 이상 (인젝트 25 + 여유)
-        2. 인젝트 직후가 아닐 때
+        1. 에너지 60 이상 (인젝트 25 + 종양 25 + 여유 10)
+        2. 인젝트 직후가 아닐 때 (쿨다운 20초)
         3. 기지 근처에 점막이 부족할 때
+        4. 점막 종양 수 25개 이하
         """
         current_time = getattr(self.bot, "time", 0.0)
+
+        # ★ 점막 종양 수 제한
+        tumor_count = self._count_creep_tumors()
+        if tumor_count >= 25:
+            return
 
         # 인젝트 퀸만 대상
         inject_queens = [q for q in queens if q.tag in self.assigned_queen_tags]
 
         for queen in inject_queens:
             # 에너지 확인 (인젝트 + 종양에 충분해야 함)
-            if getattr(queen, "energy", 0) < self.inject_queen_creep_threshold:
+            if getattr(queen, "energy", 0) < 60:  # ★ 50 → 60으로 증가
                 continue
 
-            # ★ 쿨다운 확인 (개선: 1.5배로 단축) ★
+            # ★ 쿨다운 확인 (20초로 증가)
             last_time = self.last_creep_time.get(queen.tag, 0.0)
-            if current_time - last_time < self.creep_spread_cooldown * 1.5:
+            if current_time - last_time < 20.0:
                 continue
 
             # 바쁜 퀸은 스킵
@@ -746,52 +752,55 @@ class QueenManager:
 
     async def _utilize_idle_queens_for_creep(self, queens, iteration: int) -> None:
         """
-        ★★★ 여유 있는 퀸을 점막 확장에 활용 ★★★
+        ★ 개선: 여유 있는 퀸을 점막 확장에 활용 (조건 강화) ★
 
         조건:
         1. idle 상태인 퀸 (명령 없음)
-        2. 에너지 75 이상인 퀸 (인젝트 후 여유 에너지)
-        3. 최근 점막 생성하지 않은 퀸
+        2. 에너지 100 이상인 퀸 (인젝트 4회분 = 충분한 여유)
+        3. 최근 점막 생성하지 않은 퀸 (쿨다운 15초)
+        4. 게임 시간 5분 이후 (초반 전투력 유지)
+        5. 점막 종양 수 30개 이하 (과도한 확장 방지)
 
-        이 함수는 모든 퀸을 검사하여 여유 있는 퀸을 점막 확장에 투입합니다.
+        ★ 수정 이유: 전투/방어 필요한 퀸까지 점막에 투입되는 문제 해결
         """
         current_time = getattr(self.bot, "time", 0.0)
         game_time = int(current_time)
 
-        # 여유 퀸 필터링
-        idle_queens = []
-        high_energy_queens = []
+        # ★ 조건 1: 게임 시간 5분 이후만 작동 (초반 전투력 유지)
+        if game_time < 300:
+            return
+
+        # ★ 조건 2: 점막 종양 수 제한 (30개 이상이면 중지)
+        tumor_count = self._count_creep_tumors()
+        if tumor_count >= 30:
+            return
+
+        # 여유 퀸 필터링 (조건 강화)
+        available_queens = []
 
         for queen in queens:
             energy = getattr(queen, "energy", 0)
 
-            # 최근 점막 생성 체크 (쿨다운 5초)
+            # 최근 점막 생성 체크 (쿨다운 15초로 증가)
             last_creep = self.last_creep_time.get(queen.tag, 0.0)
-            if current_time - last_creep < 5.0:
+            if current_time - last_creep < 15.0:
                 continue
 
-            # 조건 1: idle 상태 + 에너지 25 이상
-            if hasattr(queen, "is_idle") and queen.is_idle and energy >= 25:
-                idle_queens.append(queen)
-
-            # 조건 2: 에너지 75 이상 (인젝트 3회분)
-            elif energy >= 75:
-                high_energy_queens.append(queen)
-
-        # 여유 퀸 합치기 (중복 제거)
-        available_queens = list(set(idle_queens + high_energy_queens))
+            # ★ 강화된 조건: idle + 에너지 100 이상 (인젝트 4회분)
+            if hasattr(queen, "is_idle") and queen.is_idle and energy >= 100:
+                available_queens.append(queen)
 
         if not available_queens:
             return
 
         # 로그 (30초마다)
         if game_time % 30 == 0 and iteration % 22 == 0:
-            print(f"[QUEEN CREEP] [{game_time}s] ★ {len(available_queens)} idle/high-energy queens spreading creep ★")
+            print(f"[QUEEN CREEP] [{game_time}s] {len(available_queens)} idle/high-energy queens spreading creep (Tumors: {tumor_count}/30)")
 
-        # 각 여유 퀸으로 점막 확장
+        # 각 여유 퀸으로 점막 확장 (최대 2개로 감소)
         tumors_placed = 0
         for queen in available_queens:
-            if tumors_placed >= 3:  # 한 번에 최대 3개
+            if tumors_placed >= 2:  # ★ 한 번에 최대 2개로 감소
                 break
 
             try:
@@ -891,6 +900,21 @@ class QueenManager:
 
         return base_pos
 
+    def _count_creep_tumors(self) -> int:
+        """현재 점막 종양 수 반환 (종양 수 제한용)."""
+        if not hasattr(self.bot, "structures"):
+            return 0
+
+        try:
+            tumor_types = {
+                UnitTypeId.CREEPTUMOR,
+                UnitTypeId.CREEPTUMORBURROWED,
+                UnitTypeId.CREEPTUMORQUEEN,
+            }
+            return sum(1 for s in self.bot.structures if s.type_id in tumor_types)
+        except Exception:
+            return 0
+
     def _is_valid_creep_position(self, target) -> bool:
         """점막 종양 설치 가능 위치인지 확인."""
         if not target:
@@ -903,8 +927,8 @@ class QueenManager:
         except Exception:
             pass
 
-        # 확인 불가하면 True 반환 (시도해봄)
-        return True
+        # ★ 수정: 확인 불가하면 False 반환 (잘못된 위치 방지)
+        return False
 
     async def _position_creep_queen_forward(self, queen, enemy_start) -> None:
         """Move dedicated creep queen toward enemy for forward creep spread."""

@@ -9,6 +9,7 @@ Aggressive Early Game Strategies - 초반 공격 전략 모음
 4. Tunneling Claws (잠복 바퀴 이동)
 5. Proxy Hatchery (전진 해처리)
 6. Nydus All-In (땅굴망 올인)
+7. ★ Overlord Drop (대군주 드랍 견제) ★
 """
 
 from enum import Enum
@@ -26,6 +27,11 @@ except ImportError:
     UpgradeId = None
     Point2 = None
 
+try:
+    from .building_placement_helper import BuildingPlacementHelper
+except ImportError:
+    BuildingPlacementHelper = None
+
 
 class AggressiveStrategyType(Enum):
     """공격 전략 타입"""
@@ -36,6 +42,7 @@ class AggressiveStrategyType(Enum):
     TUNNELING_CLAWS = "tunneling"    # 잠복 바퀴
     PROXY_HATCH = "proxy_hatch"      # 전진 해처리
     NYDUS_ALLIN = "nydus_allin"      # 땅굴망 올인
+    OVERLORD_DROP = "overlord_drop"  # ★ 대군주 드랍 견제
 
 
 class AggressiveStrategyExecutor:
@@ -47,6 +54,12 @@ class AggressiveStrategyExecutor:
 
     def __init__(self, bot):
         self.bot = bot
+
+        # 건물 배치 헬퍼
+        if BuildingPlacementHelper:
+            self.placement_helper = BuildingPlacementHelper(bot)
+        else:
+            self.placement_helper = None
 
         # 현재 활성 전략
         self.active_strategy = AggressiveStrategyType.NONE
@@ -66,6 +79,9 @@ class AggressiveStrategyExecutor:
         # 유닛 태그 추적
         self._rush_units: Set[int] = set()
         self._proxy_drones: Set[int] = set()
+        self._drop_overlords: Set[int] = set()  # ★ 드랍 대군주
+        self._overlord_drop_active = False  # ★ 드랍 활성화 여부
+        self._last_drop_time = 0  # ★ 마지막 드랍 시간
 
         # 타이밍 설정
         self.strategy_configs = {
@@ -97,6 +113,12 @@ class AggressiveStrategyExecutor:
                 "lair_timing": 240,  # 4분에 레어
                 "nydus_timing": 300,  # 5분에 땅굴
                 "queen_count": 4,
+            },
+            AggressiveStrategyType.OVERLORD_DROP: {
+                "ventral_sacs_timing": 180,  # ★ 3분에 배주머니 업그레이드
+                "drop_overlord_count": 2,  # ★ 드랍용 대군주 2기
+                "drop_unit_count": 16,  # ★ 저글링 8마리 (2기 탑승)
+                "drop_timing": 240,  # ★ 4분에 드랍 시작
             },
         }
 
@@ -557,7 +579,7 @@ class AggressiveStrategyExecutor:
 
     # ========== 공통 유틸리티 ==========
     async def _build_structure(self, structure_type) -> None:
-        """구조물 건설 유틸리티"""
+        """구조물 건설 유틸리티 (점막 체크 포함)"""
         if not self.bot.townhalls.exists:
             return
 
@@ -568,6 +590,18 @@ class AggressiveStrategyExecutor:
         pos = self.bot.townhalls.first.position.towards(
             self.bot.game_info.map_center, 5
         )
+
+        # 점막 체크 헬퍼 사용
+        if self.placement_helper:
+            success = await self.placement_helper.build_structure_safely(
+                structure_type,
+                pos,
+                max_distance=15.0
+            )
+            if success:
+                return
+
+        # 폴백: 기존 방식 (점막 체크 없음)
         worker = workers.closest_to(pos)
         self.bot.do(worker.build(structure_type, pos))
 

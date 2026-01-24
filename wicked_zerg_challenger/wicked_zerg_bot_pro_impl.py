@@ -14,7 +14,7 @@ except ImportError:
         pass
 
 from bot_step_integration import BotStepIntegrator
-
+from utils.logger import setup_logger
 
 class WickedZergBotProImpl(BotAI):
     """
@@ -71,6 +71,8 @@ class WickedZergBotProImpl(BotAI):
         await super().on_start()
 
         print("[BOT] on_start: Initializing all managers...")
+        self.logger = setup_logger("WickedZergBot")
+        self.logger.info("Bot started. Initializing managers...")
 
         # === 0. ProductionResilience (안전한 유닛 생산) ===
         try:
@@ -80,6 +82,35 @@ class WickedZergBotProImpl(BotAI):
         except ImportError as e:
             print(f"[BOT_WARN] ProductionResilience not available: {e}")
             self.production = None
+
+        # === 0.1 Basic Managers (Economy, Combat, Intel, Scout) ===
+        try:
+            from economy_manager import EconomyManager
+            self.economy = EconomyManager(self)
+            print("[BOT] EconomyManager initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] EconomyManager not available: {e}")
+
+        try:
+            from combat_manager import CombatManager
+            self.combat = CombatManager(self)
+            print("[BOT] CombatManager initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] CombatManager not available: {e}")
+
+        try:
+            from intel_manager import IntelManager
+            self.intel = IntelManager(self)
+            print("[BOT] IntelManager initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] IntelManager not available: {e}")
+
+        try:
+            from scouting_system import ScoutingSystem
+            self.scout = ScoutingSystem(self)
+            print("[BOT] ScoutingSystem initialized")
+        except ImportError as e:
+            print(f"[BOT_WARN] ScoutingSystem not available: {e}")
 
         # === 1. Strategy Manager (종족별 전략 + Emergency Mode) ===
         try:
@@ -150,6 +181,100 @@ class WickedZergBotProImpl(BotAI):
             print(f"[BOT_WARN] AggressiveStrategies not available: {e}")
             self.aggressive_strategies = None
 
+        # === 8. Additional Managers (Creep, Upgrade, UnitFactory, Defeat, Micro, Spell, Queen) ===
+        try:
+            from creep_manager import CreepManager
+            self.creep_manager = CreepManager(self)
+        except ImportError:
+            pass
+
+        try:
+            from upgrade_manager import EvolutionUpgradeManager
+            self.upgrade_manager = EvolutionUpgradeManager(self)
+        except ImportError:
+            pass
+
+        try:
+            from unit_factory import UnitFactory
+            self.unit_factory = UnitFactory(self)
+        except ImportError:
+            pass
+
+        try:
+            from defeat_detection import DefeatDetection
+            self.defeat_detection = DefeatDetection(self)
+        except ImportError:
+            pass
+
+        try:
+            from micro_controller import BoidsController
+            self.micro = BoidsController(self)
+        except ImportError:
+            pass
+
+        try:
+            from spell_unit_manager import SpellUnitManager
+            self.spell_manager = SpellUnitManager(self)
+        except ImportError:
+            pass
+
+        try:
+            from queen_manager import QueenManager
+            self.queen_manager = QueenManager(self)
+        except ImportError:
+            pass
+
+        # === 9. Latest Improvements (AdvancedBuilding, AggressiveTech) ===
+        try:
+            from local_training.advanced_building_manager import AdvancedBuildingManager
+            self.advanced_building_manager = AdvancedBuildingManager(self)
+        except ImportError:
+            pass
+
+        try:
+            from local_training.aggressive_tech_builder import AggressiveTechBuilder
+            self.aggressive_tech_builder = AggressiveTechBuilder(self)
+        except ImportError:
+            pass
+
+        # === 10. Training Components (Reward System, RL Agent, Adaptive LR) ===
+        if self.train_mode:
+            try:
+                from local_training.reward_system import ZergRewardSystem
+                self._reward_system = ZergRewardSystem()
+            except ImportError:
+                pass
+
+            try:
+                from adaptive_learning_rate import AdaptiveLearningRate
+                self.adaptive_lr = AdaptiveLearningRate(
+                    initial_lr=0.001,
+                    min_lr=0.0001,
+                    max_lr=0.01,
+                    patience=10
+                )
+                print(f"[BOT] AdaptiveLearningRate initialized - LR: {self.adaptive_lr.get_current_lr():.6f}")
+            except ImportError:
+                print("[BOT_WARN] AdaptiveLearningRate not available")
+                self.adaptive_lr = None
+
+            try:
+                from game_analytics_system import GameAnalytics
+                self.game_analytics = GameAnalytics()
+                print(f"[BOT] GameAnalytics initialized - {self.game_analytics.total_games} games tracked")
+            except ImportError:
+                print("[BOT_WARN] GameAnalytics not available")
+                self.game_analytics = None
+
+            try:
+                from local_training.rl_agent import RLAgent
+                # 적응형 학습률 사용
+                initial_lr = self.adaptive_lr.get_current_lr() if self.adaptive_lr else 0.001
+                self.rl_agent = RLAgent(learning_rate=initial_lr)
+                print(f"[BOT] RL Agent initialized with LR: {initial_lr:.6f}")
+            except ImportError:
+                print("[WARNING] RL Agent not available, training will continue without RL updates")
+
         # === Step integrator initialization ===
         self._step_integrator = BotStepIntegrator(self)
 
@@ -202,13 +327,38 @@ class WickedZergBotProImpl(BotAI):
                 else:
                     game_outcome_reward = 0.0  # 무승부/기타
 
+                # CRITICAL FIX: Initialize parameters_updated counter
+                self.parameters_updated = 0
+
+                # Determine if we won
+                game_won = "VICTORY" in result_str or "WIN" in result_str
+
+                # ★★★ Adaptive Learning Rate Update (최우선) ★★★
+                if hasattr(self, 'adaptive_lr') and self.adaptive_lr:
+                    new_lr = self.adaptive_lr.update(game_won)
+
+                    # 학습률이 조정되었으면 RL Agent에 적용
+                    if new_lr and hasattr(self, 'rl_agent') and self.rl_agent:
+                        self.rl_agent.learning_rate = new_lr
+                        print(f"[ADAPTIVE_LR] ✓ RL Agent 학습률 업데이트: {new_lr:.6f}")
+
+                    # 10게임마다 통계 출력
+                    if self.adaptive_lr.total_games % 10 == 0:
+                        print(self.adaptive_lr.get_summary())
+
                 # RL agent: end episode and perform learning (CRITICAL!)
                 if hasattr(self, 'rl_agent') and self.rl_agent:
                     # End episode triggers backpropagation and weight update
                     training_stats = self.rl_agent.end_episode(final_reward=game_outcome_reward)
-                    print(f"[TRAINING] Episode ended - Loss: {training_stats.get('loss', 0):.4f}, "
-                          f"Avg Reward: {training_stats.get('avg_reward', 0):.3f}, "
-                          f"Steps: {training_stats.get('steps', 0)}")
+
+                    # Check if learning occurred (steps > 0 means rewards were collected)
+                    if training_stats.get('steps', 0) > 0:
+                        self.parameters_updated = 1  # Mark that learning occurred
+                        print(f"[TRAINING] ✓ Neural network updated! Loss: {training_stats.get('loss', 0):.4f}, "
+                              f"Avg Reward: {training_stats.get('avg_reward', 0):.3f}, "
+                              f"Steps: {training_stats.get('steps', 0)}")
+                    else:
+                        print(f"[TRAINING] No learning this episode (no rewards collected)")
 
                     # Save model
                     if hasattr(self.rl_agent, 'save_model'):
@@ -274,6 +424,45 @@ class WickedZergBotProImpl(BotAI):
 
         except Exception as e:
             print(f"[WARNING] Curriculum manager error: {e}")
+
+        # ★★★ Game Analytics - 게임 결과 상세 분석 ★★★
+        if hasattr(self, 'game_analytics') and self.game_analytics and self.train_mode:
+            try:
+                # 추가 통계 수집
+                additional_stats = {
+                    "worker_count": self.workers.amount if hasattr(self, 'workers') else 0,
+                    "army_count": self.units.amount if hasattr(self, 'units') else 0,
+                    "base_count": self.townhalls.amount if hasattr(self, 'townhalls') else 0,
+                    "pool_timing": getattr(self, 'pool_timing', 0),
+                    "first_expand_timing": getattr(self, 'first_expand_timing', 0),
+                    "minerals": self.minerals if hasattr(self, 'minerals') else 0,
+                    "vespene": self.vespene if hasattr(self, 'vespene') else 0,
+                }
+
+                # 게임 분석 기록
+                self.game_analytics.record_game(
+                    game_id=getattr(self, 'game_count', 0),
+                    map_name=str(getattr(self, 'game_info', {}).get('map_name', 'Unknown')) if hasattr(self, 'game_info') else 'Unknown',
+                    opponent_race=str(getattr(self, 'enemy_race', 'Unknown')).replace('Race.', ''),
+                    difficulty='Easy',  # TODO: 실제 난이도 가져오기
+                    result=str(game_result),
+                    game_time=getattr(self, 'time', 0.0) if hasattr(self, 'time') else 0.0,
+                    additional_stats=additional_stats
+                )
+
+                # 10게임마다 통계 요약 출력
+                if self.game_analytics.total_games % 10 == 0:
+                    print(self.game_analytics.get_summary())
+
+                # 종족별 조언 (20게임마다)
+                if self.game_analytics.total_games % 20 == 0:
+                    opponent_race = str(getattr(self, 'enemy_race', 'Unknown')).replace('Race.', '')
+                    advice = self.game_analytics.get_race_specific_advice(opponent_race)
+                    if advice:
+                        print(advice)
+
+            except Exception as e:
+                print(f"[WARNING] Game analytics error: {e}")
 
         # Store training result for run_with_training.py
         self._training_result = {

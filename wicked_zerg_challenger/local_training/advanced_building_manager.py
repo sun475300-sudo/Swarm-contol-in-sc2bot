@@ -600,6 +600,12 @@ class AdvancedBuildingManager:
                 if not (playable.y <= position.y <= playable.y + playable.height):
                     return False
 
+            # ★ NEW: 크립 확인 (해처리/부화장은 제외)
+            if building_type != UnitTypeId.HATCHERY:
+                if hasattr(self.bot, "has_creep"):
+                    if not self.bot.has_creep(position):
+                        return False
+
             if avoid_worker_paths and self.is_worker_path(position):
                 return False
 

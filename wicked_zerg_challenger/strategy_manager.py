@@ -16,6 +16,7 @@ Features:
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+from utils.logger import get_logger
 
 
 class GamePhase(Enum):
@@ -55,6 +56,7 @@ class StrategyManager:
 
     def __init__(self, bot):
         self.bot = bot
+        self.logger = get_logger("StrategyManager")
 
         # 전략 상태
         self.current_mode = StrategyMode.NORMAL
@@ -263,8 +265,8 @@ class StrategyManager:
         # 대규모 공격 판정
         # 조건: 위협 점수 20 이상 또는 고위협 유닛 2개 이상
         if total_threat_score >= 20 or high_threat_count >= 2:
-            print(f"[STRATEGY] [{int(game_time)}s] MAJOR ATTACK DETECTED! "
-                  f"Threat score: {total_threat_score}, High-threat units: {high_threat_count}")
+            self.logger.warning(f"[{int(game_time)}s] MAJOR ATTACK DETECTED! "
+                                f"Threat score: {total_threat_score}, High-threat units: {high_threat_count}")
             return True
 
         return False
@@ -284,7 +286,9 @@ class StrategyManager:
 
         self.current_mode = StrategyMode.DEFENSIVE
 
-        print(f"[STRATEGY] [{int(game_time)}s] DEFENSE MODE ACTIVATED - Major attack incoming!")
+        self.current_mode = StrategyMode.DEFENSIVE
+
+        self.logger.warning(f"[{int(game_time)}s] DEFENSE MODE ACTIVATED - Major attack incoming!")
 
         # 군대 집결 신호
         self._request_army_rally()
@@ -311,8 +315,9 @@ class StrategyManager:
             if hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
                 rally_pos = self.bot.townhalls.first.position
                 combat._rally_point = rally_pos
+                combat._rally_point = rally_pos
                 combat._min_army_for_attack = 999  # 공격 중지, 방어 우선
-                print(f"[STRATEGY] Army rallying to defend base!")
+                self.logger.info("Army rallying to defend base!")
 
     def _update_counter_build(self) -> None:
         """
@@ -389,7 +394,7 @@ class StrategyManager:
 
         # 로그 출력 (30초마다)
         if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
-            print(f"[STRATEGY] [{int(game_time)}s] Counter build for {enemy_pattern}")
+            self.logger.info(f"[{int(game_time)}s] Counter build for {enemy_pattern}")
 
     def _handle_air_threat(self) -> None:
         """
@@ -433,8 +438,8 @@ class StrategyManager:
                                 )
                                 try:
                                     self.bot.train_or_build_sync(UnitTypeId.HYDRALISKDEN, near=pos)
-                                except Exception:
-                                    pass
+                                except Exception as e:
+                                    self.logger.warning(f"Failed to build emergency Hydra Den: {e}")
 
                 # ★ 스파이어 체크 (커럽터 생산용) ★
                 spires = self.bot.structures(UnitTypeId.SPIRE)
@@ -448,7 +453,7 @@ class StrategyManager:
 
             except Exception as e:
                 if self.bot.iteration % 200 == 0:
-                    print(f"[STRATEGY] Air threat handling error: {e}")
+                    self.logger.warning(f"Air threat handling error: {e}")
 
         # ★ 대공 유닛 비율 강제 조정 ★
         self._force_anti_air_ratios()
@@ -457,7 +462,7 @@ class StrategyManager:
         if not hasattr(self, "_last_air_log_time"):
             self._last_air_log_time = 0
         if game_time - self._last_air_log_time >= 10:
-            print(f"[STRATEGY] [{int(game_time)}s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★")
+            self.logger.warning(f"[{int(game_time)}s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★")
             self._last_air_log_time = game_time
 
     def _force_anti_air_ratios(self) -> None:
@@ -519,8 +524,8 @@ class StrategyManager:
 
             # 30초마다 로그
             if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:
-                print(f"[STRATEGY] [{int(game_time)}s] ★★★ AIR THREAT ACTIVE: {air_unit_count} air units detected! ★★★")
-                print(f"[STRATEGY] Air types: {detected_air_types}")
+                self.logger.warning(f"[{int(game_time)}s] ★★★ AIR THREAT ACTIVE: {air_unit_count} air units detected! ★★★")
+                self.logger.info(f"Air types: {detected_air_types}")
 
             # 히드라 우선 생산 설정
             self._force_hydra_production = True
@@ -543,7 +548,7 @@ class StrategyManager:
                 elif game_time - self._air_threat_clear_time > 60:  # 60초 후 해제
                     self._air_threat_active = False
                     self._force_hydra_production = False
-                    print(f"[STRATEGY] [{int(game_time)}s] Air threat cleared")
+                    self.logger.info(f"[{int(game_time)}s] Air threat cleared")
 
     def is_air_threat_detected(self) -> bool:
         """공중 위협 감지 여부"""
@@ -623,7 +628,7 @@ class StrategyManager:
 
             if not self._immortal_counter_active:
                 self._immortal_counter_active = True
-                print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ IMMORTAL DETECTED ({immortal_count}) - Ravager bile priority ★")
+                self.logger.info(f"[{int(game_time)}s] ★ IMMORTAL DETECTED ({immortal_count}) - Ravager bile priority ★")
 
             # 레이바저 비율 증가
             self._adjust_unit_ratio("ravager", 0.35)
@@ -637,7 +642,7 @@ class StrategyManager:
 
             if not self._colossus_counter_active:
                 self._colossus_counter_active = True
-                print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★★★ COLOSSUS DETECTED ({colossus_count}) - Corruptor PRIORITY ★★★")
+                self.logger.info(f"[{int(game_time)}s] ★★★ COLOSSUS DETECTED ({colossus_count}) - Corruptor PRIORITY ★★★")
 
             # 커럽터 + 레이바저 담즙
             self._adjust_unit_ratio("corruptor", 0.4)
@@ -649,21 +654,21 @@ class StrategyManager:
 
         # 공허 포격기/캐리어 → 대공 강화
         if voidray_count >= 2 or carrier_count >= 1:
-            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ AIR THREAT - VoidRay/Carrier detected ★")
+            self.logger.warning(f"[{int(game_time)}s] ★ AIR THREAT - VoidRay/Carrier detected ★")
             self._handle_air_threat()
             self._adjust_unit_ratio("hydra", 0.5)
             self._adjust_unit_ratio("corruptor", 0.3)
 
         # 디스럽터 → 분산 필요, 빠른 공격
         if disruptor_count >= 1:
-            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ DISRUPTOR DETECTED - Split micro needed ★")
+            self.logger.warning(f"[{int(game_time)}s] ★ DISRUPTOR DETECTED - Split micro needed ★")
             # 빠른 유닛으로 우회 공격
             self._adjust_unit_ratio("zergling", 0.3)
             self._adjust_unit_ratio("mutalisk", 0.3)
 
         # 고위 기사/아콘 → 분산, 빠른 돌진
         if high_templar_count >= 1 or archon_count >= 2:
-            print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★")
+            self.logger.warning(f"[{int(game_time)}s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★")
             self._adjust_unit_ratio("zergling", 0.4)
             self._adjust_unit_ratio("ravager", 0.3)  # 담즙으로 폭풍 지역 회피
 
@@ -702,7 +707,7 @@ class StrategyManager:
                         print(f"[PROTOSS COUNTER] [{int(game_time)}s] ★★★ BUILDING SPIRE FOR CORRUPTORS ★★★")
 
         except Exception as e:
-            pass
+            self.logger.warning(f"Spire build request failed: {e}")
 
     def should_force_hydra(self) -> bool:
         """히드라 강제 생산 여부"""
@@ -714,11 +719,11 @@ class StrategyManager:
         self.emergency_start_time = game_time
         self.current_mode = StrategyMode.EMERGENCY
 
-        print(f"[STRATEGY] EMERGENCY MODE ACTIVATED at {int(game_time)}s - Rush detected!")
+        self.logger.warning(f"EMERGENCY MODE ACTIVATED at {int(game_time)}s - Rush detected!")
 
         # Economy Manager에 알림
-        if hasattr(self.bot, "economy"):
-            self.bot.economy._emergency_mode = True
+        if hasattr(self.bot, "economy") and self.bot.economy:
+            self.bot.economy.set_emergency_mode(True)
 
         # 긴급 방어 건물 건설 요청
         self.emergency_spine_requested = True
@@ -731,18 +736,18 @@ class StrategyManager:
                     self.emergency_spore_requested = True
                     break
 
-        print(f"[STRATEGY] Emergency defense requested: Spine={self.emergency_spine_requested}, Spore={self.emergency_spore_requested}")
+        self.logger.info(f"Emergency defense requested: Spine={self.emergency_spine_requested}, Spore={self.emergency_spore_requested}")
 
     def _end_emergency_mode(self) -> None:
         """Emergency Mode 종료"""
         self.emergency_active = False
         self.current_mode = StrategyMode.NORMAL
 
-        print("[STRATEGY] Emergency mode ended - Returning to normal operations")
+        self.logger.info("Emergency mode ended - Returning to normal operations")
 
         # Economy Manager 복구
-        if hasattr(self.bot, "economy"):
-            self.bot.economy._emergency_mode = False
+        if hasattr(self.bot, "economy") and self.bot.economy:
+            self.bot.economy.set_emergency_mode(False)
 
     def _check_rogue_tactics(self) -> None:
         """Rogue Tactics 상태 확인"""

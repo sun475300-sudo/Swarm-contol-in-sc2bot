@@ -42,6 +42,11 @@ class EconomyManager:
         # Gold base tracking
         self._gold_bases_cache = []
         self._gold_cache_time = 0
+        self._emergency_mode = False
+
+    def set_emergency_mode(self, active: bool) -> None:
+        """Set emergency mode validation."""
+        self._emergency_mode = active
 
     async def on_step(self, iteration: int) -> None:
         if not hasattr(self.bot, "larva"):

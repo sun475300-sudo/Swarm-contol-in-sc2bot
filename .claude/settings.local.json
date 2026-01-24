@@ -38,7 +38,15 @@
       "Bash(more:*)",
       "Bash(powershell \"Stop-Process -Name SC2_x64 -Force\")",
       "Bash(powershell \"Stop-Process -Id 8676,22660 -Force -ErrorAction SilentlyContinue\")",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(netstat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(del nul)",
+      "Bash(if exist nul del /F nul)",
+      "Bash(cmd /c \"if exist nul del /F nul\")",
+      "Bash(git push:*)",
+      "Bash(shutdown:*)"
     ]
   }
 }

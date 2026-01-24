@@ -14,6 +14,8 @@ except ImportError:  # Fallbacks for tooling environments
     UnitTypeId = None
     UpgradeId = None
 
+from utils.logger import get_logger
+
 
 class EvolutionUpgradeManager:
     """
@@ -35,6 +37,7 @@ class EvolutionUpgradeManager:
         # 0순위 업그레이드 상태 추적
         self._zergling_speed_started = False
         self._overlord_speed_started = False
+        self.logger = get_logger("UpgradeManager")
 
     async def on_step(self, iteration: int) -> None:
         if not UnitTypeId or not UpgradeId:
@@ -81,8 +84,9 @@ class EvolutionUpgradeManager:
                 try:
                     self.bot.do(evo.research(upgrade_id))
                     upgrade_name = getattr(upgrade_id, "name", str(upgrade_id))
-                    print(f"[UPGRADE] Researching {upgrade_name}")
-                except Exception:
+                    self.logger.info(f"Researching {upgrade_name}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to research upgrade {upgrade_id}: {e}")
                     continue
                 return
 
@@ -397,10 +401,10 @@ class EvolutionUpgradeManager:
                 self.bot.do(pool.research(zergling_speed))
                 self._zergling_speed_started = True
                 game_time = getattr(self.bot, "time", 0)
-                print(f"[UPGRADE] [{int(game_time)}s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★")
+                self.logger.info(f"[{int(game_time)}s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★")
             except Exception as e:
                 if iteration % 200 == 0:
-                    print(f"[WARNING] Zergling speed research error: {e}")
+                    self.logger.warning(f"Zergling speed research error: {e}")
 
     async def _research_overlord_speed(self, iteration: int) -> None:
         """기낭 갑피 (Pneumatized Carapace) 연구 - 대군주 속도"""
@@ -432,7 +436,7 @@ class EvolutionUpgradeManager:
                     self.bot.do(th.research(overlord_speed))
                     self._overlord_speed_started = True
                     game_time = getattr(self.bot, "time", 0)
-                    print(f"[UPGRADE] [{int(game_time)}s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★")
+                    self.logger.info(f"[{int(game_time)}s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★")
                     return
                 except Exception:
                     continue
@@ -464,9 +468,9 @@ class EvolutionUpgradeManager:
             try:
                 self.bot.do(nest.research(baneling_speed))
                 game_time = getattr(self.bot, "time", 0)
-                print(f"[UPGRADE] [{int(game_time)}s] ★★ 원심 고리 (맹독충 발업) 연구 시작! ★★")
-            except Exception:
-                pass
+                self.logger.info(f"[{int(game_time)}s] ★★ 원심 고리 (맹독충 발업) 연구 시작! ★★")
+            except Exception as e:
+                self.logger.warning(f"Failed to research baneling speed: {e}")
 
     async def _research_roach_speed(self, iteration: int) -> None:
         """신경 재구성 (Glial Reconstitution) 연구 - 바퀴 속도"""
@@ -500,9 +504,9 @@ class EvolutionUpgradeManager:
             try:
                 self.bot.do(warren.research(roach_speed))
                 game_time = getattr(self.bot, "time", 0)
-                print(f"[UPGRADE] [{int(game_time)}s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★")
-            except Exception:
-                pass
+                self.logger.info(f"[{int(game_time)}s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★")
+            except Exception as e:
+                self.logger.warning(f"Failed to research roach speed: {e}")
 
     async def _research_hydra_speed(self, iteration: int) -> None:
         """근육 보강 (Muscular Augments) 연구 - 히드라 속도"""
@@ -531,9 +535,9 @@ class EvolutionUpgradeManager:
             try:
                 self.bot.do(den.research(hydra_speed))
                 game_time = getattr(self.bot, "time", 0)
-                print(f"[UPGRADE] [{int(game_time)}s] ★★ 근육 보강 (히드라 발업) 연구 시작! ★★")
-            except Exception:
-                pass
+                self.logger.info(f"[{int(game_time)}s] ★★ 근육 보강 (히드라 발업) 연구 시작! ★★")
+            except Exception as e:
+                self.logger.warning(f"Failed to research hydra speed: {e}")
 
     async def _research_burrow(self, iteration: int) -> None:
         """잠복 (Burrow) 연구 - 맹독충 지뢰, 바퀴 회복 등"""
@@ -567,10 +571,10 @@ class EvolutionUpgradeManager:
                 try:
                     self.bot.do(th.research(burrow))
                     game_time = getattr(self.bot, "time", 0)
-                    print(f"[UPGRADE] [{int(game_time)}s] ★★ 잠복 (Burrow) 연구 시작! ★★")
+                    self.logger.info(f"[{int(game_time)}s] ★★ 잠복 (Burrow) 연구 시작! ★★")
                     return
-                except Exception:
-                    continue
+                except Exception as e:
+                    self.logger.warning(f"Failed to research burrow: {e}")
 
     async def _research_adrenal_glands(self, iteration: int) -> None:
         """아드레날린 분비선 (Adrenal Glands) 연구 - 저글링 공속업 (Crackling)"""
@@ -604,9 +608,9 @@ class EvolutionUpgradeManager:
             try:
                 self.bot.do(pool.research(adrenal))
                 game_time = getattr(self.bot, "time", 0)
-                print(f"[UPGRADE] [{int(game_time)}s] ★★★ 아드레날린 분비선 (Crackling) 연구 시작! ★★★")
-            except Exception:
-                pass
+                self.logger.info(f"[{int(game_time)}s] ★★★ 아드레날린 분비선 (Crackling) 연구 시작! ★★★")
+            except Exception as e:
+                self.logger.warning(f"Failed to research adrenal glands: {e}")
 
     async def _build_evolution_chamber(self) -> bool:
         """Build Evolution Chamber for upgrades."""
@@ -634,10 +638,10 @@ class EvolutionUpgradeManager:
                     UnitTypeId.EVOLUTIONCHAMBER,
                     near=self.bot.townhalls.first.position
                 )
-                print(f"[UPGRADE] [{int(self.bot.time)}s] Building Evolution Chamber")
+                self.logger.info(f"[{int(self.bot.time)}s] Building Evolution Chamber")
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f"Failed to build Evolution Chamber: {e}")
         return False
 
     # ============================================================
@@ -711,10 +715,10 @@ class EvolutionUpgradeManager:
 
             self.bot.do(main_hatch(UnitTypeId.LAIR))
             game_time = getattr(self.bot, "time", 0)
-            print(f"[TECH] [{int(game_time)}s] ★★★ 레어 (Lair) 변이 시작! ★★★")
+            self.logger.info(f"[{int(game_time)}s] ★★★ 레어 (Lair) 변이 시작! ★★★")
         except Exception as e:
             if iteration % 200 == 0:
-                print(f"[WARNING] Lair upgrade error: {e}")
+                self.logger.warning(f"Lair upgrade error: {e}")
 
     async def _upgrade_to_hive(self, iteration: int) -> None:
         """
@@ -760,10 +764,10 @@ class EvolutionUpgradeManager:
             lair = lairs.first
             self.bot.do(lair(UnitTypeId.HIVE))
             game_time = getattr(self.bot, "time", 0)
-            print(f"[TECH] [{int(game_time)}s] ★★★ 군락 (Hive) 변이 시작! ★★★")
+            self.logger.info(f"[{int(game_time)}s] ★★★ 군락 (Hive) 변이 시작! ★★★")
         except Exception as e:
             if iteration % 200 == 0:
-                print(f"[WARNING] Hive upgrade error: {e}")
+                self.logger.warning(f"Hive upgrade error: {e}")
 
     async def _build_infestation_pit(self, iteration: int) -> None:
         """
@@ -799,6 +803,6 @@ class EvolutionUpgradeManager:
                     UnitTypeId.INFESTATIONPIT,
                     near=self.bot.townhalls.first.position
                 )
-                print(f"[TECH] [{int(game_time)}s] ★★ 인페스테이션 핏 건설 시작 (군락 준비) ★★")
-            except Exception:
-                pass
+                self.logger.info(f"[{int(game_time)}s] Building Infestation Pit")
+            except Exception as e:
+                self.logger.warning(f"Failed to build Infestation Pit: {e}")

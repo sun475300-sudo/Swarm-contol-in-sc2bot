@@ -24,6 +24,7 @@ class IntelManager:
         self.enemy_worker_count = 0
         self.enemy_base_count = 0
         self.enemy_tech_buildings = set()
+        self.scouted_locations = set()
 
         # Threat tracking
         self._under_attack = False
@@ -42,6 +43,11 @@ class IntelManager:
             "ULTRALISK", "BROODLORD", "RAVAGER", "LURKER", "LURKERMP",
             "LIBERATOR", "LIBERATORAG", "WIDOWMINE", "HIGHTEMPLAR"
         }
+
+        # ★ NEW: Destructible structures tracking
+        self.destructible_rocks = []  # 파괴 가능한 중립 구조물
+        self.all_enemy_structures = []  # 모든 적 구조물 (승리 조건용)
+        self._last_structure_update = 0.0
 
     async def on_step(self, iteration: int) -> None:
         if iteration - self.last_update < self.update_interval:
@@ -70,6 +76,12 @@ class IntelManager:
 
         # Update threat status
         self._update_threat_status()
+
+        # ★ NEW: Update destructible structures
+        self._update_destructible_structures()
+
+        # ★ NEW: Update all enemy structures
+        self._update_all_enemy_structures()
 
     def _update_enemy_composition(self) -> None:
         """Track enemy army composition."""
@@ -323,3 +335,99 @@ class IntelManager:
     def get_recommended_response(self) -> list:
         """Get recommended unit composition to counter enemy build."""
         return getattr(self, "_recommended_response", [])
+
+    def record_scouted_location(self, location) -> None:
+        """Record a location that has been scouted."""
+        self.scouted_locations.add(location)
+
+    def _update_destructible_structures(self) -> None:
+        """
+        ★ NEW: 파괴 가능한 중립 구조물 감지
+
+        Destructible Rocks, Debris 등 확장 경로를 막는 구조물 추적
+        """
+        try:
+            current_time = getattr(self.bot, "time", 0.0)
+
+            # 5초마다 업데이트
+            if current_time - self._last_structure_update < 5.0:
+                return
+
+            self._last_structure_update = current_time
+
+            # 파괴 가능한 구조물 타입
+            destructible_types = {
+                "DESTRUCTIBLEROCK6X6", "DESTRUCTIBLEROCKSVERTICAL",
+                "DESTRUCTIBLEROCKSHORIZONTAL", "DESTRUCTIBLEDEBRIS6X6",
+                "DESTRUCTIBLEDEBRISRAMPLEFT", "DESTRUCTIBLEDEBRISRAMPRIGHT"
+            }
+
+            # 모든 중립 유닛에서 파괴 가능한 구조물 찾기
+            destructible_list = []
+            all_units = getattr(self.bot, "all_units", [])
+
+            for unit in all_units:
+                try:
+                    # 적군도 아니고 아군도 아닌 유닛 = 중립
+                    if not hasattr(unit, "is_mine") or unit.is_mine:
+                        continue
+                    if not hasattr(unit, "is_enemy") or unit.is_enemy:
+                        continue
+
+                    type_name = getattr(unit.type_id, "name", "").upper()
+
+                    # 파괴 가능한 구조물인지 확인
+                    if any(dest_type in type_name for dest_type in destructible_types):
+                        destructible_list.append(unit)
+                except Exception:
+                    continue
+
+            self.destructible_rocks = destructible_list
+
+            # 로그 (처음 발견 시만)
+            if destructible_list and current_time < 60 and self.bot.iteration % 100 == 0:
+                print(f"[INTEL] [{int(current_time)}s] ★ {len(destructible_list)} destructible rocks detected!")
+
+        except Exception:
+            pass
+
+    def _update_all_enemy_structures(self) -> None:
+        """
+        ★ NEW: 모든 적 구조물 추적 (승리 조건용)
+
+        모든 적 건물을 파괴해야 승리할 수 있음
+        """
+        try:
+            enemy_structures = getattr(self.bot, "enemy_structures", [])
+            self.all_enemy_structures = list(enemy_structures)
+
+            current_time = getattr(self.bot, "time", 0.0)
+
+            # 10초마다 적 구조물 수 로그
+            if int(current_time) % 30 == 0 and self.bot.iteration % 22 == 0:
+                if len(self.all_enemy_structures) > 0:
+                    print(f"[INTEL] [{int(current_time)}s] Enemy structures remaining: {len(self.all_enemy_structures)}")
+        except Exception:
+            pass
+
+    def get_destructible_rocks(self) -> list:
+        """파괴 가능한 중립 구조물 목록 반환."""
+        return self.destructible_rocks.copy()
+
+    def get_closest_destructible_rock(self, position):
+        """주어진 위치에서 가장 가까운 파괴 가능한 구조물 반환."""
+        if not self.destructible_rocks:
+            return None
+
+        try:
+            return min(self.destructible_rocks, key=lambda rock: rock.distance_to(position))
+        except Exception:
+            return None
+
+    def get_all_enemy_structures(self) -> list:
+        """모든 적 구조물 목록 반환 (승리 조건용)."""
+        return self.all_enemy_structures.copy()
+
+    def get_enemy_structure_count(self) -> int:
+        """남은 적 구조물 수 반환."""
+        return len(self.all_enemy_structures)

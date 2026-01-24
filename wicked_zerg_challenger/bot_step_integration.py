@@ -101,221 +101,13 @@ class BotStepIntegrator:
         self._logic_tracker = LogicActivityTracker()
 
     async def initialize_managers(self):
-        """매니저들 초기화 (lazy loading)"""
-        if self._managers_initialized:
-            return
-
-        try:
-            # Economy Manager
-            if self.bot.economy is None:
-                try:
-                    from economy_manager import EconomyManager
-
-                    self.bot.economy = EconomyManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Production Manager
-            if self.bot.production is None:
-                try:
-                    from local_training.production_resilience import (
-                        ProductionResilience,
-                    )
-
-                    self.bot.production = ProductionResilience(self.bot)
-                except ImportError:
-                    pass
-
-            # Combat Manager
-            if self.bot.combat is None:
-                try:
-                    from combat_manager import CombatManager
-
-                    self.bot.combat = CombatManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Intel Manager
-            if self.bot.intel is None:
-                try:
-                    from intel_manager import IntelManager
-
-                    self.bot.intel = IntelManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Scouting System
-            if self.bot.scout is None:
-                try:
-                    from scouting_system import ScoutingSystem
-
-                    self.bot.scout = ScoutingSystem(self.bot)
-                except ImportError:
-                    pass
-
-            # Creep Manager
-            if not hasattr(self.bot, "creep_manager"):
-                try:
-                    from creep_manager import CreepManager
-
-                    self.bot.creep_manager = CreepManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Upgrade Manager
-            if not hasattr(self.bot, "upgrade_manager"):
-                try:
-                    from upgrade_manager import EvolutionUpgradeManager
-
-                    self.bot.upgrade_manager = EvolutionUpgradeManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Unit Factory (fallback production)
-            if not hasattr(self.bot, "unit_factory"):
-                try:
-                    from unit_factory import UnitFactory
-
-                    self.bot.unit_factory = UnitFactory(self.bot)
-
-            # ★ Defeat Detection (패배 직감 시스템) ★
-            if not hasattr(self.bot, "defeat_detection"):
-                try:
-                    from defeat_detection import DefeatDetection
-
-                    self.bot.defeat_detection = DefeatDetection(self.bot)
-                except ImportError:
-                    pass
-
-            # Micro Controller
-            if self.bot.micro is None:
-                try:
-                    from micro_controller import BoidsController
-
-                    self.bot.micro = BoidsController(self.bot)
-                except ImportError:
-                    pass
-
-            # Spell Unit Manager
-            if not hasattr(self.bot, "spell_manager"):
-                try:
-                    from spell_unit_manager import SpellUnitManager
-
-                    self.bot.spell_manager = SpellUnitManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Queen Manager
-            if self.bot.queen_manager is None:
-                try:
-                    from queen_manager import QueenManager
-
-                    self.bot.queen_manager = QueenManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Rogue Tactics Manager (이병렬 선수 전술)
-            if not hasattr(self.bot, "rogue_tactics"):
-                try:
-                    from rogue_tactics_manager import RogueTacticsManager
-
-                    self.bot.rogue_tactics = RogueTacticsManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Advanced Building Manager (최신 개선 사항)
-            if not hasattr(self.bot, "advanced_building_manager"):
-                try:
-                    from local_training.advanced_building_manager import (
-                        AdvancedBuildingManager,
-                    )
-
-                    self.bot.advanced_building_manager = AdvancedBuildingManager(
-                        self.bot
-                    )
-                except ImportError:
-                    pass
-
-            # Aggressive Tech Builder (최신 개선 사항)
-            if not hasattr(self.bot, "aggressive_tech_builder"):
-                try:
-                    from local_training.aggressive_tech_builder import (
-                        AggressiveTechBuilder,
-                    )
-
-                    self.bot.aggressive_tech_builder = AggressiveTechBuilder(self.bot)
-                except ImportError:
-                    pass
-
-            # Reward System (훈련 모드용)
-            if self.bot.train_mode and not hasattr(self.bot, "_reward_system"):
-                try:
-                    from local_training.reward_system import ZergRewardSystem
-
-                    self.bot._reward_system = ZergRewardSystem()
-                except ImportError:
-                    pass
-
-            # Hierarchical RL System (계층적 강화학습)
-            if not hasattr(self.bot, "hierarchical_rl"):
-                try:
-                    from local_training.hierarchical_rl.improved_hierarchical_rl import (
-                        HierarchicalRLSystem,
-                    )
-
-                    self.bot.hierarchical_rl = HierarchicalRLSystem()
-                except ImportError:
-                    pass
-
-            # Transformer Decision Model (트랜스포머 의사결정 모델)
-            if not hasattr(self.bot, "transformer_model"):
-                try:
-                    from local_training.transformer_model import TransformerDecisionModel
-
-                    self.bot.transformer_model = TransformerDecisionModel()
-                except ImportError:
-                    pass
-
-            # Strategy Manager (종족별 전략 + Emergency Mode)
-            if not hasattr(self.bot, "strategy_manager"):
-                try:
-                    from strategy_manager import StrategyManager
-
-                    self.bot.strategy_manager = StrategyManager(self.bot)
-                except ImportError:
-                    pass
-
-            # Performance Optimizer (거리 캐싱 + 공간 인덱싱)
-            if not hasattr(self.bot, "performance_optimizer"):
-                try:
-                    from local_training.performance_optimizer import PerformanceOptimizer
-
-                    self.bot.performance_optimizer = PerformanceOptimizer(self.bot)
-                except ImportError:
-                    pass
-
-            # RL Agent (훈련 모드용)
-            if self.bot.train_mode and not hasattr(self.bot, "rl_agent"):
-                try:
-                    # RL Agent 클래스를 찾아서 초기화
-                    # 실제 RL Agent 클래스 경로는 프로젝트 구조에 따라 다를 수 있음
-                    from local_training.rl_agent import RLAgent
-
-                    self.bot.rl_agent = RLAgent()
-                except ImportError:
-                    # RL Agent가 없으면 경고만 출력하고 계속 진행
-                    iteration = getattr(self.bot, "iteration", 0)
-                    if iteration % 500 == 0:
-                        print(
-                            "[WARNING] RL Agent not available, training will continue without RL updates"
-                        )
-
-            self._managers_initialized = True
-
-        except Exception as e:
-            iteration = getattr(self.bot, "iteration", 0)
-            if iteration % 100 == 0:
-                print(f"[WARNING] Failed to initialize some managers: {e}")
+        """
+        매니저들 초기화 (lazy loading)
+        NOTE: 메인 봇 클래스(WickedZergBotProImpl)에서 초기화가 수행되므로
+        여기서는 추가적인 초기화 로직을 수행하지 않습니다.
+        """
+        self._managers_initialized = True
+        return
 
     async def execute_game_logic(self, iteration: int):
         """게임 로직 실행"""
@@ -323,6 +115,81 @@ class BotStepIntegrator:
             # 0. Performance Optimizer 프레임 시작
             if hasattr(self.bot, "performance_optimizer") and self.bot.performance_optimizer:
                 self.bot.performance_optimizer.start_frame()
+
+            # 0.03 ★★★ Build Order System (빌드 오더 - 최최우선) ★★★
+            if self.bot.time < 180.0:  # 3분 이내
+                if not hasattr(self.bot, "build_order_system"):
+                    try:
+                        from build_order_system import BuildOrderSystem
+                        self.bot.build_order_system = BuildOrderSystem(self.bot)
+                        print("[BUILD_ORDER] 빌드 오더 시스템 활성화!")
+                    except ImportError as e:
+                        print(f"[WARNING] Build order system not available: {e}")
+                        self.bot.build_order_system = None
+
+                if hasattr(self.bot, "build_order_system") and self.bot.build_order_system:
+                    start_time = self._logic_tracker.start_logic("BuildOrder")
+                    try:
+                        await self.bot.build_order_system.execute(iteration)
+                        # 주기적으로 진행도 출력
+                        if iteration % 150 == 0:
+                            progress = self.bot.build_order_system.get_progress()
+                            print(f"[BUILD_ORDER] {progress}")
+                    except Exception as e:
+                        if iteration % 200 == 0:
+                            print(f"[WARNING] Build Order error: {e}")
+                    finally:
+                        self._logic_tracker.end_logic("BuildOrder", start_time)
+
+            # 0.05 ★★★ Early Defense System (초반 방어 - 최우선) ★★★
+            if self.bot.time < 180.0:  # 3분 이내
+                if not hasattr(self.bot, "early_defense"):
+                    try:
+                        from early_defense_system import EarlyDefenseSystem
+                        self.bot.early_defense = EarlyDefenseSystem(self.bot)
+                        print("[EARLY_DEFENSE] 초반 방어 시스템 활성화!")
+                    except ImportError as e:
+                        print(f"[WARNING] Early defense system not available: {e}")
+                        self.bot.early_defense = None
+
+                if hasattr(self.bot, "early_defense") and self.bot.early_defense:
+                    start_time = self._logic_tracker.start_logic("EarlyDefense")
+                    try:
+                        await self.bot.early_defense.execute(iteration)
+                        # 주기적으로 상태 출력
+                        if iteration % 100 == 0:
+                            status = self.bot.early_defense.get_status()
+                            print(f"[EARLY_DEFENSE] {status}")
+                    except Exception as e:
+                        if iteration % 200 == 0:
+                            print(f"[WARNING] Early Defense error: {e}")
+                    finally:
+                        self._logic_tracker.end_logic("EarlyDefense", start_time)
+
+            # 0.06 ★★★ Early Scout System (초반 정찰) ★★★
+            if self.bot.time < 300.0:  # 5분 이내
+                if not hasattr(self.bot, "early_scout"):
+                    try:
+                        from early_scout_system import EarlyScoutSystem
+                        self.bot.early_scout = EarlyScoutSystem(self.bot)
+                        print("[EARLY_SCOUT] 초반 정찰 시스템 활성화!")
+                    except ImportError as e:
+                        print(f"[WARNING] Early scout system not available: {e}")
+                        self.bot.early_scout = None
+
+                if hasattr(self.bot, "early_scout") and self.bot.early_scout:
+                    start_time = self._logic_tracker.start_logic("EarlyScout")
+                    try:
+                        await self.bot.early_scout.execute(iteration)
+                        # 주기적으로 상태 출력
+                        if iteration % 150 == 0:
+                            status = self.bot.early_scout.get_scout_status()
+                            print(f"[EARLY_SCOUT] {status}")
+                    except Exception as e:
+                        if iteration % 200 == 0:
+                            print(f"[WARNING] Early Scout error: {e}")
+                    finally:
+                        self._logic_tracker.end_logic("EarlyScout", start_time)
 
             # 0.1 Strategy Manager 업데이트 (종족별 전략 + Emergency Mode)
             if hasattr(self.bot, "strategy_manager") and self.bot.strategy_manager:
@@ -489,13 +356,8 @@ class BotStepIntegrator:
             # 7. Queen Manager (여왕 관리)
             await self._safe_manager_step(self.bot.queen_manager, iteration, "Queen Manager")
 
-            # 8. Combat (전투) - 방어 모드 시 우선순위 높임
-            is_defense_mode = self._is_defense_mode()
-            if is_defense_mode:
-                # 방어 모드: 전투 먼저 실행
-                await self._safe_manager_step(self.bot.combat, iteration, "Combat (Defense)")
-            else:
-                await self._safe_manager_step(self.bot.combat, iteration, "Combat")
+            # 8. Combat (전투) - 단일 호출 (방어 모드 자동 감지)
+            await self._safe_manager_step(self.bot.combat, iteration, "Combat")
 
             # 9. Spell Units (Infestor/Viper)
             await self._safe_manager_step(
@@ -808,14 +670,18 @@ class BotStepIntegrator:
             # === 1. 스포어 크롤러 긴급 건설 (최우선) ===
             spore_target = 2 if air_threat_level >= 2 else 1  # 위협 높으면 기지당 2개
 
+            # 성능 최적화: 루프 외부에서 한 번만 쿼리
+            all_spores = self.bot.structures(UnitTypeId.SPORECRAWLER)
+            pending_spores = self.bot.already_pending(UnitTypeId.SPORECRAWLER)
+            pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+
             for th in self.bot.townhalls:
-                nearby_spores = self.bot.structures(UnitTypeId.SPORECRAWLER).closer_than(15, th)
+                # 캐싱된 spore 구조물에서 가까운 것만 필터링
+                nearby_spores = all_spores.closer_than(15, th)
                 spore_count = nearby_spores.amount if hasattr(nearby_spores, 'amount') else 0
-                pending_spores = self.bot.already_pending(UnitTypeId.SPORECRAWLER)
 
                 if spore_count + pending_spores < spore_target and self.bot.can_afford(UnitTypeId.SPORECRAWLER):
-                    # 스포닝 풀 확인
-                    pools = self.bot.structures(UnitTypeId.SPAWNINGPOOL).ready
+                    # 스포닝 풀 확인 (캐싱된 결과 사용)
                     if pools.exists:
                         # 미네랄 라인 근처에 배치 (일꾼 보호)
                         minerals = self.bot.mineral_field.closer_than(10, th)

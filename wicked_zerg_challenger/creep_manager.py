@@ -150,8 +150,11 @@ class CreepManager:
 
     async def _handle_tumor_relay(self, iteration: int) -> None:
         """
-        Automatic tumor relay system.
-        Finds outermost tumors and spreads them toward enemy base.
+        ★ 개선: 자동 종양 릴레이 시스템 (과도한 확장 방지)
+
+        조건:
+        - 종양 수 35개 이하만 작동
+        - 가장 바깥 종양만 확장
         """
         if not UnitTypeId or not AbilityId:
             return
@@ -173,6 +176,10 @@ class CreepManager:
             ]
 
         if not tumors:
+            return
+
+        # ★ 종양 수 제한 (35개 이상이면 릴레이 중지)
+        if len(tumors) >= 35:
             return
 
         # Clean up old cooldowns
