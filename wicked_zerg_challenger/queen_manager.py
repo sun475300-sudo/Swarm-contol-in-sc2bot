@@ -731,9 +731,9 @@ class QueenManager:
         """
         current_time = getattr(self.bot, "time", 0.0)
 
-        # ★ 점막 종양 수 제한
+        # ★ 점막 종양 수 제한 (25 -> 100)
         tumor_count = self._count_creep_tumors()
-        if tumor_count >= 25:
+        if tumor_count >= 100:
             return
 
         # 인젝트 퀸만 대상
@@ -794,9 +794,9 @@ class QueenManager:
         if game_time < 300:
             return
 
-        # ★ 조건 2: 점막 종양 수 제한 (30개 이상이면 중지)
+        # ★ 조건 2: 점막 종양 수 제한 (30 -> 100)
         tumor_count = self._count_creep_tumors()
-        if tumor_count >= 30:
+        if tumor_count >= 100:
             return
 
         # 여유 퀸 필터링 (조건 강화)
@@ -819,7 +819,7 @@ class QueenManager:
 
         # 로그 (30초마다)
         if game_time % 30 == 0 and iteration % 22 == 0:
-            print(f"[QUEEN CREEP] [{game_time}s] {len(available_queens)} idle/high-energy queens spreading creep (Tumors: {tumor_count}/30)")
+            print(f"[QUEEN CREEP] [{game_time}s] {len(available_queens)} idle/high-energy queens spreading creep (Tumors: {tumor_count}/100)")
 
         # 각 여유 퀸으로 점막 확장 (최대 2개로 감소)
         tumors_placed = 0

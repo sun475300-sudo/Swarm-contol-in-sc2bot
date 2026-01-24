@@ -60,8 +60,8 @@ def main():
 
     # Settings
     map_name = "AbyssalReefLE"
-    opponent_race = Race.Terran  # vs Terran for air unit testing
-    difficulty = Difficulty.Medium
+    opponent_race = Race.Protoss  # vs Protoss (이전 게임 상대)
+    difficulty = Difficulty.Easy  # Easy 난이도로 변경
 
     print(f"  Map: {map_name}")
     print(f"  Opponent: {opponent_race.name}")

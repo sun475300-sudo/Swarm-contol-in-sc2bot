@@ -31,12 +31,12 @@ class CreepManager:
     def __init__(self, bot):
         self.bot = bot
         self.last_update = 0
-        self.update_interval = 12  # 개선: 16 → 12 (더 자주 업데이트)
-        self.tumor_relay_interval = 8  # 개선: 12 → 8 (더 빠른 종양 릴레이)
+        self.update_interval = 10  # 개선: 12 → 10 (더 자주 업데이트)
+        self.tumor_relay_interval = 6  # 개선: 8 → 6 (매우 빠른 종양 릴레이)
         self.last_tumor_relay = 0
         self.cached_targets: List[object] = []
         self.tumor_spread_cooldowns: Dict[int, int] = {}  # tumor_tag -> last_spread_frame
-        self.max_tumors_per_cycle = 4  # 개선: 3 → 4 (한 번에 더 많은 종양 확장)
+        self.max_tumors_per_cycle = 6  # 개선: 4 → 6 (한 번에 더 많은 종양 확장)
         self.spread_directions = []  # 확장 방향 캐시
         self._tumor_count_check_interval = 0
 
@@ -150,10 +150,10 @@ class CreepManager:
 
     async def _handle_tumor_relay(self, iteration: int) -> None:
         """
-        ★ 개선: 자동 종양 릴레이 시스템 (과도한 확장 방지)
+        ★ 개선: 자동 종양 릴레이 시스템 (과도한 확장 방지 -> 제한 해제)
 
         조건:
-        - 종양 수 35개 이하만 작동
+        - 종양 수 100개 이하만 작동 (성능 고려)
         - 가장 바깥 종양만 확장
         """
         if not UnitTypeId or not AbilityId:
@@ -178,8 +178,8 @@ class CreepManager:
         if not tumors:
             return
 
-        # ★ 종양 수 제한 (35개 이상이면 릴레이 중지)
-        if len(tumors) >= 35:
+        # ★ 종양 수 제한 해제 (35 -> 100)
+        if len(tumors) >= 100:
             return
 
         # Clean up old cooldowns

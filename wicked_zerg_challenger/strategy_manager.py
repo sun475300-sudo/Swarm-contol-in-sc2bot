@@ -225,6 +225,31 @@ class StrategyManager:
 
         return False
 
+    def _check_early_harassment(self) -> None:
+        """
+        1-4분 견제 시스템
+
+        1분부터 시작하여 30초마다 적 본진을 견제
+        저글링, 뮤탈리스크 등 빠른 유닛으로 적 일꾼 견제 및 정보 수집
+        """
+        game_time = getattr(self.bot, "time", 0.0)
+
+        # 1분부터 4분까지만 활성화
+        if game_time < 60 or game_time >= 240:
+            self.early_harassment_active = False
+            return
+
+        # 30초마다 견제
+        # 30초마다 견제
+        if game_time - self.last_harassment_time < self.harassment_interval:
+            return
+
+        self.last_harassment_time = game_time
+        self.early_harassment_active = True
+        
+        # Log only - Control is delegated to CombatManager
+        self.logger.info(f"[{int(game_time)}s] EARLY HARASSMENT: Signal sent to CombatManager")
+
     def _detect_major_attack(self, game_time: float) -> bool:
         """
         중후반 대규모 공격 감지

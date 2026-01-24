@@ -255,7 +255,14 @@ class CombatManager:
 
         # === TASK 2.3: ★ ULTRA-AGGRESSIVE Early Zergling Harass (1분-7분) ★ ===
         game_time = getattr(self.bot, 'time', 0)
-        if 60 <= game_time <= 420:  # ★ 1분-7분 (2분 → 1분으로 조기 시작)
+        
+        # Check StrategyManager flag
+        strategy_active = False
+        if strategy:
+             strategy_active = getattr(strategy, "early_harassment_active", False)
+
+        # Trigger if time is right OR strategy manager requested it
+        if (60 <= game_time <= 420) or strategy_active:
             try:
                 from sc2.ids.unit_typeid import UnitTypeId
                 zerglings = [u for u in army_units if hasattr(u, 'type_id') and u.type_id == UnitTypeId.ZERGLING]
@@ -264,7 +271,12 @@ class CombatManager:
                     harass_target = self._find_harass_target()
                     if harass_target:
                         # Priority 75 (더 높은 우선순위 - 일꾼 제거가 중요!)
-                        tasks_to_execute.append(("early_harass", harass_target, 75))
+                        # Strategy requested it? Boost priority
+                        priority = 85 if strategy_active else 75
+                        tasks_to_execute.append(("early_harass", harass_target, priority))
+                        
+                        if strategy_active and iteration % 100 == 0:
+                             self.logger.info(f"[{int(game_time)}s] EARLY HARASS: StrategyManager triggered!")
             except ImportError:
                 pass
 
@@ -641,7 +653,11 @@ class CombatManager:
             # 중후반에는 더 넓은 감지 거리 (40)
             detection_range = 25 if game_time < 300 else 40
 
-            nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < detection_range]
+            # ★ OPTIMIZATION: Use internal spatial query (closer_than) instead of list comprehension
+            if hasattr(enemy_units, "closer_than"):
+                 nearby_enemies = enemy_units.closer_than(detection_range, th.position)
+            else:
+                 nearby_enemies = [e for e in enemy_units if e.distance_to(th.position) < detection_range]
 
             if not nearby_enemies:
                 continue
@@ -679,17 +695,21 @@ class CombatManager:
         return highest_threat
 
     def _get_units_near_base(self, units, range_distance: float = 30):
-        """Get units near our bases."""
+        """Get units near our bases (Optimized)."""
         if not hasattr(self.bot, "townhalls") or not self.bot.townhalls.exists:
             return []
 
-        near_units = []
+        # Optimization: Use global spatial query first
+        nearby_tags = set()
         for th in self.bot.townhalls:
-            for u in units:
-                if u.distance_to(th.position) < range_distance and u not in near_units:
-                    near_units.append(u)
+            # Get all units near this base (Fast C++ spatial query)
+            nearby = self.bot.units.closer_than(range_distance, th.position)
+            for u in nearby:
+                nearby_tags.add(u.tag)
 
-        return near_units
+        # Filter the input list against the nearby set
+        # This avoids calculating distance for every unit against every base (N*M)
+        return [u for u in units if u.tag in nearby_tags]
 
     def _get_attack_target(self, enemy_units):
         """Get best attack target for main army."""

@@ -17910,3 +17910,25 @@
 00:52:16 - StrategyManager - WARNING - [1149s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★
 00:52:16 - StrategyManager - WARNING - [1149s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★
 00:52:16 - StrategyManager - WARNING - [1150s] ★ HIGH TEMPLAR/ARCHON - Rush them! ★
+01:19:19 - WickedZergBot - INFO - Bot started. Initializing managers...
+01:19:31 - UpgradeManager - INFO - [123s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+01:19:36 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:19:37 - UpgradeManager - INFO - [186s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+01:19:40 - StrategyManager - INFO - [210s] EARLY HARASSMENT: Sending 6 Zerglings to enemy base
+01:19:40 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:19:44 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:19:47 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+01:19:48 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:19:52 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:19:56 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:20:27 - UnitMorphManager - INFO - [581s] Morphed Overseer (Active: 0/3)
+01:20:31 - UnitMorphManager - INFO - [612s] Morphed Overseer (Active: 1/3)
+01:20:35 - StrategyManager - WARNING - [638s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+01:20:36 - UnitMorphManager - INFO - [644s] Morphed Overseer (Active: 2/3)
+01:20:38 - StrategyManager - WARNING - [655s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+01:20:39 - StrategyManager - WARNING - [660s] ★★★ AIR THREAT ACTIVE: 2 air units detected! ★★★
+01:20:39 - StrategyManager - INFO - Air types: {'OBSERVER'}
+01:20:42 - StrategyManager - WARNING - [677s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+01:20:44 - StrategyManager - WARNING - [687s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+01:20:46 - UpgradeManager - INFO - [703s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+01:20:46 - StrategyManager - INFO - [704s] Air threat cleared
