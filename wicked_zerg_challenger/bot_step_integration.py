@@ -489,47 +489,119 @@ class BotStepIntegrator:
             self._logic_tracker.end_logic(label, start_time, success)
 
     async def _safe_hierarchical_rl_step(self, iteration: int) -> None:
-        """계층적 강화학습 시스템 실행"""
+        """계층적 강화학습 시스템 실행 (RL Agent 연동 완료)"""
         if not hasattr(self.bot, "hierarchical_rl") or self.bot.hierarchical_rl is None:
             return
 
         start_time = self._logic_tracker.start_logic("HierarchicalRL")
         success = True
         try:
-            result = self.bot.hierarchical_rl.step(self.bot)
+            override_strategy = None
+            rl_decision_used = False
 
-            # 전략 모드 저장 (다른 매니저에서 참조 가능)
+            # ★★★ RLAgent 최우선: 게임 상태와 선택된 전략을 기록 ★★★
+            if hasattr(self.bot, "rl_agent") and self.bot.rl_agent:
+                try:
+                    import numpy as np
+
+                    # === 1. Feature Engineering (15차원 상태 벡터) ===
+                    # ★ 모든 필드가 실제 게임 정보로 채워짐 (0.0 없음) ★
+
+                    # 적 기지 수
+                    enemy_bases = 0
+                    if hasattr(self.bot, "enemy_structures"):
+                         enemy_bases = len(self.bot.enemy_structures.townhall)
+
+                    # 업그레이드 수
+                    upgrade_count = 0
+                    if hasattr(self.bot, "state") and self.bot.state.upgrades:
+                        upgrade_count = len(self.bot.state.upgrades)
+
+                    # 라바 수
+                    larva_count = 0
+                    if hasattr(self.bot, "larva"):
+                        larva_count = len(self.bot.larva)
+
+                    # 군대 체력 합계 (전투력 지표)
+                    our_army_hp = 0
+                    if hasattr(self.bot, "units"):
+                        combat_units = self.bot.units.filter(lambda u: u.type_id not in [UnitTypeId.DRONE, UnitTypeId.OVERLORD, UnitTypeId.LARVA, UnitTypeId.EGG])
+                        our_army_hp = sum(u.health for u in combat_units)
+
+                    enemy_army_hp = 0
+                    if hasattr(self.bot, "enemy_units"):
+                        enemy_army_hp = sum(u.health for u in self.bot.enemy_units)
+
+                    # 맵 장악력 (HierarchicalRL 메서드 재사용)
+                    map_control = 0.5
+                    if hasattr(self.bot.hierarchical_rl, "_calculate_map_control"):
+                        map_control = self.bot.hierarchical_rl._calculate_map_control(self.bot)
+
+                    game_state = np.array([
+                        getattr(self.bot, "minerals", 0) / 2000.0,
+                        getattr(self.bot, "vespene", 0) / 1000.0,
+                        getattr(self.bot, "supply_used", 0) / 200.0,
+                        getattr(self.bot, "supply_cap", 0) / 200.0,
+                        len(getattr(self.bot, "workers", [])) / 100.0,
+                        len(getattr(self.bot, "units", [])) / 100.0,
+                        len(getattr(self.bot, "enemy_units", [])) / 100.0,
+                        len(getattr(self.bot, "townhalls", [])) / 10.0,
+                        getattr(self.bot, "time", 0) / 1000.0,
+                        # ★ COMPLETE: Filled Features (6 dims) - NO MORE 0.0! ★
+                        enemy_bases / 5.0,        # 적 기지 수
+                        upgrade_count / 10.0,     # 업그레이드 진척도
+                        larva_count / 20.0,       # 라바 가용량
+                        map_control,              # 맵 장악력 (0~1)
+                        our_army_hp / 5000.0,     # 아군 전투력
+                        enemy_army_hp / 5000.0    # 적군 전투력
+                    ], dtype=np.float32)
+
+                    # ★ 상태 벡터 로깅 (30초마다) - 실제 값 확인 ★
+                    if iteration % 660 == 0:  # 30초
+                        print(f"[RL_STATE] 게임 상태 벡터 (15차원):")
+                        print(f"  미네랄: {game_state[0]:.3f}, 가스: {game_state[1]:.3f}")
+                        print(f"  서플라이: {game_state[2]:.3f}/{game_state[3]:.3f}")
+                        print(f"  일꾼: {game_state[4]:.3f}, 유닛: {game_state[5]:.3f}, 적 유닛: {game_state[6]:.3f}")
+                        print(f"  기지: {game_state[7]:.3f}, 시간: {game_state[8]:.3f}")
+                        print(f"  적 기지: {game_state[9]:.3f}, 업그레이드: {game_state[10]:.3f}, 라바: {game_state[11]:.3f}")
+                        print(f"  맵 장악: {game_state[12]:.3f}, 아군 HP: {game_state[13]:.3f}, 적군 HP: {game_state[14]:.3f}")
+
+                    # ★★★ CRITICAL: RLAgent에게 행동 결정 요청 (최우선) ★★★
+                    action_idx, action_label, prob = self.bot.rl_agent.get_action(game_state)
+
+                    # ★ RLAgent의 결정을 무조건 따름 ★
+                    override_strategy = action_label
+                    rl_decision_used = True
+
+                    # ★ 결정 로깅 (10초마다) ★
+                    if iteration % 220 == 0:
+                        print(f"[RL_DECISION] ★ RLAgent 결정: {action_label} (확률: {prob:.3f}) ★")
+
+                except Exception as e:
+                    if iteration % 500 == 0:
+                        print(f"[WARNING] RLAgent error: {e}")
+                        import traceback
+                        traceback.print_exc()
+
+            # ★★★ HierarchicalRL 실행 (RL Override 강제 적용) ★★★
+            result = self.bot.hierarchical_rl.step(self.bot, override_strategy=override_strategy)
+
+            # 전략 모드 저장
             if result and "strategy_mode" in result:
                 self.bot._current_strategy = result["strategy_mode"]
 
-                # RLAgent 연동: 게임 상태와 선택된 전략을 기록
-                if hasattr(self.bot, "rl_agent") and self.bot.rl_agent:
-                    try:
-                        import numpy as np
-                        # 게임 상태 추출
-                        game_state = np.array([
-                            getattr(self.bot, "minerals", 0) / 2000.0,
-                            getattr(self.bot, "vespene", 0) / 1000.0,
-                            getattr(self.bot, "supply_used", 0) / 200.0,
-                            getattr(self.bot, "supply_cap", 0) / 200.0,
-                            len(getattr(self.bot, "workers", [])) / 100.0,
-                            len(getattr(self.bot, "units", [])) / 100.0,
-                            len(getattr(self.bot, "enemy_units", [])) / 100.0,
-                            len(getattr(self.bot, "townhalls", [])) / 10.0,
-                            getattr(self.bot, "time", 0) / 1000.0,
-                            # 패딩 (15차원 맞추기)
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-                        ], dtype=np.float32)
-
-                        # RLAgent에 상태와 행동 기록
-                        self.bot.rl_agent.get_action(game_state)
-                    except Exception as e:
-                        if iteration % 500 == 0:
-                            print(f"[WARNING] RLAgent state recording error: {e}")
-
-                # 주기적으로 전략 로그 출력
+                # ★ 전략 결정 로깅 강화 (10초마다) ★
                 if iteration % 220 == 0:  # 10초마다
-                    print(f"[HIERARCHICAL RL] Strategy: {result['strategy_mode']}")
+                    if rl_decision_used:
+                        print(f"[STRATEGY] ★★★ RLAgent 결정 사용됨: {result['strategy_mode']} ★★★")
+                    else:
+                        print(f"[STRATEGY] 규칙 기반 결정: {result['strategy_mode']} (RLAgent 없음)")
+
+                # ★ 불일치 경고 (RL이 있는데 사용 안 됨) ★
+                if hasattr(self.bot, "rl_agent") and self.bot.rl_agent and not rl_decision_used:
+                    if iteration % 220 == 0:
+                        print(f"[WARNING] ★ RLAgent가 있지만 결정이 사용되지 않음! ★")
+                    
         except Exception as e:
             success = False
             if iteration % 200 == 0:
