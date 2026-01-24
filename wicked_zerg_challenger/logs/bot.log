@@ -17932,3 +17932,54 @@
 01:20:44 - StrategyManager - WARNING - [687s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
 01:20:46 - UpgradeManager - INFO - [703s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
 01:20:46 - StrategyManager - INFO - [704s] Air threat cleared
+01:23:51 - WickedZergBot - INFO - Bot started. Initializing managers...
+01:23:56 - StrategyManager - INFO - [60s] EARLY HARASSMENT: Signal sent to CombatManager
+01:23:59 - StrategyManager - INFO - [90s] EARLY HARASSMENT: Signal sent to CombatManager
+01:24:01 - StrategyManager - INFO - [120s] EARLY HARASSMENT: Signal sent to CombatManager
+01:24:02 - UpgradeManager - INFO - [123s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+01:24:04 - StrategyManager - INFO - [150s] EARLY HARASSMENT: Signal sent to CombatManager
+01:24:07 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:07 - StrategyManager - INFO - [180s] EARLY HARASSMENT: Signal sent to CombatManager
+01:24:09 - UpgradeManager - INFO - [198s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+01:24:11 - StrategyManager - INFO - [210s] EARLY HARASSMENT: Signal sent to CombatManager
+01:24:11 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:15 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:18 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+01:24:19 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:22 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:27 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:31 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:24:31 - UpgradeManager - INFO - [392s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+01:24:31 - UnitMorphManager - INFO - [392s] Morphed Overseer (Active: 0/3)
+01:24:32 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL2
+01:24:34 - UnitMorphManager - INFO - [416s] Morphed Overseer (Active: 2/3)
+01:24:46 - UpgradeManager - INFO - [508s] ★★★ 배주머니 (대군주 수송) 연구 시작! ★★★
+01:24:47 - UpgradeManager - INFO - [510s] ★★★ 배주머니 (대군주 수송) 연구 시작! ★★★
+01:27:34 - WickedZergBot - INFO - Bot started. Initializing managers...
+01:27:42 - StrategyManager - INFO - [60s] EARLY HARASSMENT: Signal sent to CombatManager
+01:27:47 - StrategyManager - INFO - [90s] EARLY HARASSMENT: Signal sent to CombatManager
+01:27:52 - StrategyManager - INFO - [120s] EARLY HARASSMENT: Signal sent to CombatManager
+01:27:53 - UpgradeManager - INFO - [123s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+01:27:58 - StrategyManager - INFO - [150s] EARLY HARASSMENT: Signal sent to CombatManager
+01:28:02 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:03 - StrategyManager - INFO - [180s] EARLY HARASSMENT: Signal sent to CombatManager
+01:28:06 - UpgradeManager - INFO - [198s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+01:28:08 - StrategyManager - INFO - [210s] EARLY HARASSMENT: Signal sent to CombatManager
+01:28:08 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:14 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:18 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+01:28:21 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:27 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:34 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:28:40 - UnitMorphManager - INFO - [385s] Morphed Overseer (Active: 0/3)
+01:28:40 - StrategyManager - WARNING - [385s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+01:28:40 - StrategyManager - WARNING - [385s] DEFENSE MODE ACTIVATED - Major attack incoming!
+01:28:40 - StrategyManager - WARNING - [386s] DEFENSE MODE ACTIVATED - Major attack incoming!
+01:28:40 - StrategyManager - WARNING - [386s] DEFENSE MODE ACTIVATED - Major attack incoming!
+01:28:44 - UnitMorphManager - INFO - [400s] Morphed Overseer (Active: 1/3)
+01:28:46 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL2
+01:28:56 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:29:03 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:29:06 - UpgradeManager - INFO - [514s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+01:29:11 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
+01:29:14 - UpgradeManager - INFO - Researching ZERGMISSILEWEAPONSLEVEL1

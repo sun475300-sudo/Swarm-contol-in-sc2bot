@@ -178,9 +178,8 @@ class CreepManager:
         if not tumors:
             return
 
-        # ★ 종양 수 제한 해제 (35 -> 100)
-        if len(tumors) >= 100:
-            return
+        # ★ 종양 수 제한 완전 해제 - 맵 전체를 덮기 위해 ★
+        # 제한 없음 (맵 크기에 따라 자동 조절)
 
         # Clean up old cooldowns
         tumor_tags = {t.tag for t in tumors}
