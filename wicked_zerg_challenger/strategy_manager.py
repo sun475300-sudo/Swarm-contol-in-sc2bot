@@ -137,6 +137,7 @@ class StrategyManager:
         self._detect_enemy_race()
         self._update_game_phase()
         self._check_rush_detection()
+        self._check_early_harassment()  # ★ 1-4분 견제 시스템 ★
         self._check_rogue_tactics()
         self._update_strategy_mode()
         self._update_counter_build()  # 적 빌드에 따른 대응
