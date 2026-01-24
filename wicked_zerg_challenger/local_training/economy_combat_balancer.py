@@ -168,25 +168,24 @@ class EconomyCombatBalancer:
             drones = self.current_drone_count()
             target = self.get_drone_target()
 
-            # Priority 0: ★ 기지 포화도 체크 - expansion 실패 시 드론 생산 계속 ★
-            saturation_status = self._check_base_saturation()
+            # Priority 0: ★ CRITICAL - Always maintain minimum workers ★
+            if drones < self.min_drone_count:
+                return True
+
+            # Priority 0.5: ★ CRITICAL FIX - 1베이스 expansion 비용 확보 ★
+            # 1베이스만 있으면 무조건 28마리까지 생산 (다른 모든 로직 무시)
             base_count = 0
             if hasattr(self.bot, "townhalls"):
                 bases = self.bot.townhalls
-                base_count = bases.amount if bases else 0
+                base_count = bases.amount if hasattr(bases, "amount") else len(list(bases))
 
-            # ★ CRITICAL FIX: 1베이스만 있으면 expansion 비용을 위해 드론 계속 생산 ★
-            # 포화 상태여도 expansion을 위해 미네랄을 모아야 하므로 드론 생산 계속
-            if base_count <= 1:
-                # 1베이스는 최대 28마리까지 생산 (expansion 대기)
-                if drones < 28:
-                    return True
-            elif saturation_status == "FULLY_SATURATED":
-                return False  # 2베이스 이상이고 모든 기지가 포화면 드론 불필요
+            if base_count <= 1 and drones < 28:
+                return True  # 1베이스는 expansion 비용 확보를 위해 무조건 생산
 
-            # Priority 1: Always maintain minimum workers
-            if drones < self.min_drone_count:
-                return True
+            # Priority 1: ★ 기지 포화도 체크 ★
+            saturation_status = self._check_base_saturation()
+            if saturation_status == "FULLY_SATURATED":
+                return False  # 모든 기지가 포화면 드론 불필요
 
             # Priority 1.5: ★ 기지가 심하게 부족하면 드론 우선 ★
             if saturation_status == "SEVERELY_UNDER":

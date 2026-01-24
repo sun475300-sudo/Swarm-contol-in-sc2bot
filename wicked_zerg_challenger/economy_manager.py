@@ -879,15 +879,21 @@ class EconomyManager:
         expand_reason = ""
         minerals = self.bot.minerals if hasattr(self.bot, "minerals") else 0
 
-        # 1베이스 → 2베이스 (내츄럴): 초고속 확장 (1분 안에 자원 확보)
+        # 1베이스 → 2베이스 (내츄럴): ★ 1분 안에 확장 (게임 시작 즉시) ★
         if base_count == 1:
             worker_count = self.bot.workers.amount if hasattr(self.bot, "workers") else 0
-            # ★ ULTRA-FAST NATURAL: 10초부터 시도, 일꾼 10마리면 즉시 확장 ★
-            # 해처리 건설 시간 ~100초 고려, 10초 시작 = 110초 완료 (약 1분 50초)
-            # 더 빠르게: 게임 시작 5초만 지나면 미네랄만 있으면 시도
-            if (game_time >= 5 and minerals >= 300) or (game_time >= 10 and worker_count >= 10):
+            # ★ EXTREME FAST NATURAL: 5초부터 시도 → 1분 안에 완성 ★
+            # 해처리 건설 시간 ~100초 고려
+            # 5초 시작 = 105초 완료 (1분 45초) → 조금 늦음
+            # 즉시 시작 (0초): 100초 완료 (1분 40초) → 목표 달성
+            # 미네랄 300 모이는 즉시 expansion (드론 생산과 병행)
+            if minerals >= 300:
                 should_expand = True
-                expand_reason = f"ULTRA-FAST Natural (time: {int(game_time)}s, workers: {worker_count}, minerals: {minerals})"
+                expand_reason = f"EXTREME-FAST Natural (time: {int(game_time)}s, workers: {worker_count}, minerals: {minerals})"
+            # 또는 13드론 이상일 때 (약 40-50초)
+            elif worker_count >= 13 and minerals >= 200:
+                should_expand = True
+                expand_reason = f"13-POOL Natural (time: {int(game_time)}s, workers: {worker_count}, minerals: {minerals})"
 
         # ★ 2베이스 → 3베이스: 1분 30초 (초고속 3베이스) ★
         elif base_count == 2:
@@ -970,39 +976,35 @@ class EconomyManager:
 
         # ★ 그 외 모든 경우: 확장 계속 (매크로 경제 우선) ★
 
-        # ★ 확장 실행 (여러 방법 시도) ★
+        # ★ 확장 실행 - bot.expand_now() 우선 사용 (안정적) ★
         expansion_success = False
 
         try:
-            # 방법 1: 황금 기지 우선 확장 시도
-            gold_pos = await self._get_best_expansion_with_gold_priority()
-            if gold_pos and hasattr(self.bot, "workers") and self.bot.workers:
-                worker = self.bot.workers.closest_to(gold_pos)
-                if worker:
-                    self.bot.do(worker.build(UnitTypeId.HATCHERY, gold_pos))
-                    is_gold = self._is_gold_expansion(gold_pos)
-                    gold_tag = " [GOLD!]" if is_gold else ""
-                    print(f"[PROACTIVE EXPAND] [{int(game_time)}s] {expand_reason}{gold_tag}")
-                    expansion_success = True
+            # 방법 1: expand_now 우선 사용 (가장 안정적)
+            if hasattr(self.bot, "expand_now"):
+                await self.bot.expand_now()
+                print(f"[PROACTIVE EXPAND] [{int(game_time)}s] {expand_reason} - SUCCESS")
+                expansion_success = True
         except Exception as e:
-            print(f"[EXPAND] Gold expansion failed: {e}")
+            print(f"[EXPAND] expand_now failed: {e}")
 
         if not expansion_success:
             try:
-                # 방법 2: expand_now 사용
-                if hasattr(self.bot, "expand_now"):
-                    await self.bot.expand_now()
-                    print(f"[PROACTIVE EXPAND] [{int(game_time)}s] {expand_reason}")
-                    expansion_success = True
+                # 방법 2: 황금 기지 우선 확장 시도
+                gold_pos = await self._get_best_expansion_with_gold_priority()
+                if gold_pos and hasattr(self.bot, "workers") and self.bot.workers:
+                    worker = self.bot.workers.closest_to(gold_pos)
+                    if worker and not worker.is_constructing_scv:
+                        worker.build(UnitTypeId.HATCHERY, gold_pos)
+                        is_gold = self._is_gold_expansion(gold_pos)
+                        gold_tag = " [GOLD!]" if is_gold else ""
+                        print(f"[PROACTIVE EXPAND] [{int(game_time)}s] {expand_reason}{gold_tag} - SUCCESS")
+                        expansion_success = True
             except Exception as e:
-                print(f"[EXPAND] expand_now failed: {e}")
+                print(f"[EXPAND] Gold expansion failed: {e}")
 
         if not expansion_success:
-            try:
-                # 방법 3: 직접 확장 위치 찾기
-                await self._manual_expansion(game_time, expand_reason)
-            except Exception as e:
-                print(f"[EXPAND] Manual expansion failed: {e}")
+            print(f"[EXPAND] ALL METHODS FAILED - Check bot state")
 
     async def _check_expansion_on_depletion(self) -> None:
         """

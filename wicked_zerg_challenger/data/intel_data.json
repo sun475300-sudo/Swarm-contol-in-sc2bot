@@ -1,12 +1,6 @@
 {
   "enemy_race_name": "Protoss",
-  "enemy_unit_counts": {
-    "ADEPT": 2,
-    "IMMORTAL": 1,
-    "ARCHON": 2,
-    "OBSERVER": 1,
-    "STALKER": 2
-  },
+  "enemy_unit_counts": {},
   "enemy_tech_buildings": [],
   "scouted_locations": [
     [
@@ -62,12 +56,12 @@
       65.5
     ],
     [
-      45.5,
-      20.5
-    ],
-    [
       82.5,
       152.5
+    ],
+    [
+      45.5,
+      20.5
     ],
     [
       58.5,

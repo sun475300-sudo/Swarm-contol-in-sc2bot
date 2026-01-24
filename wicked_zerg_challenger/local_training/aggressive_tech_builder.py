@@ -24,7 +24,7 @@ except ImportError:
         HATCHERY = "HATCHERY"
         BANELINGNEST = "BANELINGNEST"
         EVOLUTIONCHAMBER = "EVOLUTIONCHAMBER"
-        SPAIRE = "SPAIRE"
+        SPIRE = "SPIRE"
 
 
 class AggressiveTechBuilder:
@@ -230,19 +230,19 @@ class AggressiveTechBuilder:
         """
         priority_map = {
             UnitTypeId.SPAWNINGPOOL: 1,      # �ֿ켱
-            UnitTypeId.EXTRACTOR: 2,         # ������
-            UnitTypeId.ROACHWARREN: 3,       # 3����
-            UnitTypeId.HYDRALISKDEN: 4,      # 4����
-            UnitTypeId.BANELINGNEST: 5,      # 5����
-            UnitTypeId.EVOLUTIONCHAMBER: 6,  # 6����
-            UnitTypeId.LAIR: 7,              # 7����
-            UnitTypeId.SPAIRE: 8,            # 8����
+            UnitTypeId.SPAWNINGPOOL: 1,      # ֿ켱
+            UnitTypeId.EXTRACTOR: 2,         # 
+            UnitTypeId.ROACHWARREN: 3,       # 3
+            UnitTypeId.HYDRALISKDEN: 4,      # 4
+            UnitTypeId.BANELINGNEST: 5,      # 5
+            UnitTypeId.EVOLUTIONCHAMBER: 6,  # 6
+            UnitTypeId.LAIR: 7,              # 7
+            UnitTypeId.SPIRE: 8,            # 8
         }
         return priority_map.get(tech_type, 10)
     
     async def recommend_tech_builds(self) -> List[Tuple[UnitTypeId, float, int]]:
         """
-        �ڿ��� ��ĥ �� �Ǽ��� ��ũ ��õ
         
         Returns:
             [(tech_type, base_supply, priority), ...] ����Ʈ

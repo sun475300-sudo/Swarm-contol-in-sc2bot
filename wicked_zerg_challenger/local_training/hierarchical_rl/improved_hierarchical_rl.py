@@ -277,7 +277,8 @@ class CombatAgent:
                 return True
 
         except Exception as e:
-            print(f"[WARNING] Combat Agent execution error: {e}")
+            error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+            print(f"[WARNING] Combat Agent execution error: {error_msg}")
             return False
 
 
@@ -328,7 +329,8 @@ class QueenAgent:
             return True
 
         except Exception as e:
-            print(f"[WARNING] Queen Agent execution error: {e}")
+            error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+            print(f"[WARNING] Queen Agent execution error: {error_msg}")
             return False
 
     def _execute_inject(self, bot, queens, priority: str) -> None:
@@ -492,7 +494,8 @@ class HierarchicalRLSystem:
             return results
 
         except Exception as e:
-            print(f"[WARNING] Hierarchical RL step error: {e}")
+            error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+            print(f"[WARNING] Hierarchical RL step error: {error_msg}")
             return {"strategy_mode": "ECONOMY", "error": str(e)}
 
     def _calculate_army_value(self, units) -> float:

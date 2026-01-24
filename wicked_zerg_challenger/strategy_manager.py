@@ -464,27 +464,8 @@ class StrategyManager:
             try:
                 from sc2.ids.unit_typeid import UnitTypeId
 
-                # 히드라 굴 체크
-                hydra_dens = self.bot.structures(UnitTypeId.HYDRALISKDEN)
-                if not hydra_dens.exists and self.bot.already_pending(UnitTypeId.HYDRALISKDEN) == 0:
-                    # 레어가 있으면 히드라 굴 건설
-                    lairs = self.bot.structures(UnitTypeId.LAIR)
-                    hives = self.bot.structures(UnitTypeId.HIVE)
-                    if lairs.exists or hives.exists:
-                        # ★★★ 로그 스팸 방지: 5초마다만 출력 ★★★
-                        if game_time - self.last_air_threat_log > self.log_cooldown:
-                            print(f"[STRATEGY] [{int(game_time)}s] ★★★ AIR THREAT - BUILDING HYDRA DEN NOW ★★★")
-                            self.last_air_threat_log = game_time
-                        # 직접 건설 시도
-                        if self.bot.can_afford(UnitTypeId.HYDRALISKDEN):
-                            if self.bot.townhalls.exists:
-                                pos = self.bot.townhalls.first.position.towards(
-                                    self.bot.game_info.map_center, 5
-                                )
-                                try:
-                                    self.bot.train_or_build_sync(UnitTypeId.HYDRALISKDEN, near=pos)
-                                except Exception as e:
-                                    self.logger.warning(f"Failed to build emergency Hydra Den: {e}")
+                # 히드라 굴 체크 - BotStepIntegrator에서 통합 관리하므로 제거
+                # (중복 건설 방지)
 
                 # ★ 스파이어 체크 (커럽터 생산용) ★
                 spires = self.bot.structures(UnitTypeId.SPIRE)
@@ -694,8 +675,7 @@ class StrategyManager:
             self._adjust_unit_ratio("ravager", 0.2)
             self._adjust_unit_ratio("hydra", 0.3)
 
-            # 스파이어 긴급 건설
-            self._request_spire_build()
+            # 스파이어 긴급 건설 - AggressiveTechBuilder로 통합됨
 
         # 공허 포격기/캐리어 → 대공 강화
         if voidray_count >= 2 or carrier_count >= 1:
@@ -737,72 +717,8 @@ class StrategyManager:
             current_ratios[unit_type] = target_ratio
 
     def _request_spire_build(self) -> None:
-        """스파이어 긴급 건설 요청"""
-        if not hasattr(self.bot, "structures"):
-            return
-
-        try:
-            from sc2.ids.unit_typeid import UnitTypeId
-
-            spires = self.bot.structures(UnitTypeId.SPIRE)
-            greater_spires = self.bot.structures(UnitTypeId.GREATERSPIRE)
-
-            if not spires.exists and not greater_spires.exists:
-                if self.bot.already_pending(UnitTypeId.SPIRE) == 0:
-                    # 레어 체크
-                    lairs = self.bot.structures(UnitTypeId.LAIR)
-                    hives = self.bot.structures(UnitTypeId.HIVE)
-
-                    if (lairs.exists or hives.exists) and self.bot.can_afford(UnitTypeId.SPIRE):
-                        game_time = getattr(self.bot, "time", 0)
-                        print(f"[STRATEGY] [{int(game_time)}s] ★★★ BUILDING SPIRE FOR CORRUPTORS (Auto) ★★★")
-                        
-                        # 건설 위치: 메인 기지 근처
-                        if self.bot.townhalls.exists:
-                            main_base = self.bot.townhalls.first
-                            # 맵 중앙 방향으로 약간 이동 (건물 겹침 방지)
-                            pos = main_base.position.towards(self.bot.game_info.map_center, 6)
-                            
-                            # 비동기 빌드 명령 (Worker Manager가 처리하도록 build 사용)
-                            # self.bot.build는 적절한 일꾼을 찾아 건설함
-                            try:
-                                # await self.bot.build(...)는 코루틴이므로 await 필요하지만
-                                # on_step이 async이므로 가능? 아니면 create_task?
-                                # StrategyManager.update는 동기 함수일 수 있음.
-                                # self.bot.do(self.bot.workers.closest_to(pos).build(UnitTypeId.SPIRE, pos)) 사용이 안전.
-                                
-                                # 하지만 build 함수는 최적 위치를 찾아주므로 build 사용이 좋음.
-                                # 여기서 bot은 BotAI 인스턴스.
-                                # 비동기 함수 호출이 어려우면 동기식으로 처리해야 함.
-                                # 여기서는 안전하게 bot.build (async) 대신 일꾼 직접 명령 사용
-                                
-                                worker = self.bot.workers.closest_to(pos)
-                                if worker:
-                                    # 위치 찾기 (sc2 메서드)
-                                    # find_placement는 async 메서드임. 동기 컨텍스트라면 문제.
-                                    # StrategyManager.update가 sync인지 async인지 확인 필요.
-                                    # bot_step_integration.py에서 `await self._safe_manager_step(...)`으로 호출됨.
-                                    # `_safe_manager_step`을 보면 `method_name="update"`를 호출함.
-                                    # execute_game_logic -> StrategyManager.update (sync defined).
-                                    
-                                    # Sync method cannot await.
-                                    # So we use self.bot.do(worker.build(UnitTypeId.SPIRE, pos)) and hope placement is valid.
-                                    # Better: Use `client.query_building_placement`? Too slow for sync.
-                                    # Let's just issue the command. The bot class usually has `train_or_build_sync` helper if defined?
-                                    # I saw `self.bot.train_or_build_sync` in `_handle_air_threat` earlier!
-                                    # Let's use that if available, or just print warning if not.
-                                    
-                                    if hasattr(self.bot, "train_or_build_sync"):
-                                        self.bot.train_or_build_sync(UnitTypeId.SPIRE, near=pos)
-                                    else:
-                                        # Fallback logic
-                                        self.bot.do(worker.build(UnitTypeId.SPIRE, pos))
-                                        
-                            except Exception as e:
-                                self.logger.warning(f"Spire construction failed: {e}")
-
-        except Exception as e:
-            self.logger.warning(f"Spire build request failed: {e}")
+        """스파이어 긴급 건설 요청 - 제거됨 (AggressiveTechBuilder로 통합)"""
+        pass
 
     def should_force_hydra(self) -> bool:
         """히드라 강제 생산 여부"""

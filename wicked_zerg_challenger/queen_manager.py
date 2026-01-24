@@ -731,9 +731,9 @@ class QueenManager:
         """
         current_time = getattr(self.bot, "time", 0.0)
 
-        # ★ 점막 종양 수 제한 (25 -> 100)
+        # ★ 점막 종양 수 제한 (25 -> 1000: 사실상 무제한)
         tumor_count = self._count_creep_tumors()
-        if tumor_count >= 100:
+        if tumor_count >= 1000:
             return
 
         # 인젝트 퀸만 대상
@@ -794,9 +794,9 @@ class QueenManager:
         if game_time < 300:
             return
 
-        # ★ 조건 2: 점막 종양 수 제한 (30 -> 100)
+        # ★ 조건 2: 점막 종양 수 제한 (30 -> 1000)
         tumor_count = self._count_creep_tumors()
-        if tumor_count >= 100:
+        if tumor_count >= 1000:
             return
 
         # 여유 퀸 필터링 (조건 강화)
