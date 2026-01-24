@@ -218,9 +218,23 @@ class MicroCombat:
         self._issue_actions(actions)
 
     def kiting(self, units: Iterable, enemy_units: Iterable) -> None:
+        """
+        Improved kiting logic: only kite when weapon is on cooldown.
+        """
         actions = []
         threats = list(enemy_units) if enemy_units else []
         for unit in units:
+            # 1. Queen Micro (Transfuse)
+            if unit.type_id == getattr(UnitTypeId, "QUEEN", None):
+                if self._micro_queen(unit, units, actions):
+                    continue
+
+            # 2. Baneling Micro (Crash into clumps)
+            if unit.type_id == getattr(UnitTypeId, "BANELING", None):
+                if self._micro_baneling(unit, threats, actions):
+                    continue
+
+            # 3. Anti-Splash Repulsion
             rep_x, rep_y = self.anti_splash.repulsion_vector(unit, threats)
             if rep_x or rep_y:
                 move_target = self._offset_position(unit, rep_x, rep_y)
@@ -228,19 +242,81 @@ class MicroCombat:
                     actions.append(unit.move(move_target))
                     continue
 
+            # 4. Kiting Logic
             target = self._closest_enemy(unit, threats)
-            if target and hasattr(unit, "distance_to"):
-                try:
-                    if unit.distance_to(target) < 6:
-                        move_target = unit.position.towards(target.position, -3)
-                        actions.append(unit.move(move_target))
-                        continue
-                except Exception:
-                    pass
             if target:
-                actions.append(unit.attack(target))
+                # 무기 쿨다운 중이고 사거리가 닿으면 후퇴 (카이팅)
+                # Kiting only if weapon is on cooldown
+                weapon_cooldown = unit.weapon_cooldown
+                ground_range = unit.ground_range
+                distance = unit.distance_to(target)
+
+                if weapon_cooldown > 0 and distance < ground_range:
+                    # Retreat while cooling down
+                    move_target = unit.position.towards(target.position, -2)
+                    actions.append(unit.move(move_target))
+                else:
+                    # Attack if ready or out of range
+                    actions.append(unit.attack(target))
 
         self._issue_actions(actions)
+
+    def _micro_queen(self, queen, friendly_units: Iterable, actions: List) -> bool:
+        """Queen Transfuse logic."""
+        if not hasattr(self.bot, "abilities"):
+            return False
+            
+        transfuse_id = getattr(self.bot.abilities, "TRANSFUSION_TRANSFUSION", None)
+        if not transfuse_id:
+            return False
+
+        if queen.energy < 50:
+            return False
+
+        # Find injured biological unit/structure nearby
+        low_hp_units = [
+            u for u in friendly_units 
+            if u.is_biological and u.health_percentage < 0.4 and u.distance_to(queen) < 7
+        ]
+        
+        if low_hp_units:
+            # Heal the most injured one
+            target = min(low_hp_units, key=lambda u: u.health)
+            actions.append(queen(transfuse_id, target))
+            return True
+            
+        return False
+
+    def _micro_baneling(self, baneling, enemy_units: Iterable, actions: List) -> bool:
+        """Baneling optimization: avoid single units, target clumps."""
+        if not enemy_units:
+            return False
+            
+        nearby_enemies = [e for e in enemy_units if e.distance_to(baneling) < 10]
+        if not nearby_enemies:
+            return False
+            
+        # 1. Prioritize structures and light units (marines/lings)
+        vital_targets = [
+            e for e in nearby_enemies 
+            if e.is_structure or e.is_light
+        ]
+        
+        if vital_targets:
+            # Find the densest cluster center
+            center = self._find_center_of_mass(vital_targets)
+            if center:
+                 actions.append(baneling.move(center))
+                 return True
+                 
+        return False
+
+    def _find_center_of_mass(self, units) -> Optional[Point2]:
+        if not units or not Point2:
+            return None
+        total_x = sum(u.position.x for u in units)
+        total_y = sum(u.position.y for u in units)
+        return Point2((total_x / len(units), total_y / len(units)))
 
     @staticmethod
     def _closest_enemy(unit, enemies: Iterable):

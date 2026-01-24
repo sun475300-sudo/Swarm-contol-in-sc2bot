@@ -416,19 +416,20 @@ class HierarchicalRLSystem:
             return text.split(".", 1)[1]
         return text
 
-    def step(self, bot) -> Dict[str, Any]:
+    def step(self, bot, override_strategy: Optional[str] = None) -> Dict[str, Any]:
         """
-        �� ���� ����
-
+        매 프레임 실행
+        
         Args:
-            bot: �� ��ü
-
+            bot: 봇 객체
+            override_strategy: 외부(RL Agent)에서 결정한 전략 (있으면 우선 사용)
+            
         Returns:
-            ���� ��� ��ųʸ�
+            실행 결과 딕셔너리
         """
         try:
-            # 1. Commander Agent�� �Ž��� ����
-            strategy_mode = self.commander.make_decision(
+            # 1. Commander Agent의 상황 판단 (Rule-based)
+            rule_based_decision = self.commander.make_decision(
                 minerals=bot.minerals,
                 vespene=bot.vespene,
                 supply_used=bot.supply_used,
@@ -450,10 +451,19 @@ class HierarchicalRLSystem:
                 creep_coverage=self._calculate_creep_coverage(bot),
             )
 
-            # 2. ���� ������Ʈ���� ���� ����
+            # ★ CRITICAL: RL Agent가 결정을 내렸으면 그것을 따름 ★
+            if override_strategy:
+                strategy_mode = override_strategy
+                # 훈련 로깅을 위해 비교 정보 출력 (가끔)
+                if bot.iteration % 220 == 0 and strategy_mode != rule_based_decision:
+                    print(f"[RL_OVERRIDE] RL: {strategy_mode} vs Rule: {rule_based_decision}")
+            else:
+                strategy_mode = rule_based_decision
+
+            # 2.  Ʈ  
             commands = self.commander.get_sub_agent_commands(strategy_mode)
 
-            # 3. ���� ������Ʈ ����
+            # 3.  Ʈ 
             results = {
                 "strategy_mode": strategy_mode,
                 "combat_result": False,
