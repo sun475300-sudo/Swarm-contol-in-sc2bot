@@ -82,6 +82,11 @@ except ImportError:
     class UnitTypeId:
         pass
 
+try:
+    from .building_placement_helper import BuildingPlacementHelper
+except ImportError:
+    BuildingPlacementHelper = None
+
 
 class BotStepIntegrator:
     """
@@ -99,6 +104,12 @@ class BotStepIntegrator:
         self.bot = bot
         self._managers_initialized = False
         self._logic_tracker = LogicActivityTracker()
+
+        # 건물 배치 헬퍼
+        if BuildingPlacementHelper:
+            self.placement_helper = BuildingPlacementHelper(bot)
+        else:
+            self.placement_helper = None
 
     async def initialize_managers(self):
         """
