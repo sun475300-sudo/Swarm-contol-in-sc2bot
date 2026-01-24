@@ -522,6 +522,41 @@ def main():
                 continue
         except KeyboardInterrupt:
             print("\n[STOP] Training stopped by user.")
+            
+            # ★ MANUAL FEEDBACK FOR INTERRUPTED GAME ★
+            try:
+                print("\n" + "="*50)
+                print("MANUAL TERMINATION DETECTED")
+                print("="*50)
+                feedback = input("Did you stop the game to record a result? (y/n): ").strip().lower()
+                
+                if feedback == 'y':
+                    result_input = input("Result (win/loss/tie): ").strip().lower()
+                    if 'w' in result_input:
+                        game_result_str = "Victory"
+                    elif 'l' in result_input:
+                        game_result_str = "Defeat"
+                    else:
+                        game_result_str = "Tie"
+                        
+                    reason = input("Reason/Notes for termination: ").strip()
+                    
+                    if session_manager:
+                        session_manager.record_game_result(
+                            game_id=game_count,
+                            map_name=map_name,
+                            opponent_race=opponent_race.name,
+                            difficulty=difficulty.name,
+                            result=game_result_str,
+                            game_time=0.0, # Unknown time
+                            build_order_score=0,
+                            loss_reason=f"Manual: {reason}",
+                            parameters_updated=0
+                        )
+                        print(f"[MANUAL] Recorded result: {game_result_str} ({reason})")
+            except Exception:
+                pass
+
             # Stop local monitoring server on interrupt
             if local_server_manager:
                 print("[INFO] Stopping local monitoring server...")

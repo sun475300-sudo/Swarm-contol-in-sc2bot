@@ -188,10 +188,16 @@ class BurrowController:
         if UnitTypeId:
             self.burrow_unit_types = {
                 UnitTypeId.ROACH,
-                UnitTypeId.LURKER,
+                UnitTypeId.ROACHBURROWED,
+                UnitTypeId.LURKER,  # Likely LURKERMP
+                UnitTypeId.LURKERMP,
+                UnitTypeId.LURKERMPBURROWED,
                 UnitTypeId.BANELING,
+                UnitTypeId.BANELINGBURROWED,
                 UnitTypeId.INFESTOR,
+                UnitTypeId.INFESTORBURROWED,
                 UnitTypeId.SWARMHOSTMP,
+                UnitTypeId.SWARMHOSTBURROWEDMP,
             }
 
         # Baneling specific settings
@@ -297,6 +303,12 @@ class BurrowController:
             if down_ability:
                 return unit(down_ability)
 
+        # ★ FIX: Lurkers must burrow to attack! ★
+        if UnitTypeId and unit.type_id == UnitTypeId.LURKERMP:
+            # 적이 공격 사거리(9) 내에 있으면 잠복
+            if self._enemy_within(enemy_units, unit, 9.0) and down_ability:
+                return unit(down_ability)
+
         return None
 
     @staticmethod
@@ -337,23 +349,40 @@ class BurrowController:
 
         down_map = {
             "ROACH": "BURROWDOWN_ROACH",
-            "LURKER": "BURROWDOWN_LURKER",
+            "LURKERMP": "BURROWDOWN_LURKER",
             "BANELING": "BURROWDOWN_BANELING",
             "INFESTOR": "BURROWDOWN_INFESTOR",
             "SWARMHOSTMP": "BURROWDOWN_SWARMHOST",
         }
         up_map = {
-            "ROACH": "BURROWUP_ROACH",
-            "LURKER": "BURROWUP_LURKER",
-            "BANELING": "BURROWUP_BANELING",
-            "INFESTOR": "BURROWUP_INFESTOR",
-            "SWARMHOSTMP": "BURROWUP_SWARMHOST",
+            "ROACHBURROWED": "BURROWUP_ROACH",
+            "LURKERMPBURROWED": "BURROWUP_LURKER",
+            "BANELINGBURROWED": "BURROWUP_BANELING",
+            "INFESTORBURROWED": "BURROWUP_INFESTOR",
+            "SWARMHOSTBURROWEDMP": "BURROWUP_SWARMHOST",
         }
 
         unit_name = getattr(unit_type, "name", "")
-        down_name = down_map.get(unit_name, "BURROWDOWN")
-        up_name = up_map.get(unit_name, "BURROWUP")
+        
+        # Try exact match first
+        down_name = down_map.get(unit_name)
+        up_name = up_map.get(unit_name)
+        
+        # Helper for common prefixes/suffixes if exact match fails
+        if not down_name and not up_name:
+             if "ROACH" in unit_name: 
+                 down_name, up_name = "BURROWDOWN_ROACH", "BURROWUP_ROACH"
+             elif "LURKER" in unit_name:
+                 down_name, up_name = "BURROWDOWN_LURKER", "BURROWUP_LURKER"
+             elif "BANELING" in unit_name:
+                 down_name, up_name = "BURROWDOWN_BANELING", "BURROWUP_BANELING"
+             elif "INFESTOR" in unit_name:
+                 down_name, up_name = "BURROWDOWN_INFESTOR", "BURROWUP_INFESTOR"
+             elif "SWARMHOST" in unit_name:
+                 down_name, up_name = "BURROWDOWN_SWARMHOST", "BURROWUP_SWARMHOST"
+             else:
+                 down_name, up_name = "BURROWDOWN", "BURROWUP"
 
-        down_ability = getattr(AbilityId, down_name, None)
-        up_ability = getattr(AbilityId, up_name, None)
+        down_ability = getattr(AbilityId, down_name or "BURROWDOWN", None)
+        up_ability = getattr(AbilityId, up_name or "BURROWUP", None)
         return down_ability, up_ability

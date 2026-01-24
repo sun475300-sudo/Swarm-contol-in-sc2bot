@@ -361,6 +361,8 @@ class UnitFactory:
     def _gas_unit_table(self) -> List[dict]:
         return [
             {"unit": UnitTypeId.HYDRALISK, "min_gas": 50, "max_ratio": 0.45},
+            {"unit": UnitTypeId.CORRUPTOR, "min_gas": 100, "max_ratio": 0.3},
+            {"unit": UnitTypeId.MUTALISK, "min_gas": 100, "max_ratio": 0.25},
             {"unit": UnitTypeId.ROACH, "min_gas": 25, "max_ratio": 0.5},
             {"unit": UnitTypeId.RAVAGER, "min_gas": 25, "max_ratio": 0.35},
             {"unit": UnitTypeId.LURKER, "min_gas": 75, "max_ratio": 0.2},
@@ -413,46 +415,37 @@ class UnitFactory:
 
     def _check_protoss_threat_boost(self) -> bool:
         """
-        ★★★ 프로토스 핵심 위협 유닛 감지 ★★★
-
-        감지 시 가스 유닛 생산 우선 (히드라/커럽터):
-        - 불멸자 (Immortal): 1기 이상
-        - 공허 포격기 (VoidRay): 1기 이상
-        - 콜로서스 (Colossus): 1기 이상
-        - 아콘 (Archon): 2기 이상
-        - 캐리어 (Carrier): 1기 이상
-
-        Returns:
-            True if threat detected, should boost gas unit production
+        ★★★ 핵심 위협 유닛(공중 주력) 감지 ★★★
         """
         if not hasattr(self.bot, "enemy_units"):
             return False
 
         threat_units = {
-            "IMMORTAL": 1,      # 불멸자 1기
-            "VOIDRAY": 1,       # 공허 1기
-            "COLOSSUS": 1,      # 콜로서스 1기
-            "CARRIER": 1,       # 캐리어 1기
-            "ARCHON": 2,        # 아콘 2기
-            "DISRUPTOR": 1,     # 분열기 1기
-            "TEMPEST": 1,       # 폭풍함 1기
+            "IMMORTAL": 1, "VOIDRAY": 1, "COLOSSUS": 1,
+            "CARRIER": 1, "ARCHON": 2, "DISRUPTOR": 1,
+            "TEMPEST": 1, "BATTLECRUISER": 1, "LIBERATOR": 1
         }
 
         unit_counts = {}
+        found_air_threat = False
+
         for enemy in self.bot.enemy_units:
             try:
-                enemy_type = getattr(enemy.type_id, "name", "").upper()
-                if enemy_type in threat_units:
-                    unit_counts[enemy_type] = unit_counts.get(enemy_type, 0) + 1
+                name = getattr(enemy.type_id, "name", "").upper()
+                if name in threat_units:
+                    unit_counts[name] = unit_counts.get(name, 0) + 1
+                    if name in ["VOIDRAY", "CARRIER", "TEMPEST", "BATTLECRUISER", "LIBERATOR", "COLOSSUS"]:
+                        found_air_threat = True
             except Exception:
                 continue
+                
+        if found_air_threat:
+             self.gas_unit_ratio_target = 0.60
 
-        # 위협 임계값 체크
         for unit_type, threshold in threat_units.items():
             if unit_counts.get(unit_type, 0) >= threshold:
-                game_time = getattr(self.bot, "time", 0)
                 if self.bot.iteration % 200 == 0:
-                    print(f"[UNIT_FACTORY] [{int(game_time)}s] ★ Protoss threat: {unit_type} x{unit_counts[unit_type]} → Gas boost! ★")
+                    print(f"[UNIT_FACTORY] Threat: {unit_type} x{unit_counts[unit_type]} → Gas Boost!")
                 return True
 
         return False

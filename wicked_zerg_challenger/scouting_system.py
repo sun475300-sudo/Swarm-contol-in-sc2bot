@@ -158,23 +158,34 @@ class ScoutingSystem:
             return
 
         available = [z for z in zerglings if z.tag not in self.scout_zerglings]
-        for z in available[:max_scouts - len(active)]:
+        
+        # 적 기지 위치를 아직 모르면 모든 스타팅 포인트 정찰
+        enemy_base_found = False
+        if self.intel_manager:
+             enemy_base_found = self.intel_manager.enemy_main_base_location is not None
+
+        start_locations = self.bot.enemy_start_locations
+        
+        for i, z in enumerate(available[:max_scouts - len(active)]):
             self.scout_zerglings.append(z.tag)
-            # ★ 다양한 정찰 목표 설정
-            if len(self.scout_zerglings) == 1:
-                # 첫 번째: 적 메인 기지
-                self.scout_assignments[z.tag] = self.bot.enemy_start_locations[0]
-            elif len(self.scout_zerglings) == 2:
-                # 두 번째: 맵 중앙
-                map_center = getattr(self.bot.game_info, "map_center", self.bot.enemy_start_locations[0])
-                self.scout_assignments[z.tag] = map_center
+            
+            if not enemy_base_found:
+                # 적 발견 전: 스타팅 포인트 순회
+                loc_index = (iteration // 100 + i) % len(start_locations)
+                self.scout_assignments[z.tag] = start_locations[loc_index]
             else:
-                # 나머지: 확장 기지 정찰
-                expansions = getattr(self.bot, "expansion_locations_list", [])
-                if expansions and len(expansions) > len(self.scout_zerglings) - 3:
-                    self.scout_assignments[z.tag] = expansions[len(self.scout_zerglings) - 3]
+                # 적 발견 후: 기존 로직 (메인, 센터, 멀티)
+                if len(self.scout_zerglings) == 1:
+                    self.scout_assignments[z.tag] = start_locations[0]
+                elif len(self.scout_zerglings) == 2:
+                    map_center = getattr(self.bot.game_info, "map_center", start_locations[0])
+                    self.scout_assignments[z.tag] = map_center
                 else:
-                    self.scout_assignments[z.tag] = self.bot.enemy_start_locations[0]
+                    expansions = getattr(self.bot, "expansion_locations_list", [])
+                    if expansions and len(expansions) > len(self.scout_zerglings) - 3:
+                        self.scout_assignments[z.tag] = expansions[len(self.scout_zerglings) - 3]
+                    else:
+                        self.scout_assignments[z.tag] = start_locations[0]
 
     async def _maybe_morph_overseer(self):
         if self.bot.time < 240 or self.bot.vespene < 50:

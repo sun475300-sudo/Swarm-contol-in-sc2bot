@@ -227,11 +227,31 @@ class CreepManager:
         scored_tumors.sort(key=lambda x: x[1], reverse=True)
         actions = []
 
+        # ★ 확장 기지 위치 가져오기 (점막이 막지 않도록)
+        expansion_locations = []
+        if hasattr(self.bot, "expansion_locations_list"):
+            expansion_locations = list(self.bot.expansion_locations_list)
+
         # 개선: 최대 4개 종양 확장 (적 방향 + 확장 방향)
         for tumor, _ in scored_tumors[:self.max_tumors_per_cycle]:
             try:
                 # Calculate spread target toward enemy
                 spread_target = tumor.position.towards(direction_target, 9.0)
+
+                # ★ FIX: 확장 기지 위치 근처는 종양 확산 제외 (기지 건설 공간 확보)
+                # 확장 위치에서 7거리 이내는 점막 깔지 않음
+                too_close_to_expansion = False
+                for exp_loc in expansion_locations:
+                    try:
+                        if spread_target.distance_to(exp_loc) < 7.0:
+                            too_close_to_expansion = True
+                            break
+                    except Exception:
+                        continue
+
+                # 확장 기지 근처면 이 종양은 스킵
+                if too_close_to_expansion:
+                    continue
 
                 # Check if tumor can spread (has ability)
                 if hasattr(tumor, "can_cast") and hasattr(

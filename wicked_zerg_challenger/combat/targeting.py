@@ -40,10 +40,30 @@ HIGH_VALUE_TYPES = set(
             "CARRIER",
             "TEMPEST",
             "GHOST",
+            "VOIDRAY",    # Added VoidRay
+            "BANSHEE",    # Added Banshee
+            "LIBERATOR",  # Added Liberator
+            "LIBERATORAG",
         ]
     )
 )
 
+LOW_PRIORITY_TYPES = set(
+    _unit_type_ids(
+        [
+            "INTERCEPTOR",
+            "LARVA",
+            "EGG",
+            "CHANGELING",
+            "CHANGELINGZEALOT",
+            "CHANGELINGMARINESHIELD",
+            "CHANGELINGMARINE",
+            "CHANGELINGZERGLINGWINGS",
+            "CHANGELINGZERGLING",
+            "ADEPTPHASESHIFT",
+        ]
+    )
+)
 
 def _health_ratio(unit) -> float:
     health = getattr(unit, "health", None)
@@ -62,9 +82,13 @@ def _shield_ratio(unit) -> float:
 
 
 def _score_target(unit) -> float:
+    # ★ LOW PRIORITY CHECK ★
+    if unit.type_id in LOW_PRIORITY_TYPES:
+        return -100.0  # Do not target unless nothing else exists
+
     base = 1.0
     if unit.type_id in HIGH_VALUE_TYPES:
-        base += 3.0
+        base += 5.0  # Increased from 3.0 to 5.0 for better focus fire
 
     base += (1.0 - _health_ratio(unit)) * 2.0
     base += (1.0 - _shield_ratio(unit)) * 1.0

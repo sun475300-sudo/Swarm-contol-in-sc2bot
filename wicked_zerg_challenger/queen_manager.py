@@ -507,13 +507,37 @@ class QueenManager:
                 if dist_to_threat < 12:
                     # ★ 공중 유닛 우선 공격 (퀸은 대공 유닛) ★
                     target = None
-
-                    if air_enemies:
-                        # 공중 유닛 중 가장 가까운 적 공격
-                        target = min(air_enemies, key=lambda e: e.distance_to(queen))
+                    
+                    # 우선순위: 고위협 공중 > 일반 공중 > 지상
+                    # 인터셉터(Interceptor)는 최후순위로 미룸
+                    
+                    # 고위협 공중 유닛 식별
+                    high_value_air = []
+                    normal_air = []
+                    low_value_air = [] # Interceptors
+                    
+                    high_value_names = {"CARRIER", "BATTLECRUISER", "TEMPEST", "BROODLORD", "VOIDRAY", "LIBERATOR", "LIBERATORAG"}
+                    
+                    for e in air_enemies:
+                         name = getattr(e.type_id, "name", "").upper()
+                         if name == "INTERCEPTOR":
+                             low_value_air.append(e)
+                         elif name in high_value_names:
+                             high_value_air.append(e)
+                         else:
+                             normal_air.append(e)
+                             
+                    # 타겟 선정
+                    if high_value_air:
+                        target = min(high_value_air, key=lambda e: e.distance_to(queen))
+                    elif normal_air:
+                        target = min(normal_air, key=lambda e: e.distance_to(queen))
                     elif ground_enemies:
-                        # 지상 유닛 중 가장 가까운 적 공격
+                        # 지상 유닛 중 가장 가까운 적
                         target = min(ground_enemies, key=lambda e: e.distance_to(queen))
+                    elif low_value_air:
+                         # 쏠 게 인터셉터밖에 없으면 그거라도 쏨
+                        target = min(low_value_air, key=lambda e: e.distance_to(queen))
 
                     if target:
                         result = self.bot.do(queen.attack(target))
@@ -856,12 +880,29 @@ class QueenManager:
 
             queen_pos = queen.position
 
-            # 적 방향으로 8-10 거리 위치
-            import random
-            distance = random.uniform(7.0, 10.0)
-            target = queen_pos.towards(enemy_start, distance)
+            # ★ 확장 기지 위치 가져오기
+            expansion_locations = []
+            if hasattr(self.bot, "expansion_locations_list"):
+                expansion_locations = list(self.bot.expansion_locations_list)
 
-            return target
+            # 적 방향으로 8-10 거리 위치 시도 (최대 5회)
+            import random
+            for _ in range(5):
+                distance = random.uniform(7.0, 10.0)
+                target = queen_pos.towards(enemy_start, distance)
+
+                # ★ FIX: 확장 기지 위치 근처는 제외 (기지 건설 공간 확보)
+                too_close = False
+                for exp_loc in expansion_locations:
+                    if target.distance_to(exp_loc) < 7.0:
+                        too_close = True
+                        break
+
+                if not too_close:
+                    return target
+
+            # 모든 시도 실패 시 None 반환
+            return None
 
         except Exception:
             return None
@@ -877,6 +918,11 @@ class QueenManager:
         except Exception:
             return None
 
+        # ★ 확장 기지 위치 가져오기
+        expansion_locations = []
+        if hasattr(self.bot, "expansion_locations_list"):
+            expansion_locations = list(self.bot.expansion_locations_list)
+
         # 기지 주변 8방향 중 하나 선택
         base_pos = closest_base.position
         import random
@@ -887,6 +933,7 @@ class QueenManager:
             from sc2.position import Point2
             for dx, dy in offsets:
                 target = Point2((base_pos.x + dx, base_pos.y + dy))
+
                 # 맵 경계 체크
                 if hasattr(self.bot, "game_info"):
                     map_area = self.bot.game_info.playable_area
@@ -894,7 +941,16 @@ class QueenManager:
                         continue
                     if not (map_area.y <= target.y <= map_area.y + map_area.height):
                         continue
-                return target
+
+                # ★ FIX: 확장 기지 위치 근처는 제외 (기지 건설 공간 확보)
+                too_close = False
+                for exp_loc in expansion_locations:
+                    if target.distance_to(exp_loc) < 7.0:
+                        too_close = True
+                        break
+
+                if not too_close:
+                    return target
         except Exception:
             return base_pos
 

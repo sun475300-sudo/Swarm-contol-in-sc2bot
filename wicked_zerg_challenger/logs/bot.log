@@ -7163,3 +7163,1031 @@
 21:29:41 - StrategyManager - WARNING - [1278s] ★ AIR THREAT - VoidRay/Carrier detected ★
 21:29:41 - StrategyManager - WARNING - [1279s] ★ AIR THREAT - VoidRay/Carrier detected ★
 21:29:41 - StrategyManager - WARNING - [1279s] ★ AIR THREAT - VoidRay/Carrier detected ★
+21:40:57 - WickedZergBot - INFO - Bot started. Initializing managers...
+21:41:09 - UpgradeManager - INFO - [133s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+21:41:35 - UpgradeManager - INFO - [326s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+21:41:40 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+21:42:19 - UpgradeManager - INFO - [550s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+21:42:21 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL2
+21:42:24 - StrategyManager - WARNING - [576s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:42:26 - StrategyManager - WARNING - [586s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:42:31 - StrategyManager - WARNING - [606s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:42:38 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:42:41 - StrategyManager - WARNING - [654s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:42:42 - StrategyManager - WARNING - [660s] ★★★ AIR THREAT ACTIVE: 2 air units detected! ★★★
+21:42:42 - StrategyManager - INFO - Air types: {'OBSERVER'}
+21:42:43 - StrategyManager - WARNING - [664s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:42:46 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:42:54 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:43:03 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:43:15 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:43:27 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:43:42 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:44:24 - WickedZergBot - INFO - Bot started. Initializing managers...
+21:44:39 - UpgradeManager - INFO - [129s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+21:45:15 - StrategyManager - WARNING - [331s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 0
+21:45:15 - StrategyManager - WARNING - [331s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [331s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [332s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [332s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [332s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [332s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [332s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [333s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [334s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [334s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [334s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [334s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [334s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:15 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [335s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [336s] MAJOR ATTACK DETECTED! Threat score: 36, High-threat units: 0
+21:45:16 - StrategyManager - WARNING - [336s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [337s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [337s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [337s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [337s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [337s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [338s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [339s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [339s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [339s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [339s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [339s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:16 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [340s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [341s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [342s] MAJOR ATTACK DETECTED! Threat score: 30, High-threat units: 0
+21:45:17 - StrategyManager - WARNING - [342s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [342s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [342s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [342s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [342s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:17 - StrategyManager - WARNING - [343s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:45:18 - UpgradeManager - INFO - [345s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+21:45:33 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+21:45:42 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:46:03 - StrategyManager - WARNING - [555s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:46:03 - StrategyManager - WARNING - [555s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:03 - StrategyManager - WARNING - [556s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [557s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [557s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [557s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [557s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [557s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [558s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [559s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [559s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [559s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [559s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [559s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:04 - StrategyManager - WARNING - [560s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:05 - StrategyManager - WARNING - [561s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:46:05 - StrategyManager - WARNING - [561s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:05 - StrategyManager - WARNING - [561s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:05 - StrategyManager - WARNING - [563s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:06 - StrategyManager - WARNING - [565s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [565s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [565s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [566s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [567s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [567s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [567s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [567s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [567s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:06 - StrategyManager - WARNING - [568s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:46:10 - StrategyManager - WARNING - [580s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:12 - StrategyManager - WARNING - [590s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:13 - UpgradeManager - INFO - [597s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+21:46:15 - StrategyManager - WARNING - [604s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:15 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:46:23 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:46:28 - UpgradeManager - INFO - Researching ZERGMISSILEWEAPONSLEVEL1
+21:46:30 - StrategyManager - INFO - [667s] Air threat cleared
+21:46:38 - StrategyManager - WARNING - [696s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:40 - StrategyManager - WARNING - [706s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:43 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:46:43 - StrategyManager - WARNING - [716s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:46 - StrategyManager - WARNING - [726s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:48 - StrategyManager - WARNING - [736s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:51 - UpgradeManager - INFO - [SPIRE] Researching ZERGFLYERWEAPONSLEVEL1
+21:46:52 - StrategyManager - WARNING - [746s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:53 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:46:53 - StrategyManager - WARNING - [750s] ★★★ AIR THREAT ACTIVE: 8 air units detected! ★★★
+21:46:53 - StrategyManager - INFO - Air types: {'CORRUPTOR', 'OVERSEER', 'OVERLORDTRANSPORT', 'BROODLORD'}
+21:46:55 - StrategyManager - WARNING - [756s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:46:58 - StrategyManager - WARNING - [766s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:01 - StrategyManager - WARNING - [776s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:03 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:03 - StrategyManager - WARNING - [786s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:06 - StrategyManager - WARNING - [796s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:09 - StrategyManager - WARNING - [806s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:12 - StrategyManager - WARNING - [816s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:14 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:15 - StrategyManager - WARNING - [826s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:18 - StrategyManager - WARNING - [836s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:20 - StrategyManager - INFO - [840s] Counter build for zerg_muta
+21:47:20 - StrategyManager - WARNING - [840s] ★★★ AIR THREAT ACTIVE: 15 air units detected! ★★★
+21:47:20 - StrategyManager - INFO - Air types: {'OVERSEER', 'MUTALISK', 'OVERLORD', 'CORRUPTOR', 'OVERLORDTRANSPORT', 'BROODLORD'}
+21:47:22 - StrategyManager - WARNING - [846s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:25 - StrategyManager - WARNING - [856s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:25 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:27 - StrategyManager - WARNING - [866s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:30 - StrategyManager - WARNING - [876s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:33 - StrategyManager - WARNING - [886s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:35 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:36 - StrategyManager - WARNING - [896s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:38 - StrategyManager - WARNING - [906s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:41 - StrategyManager - WARNING - [916s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:44 - StrategyManager - WARNING - [926s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:45 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:47 - StrategyManager - WARNING - [936s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:50 - StrategyManager - WARNING - [946s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:51 - StrategyManager - INFO - [949s] Air threat cleared
+21:47:52 - StrategyManager - WARNING - [956s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:54 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:47:55 - StrategyManager - WARNING - [966s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:47:58 - StrategyManager - WARNING - [976s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:00 - StrategyManager - WARNING - [986s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:02 - StrategyManager - INFO - [990s] Counter build for zerg_muta
+21:48:02 - StrategyManager - WARNING - [990s] ★★★ AIR THREAT ACTIVE: 14 air units detected! ★★★
+21:48:02 - StrategyManager - INFO - Air types: {'OVERSEER', 'MUTALISK', 'OVERLORD', 'CORRUPTOR', 'OVERLORDTRANSPORT', 'BROODLORD'}
+21:48:03 - StrategyManager - WARNING - [996s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:04 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:48:06 - StrategyManager - WARNING - [1006s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:08 - StrategyManager - WARNING - [1016s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:11 - StrategyManager - WARNING - [1026s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:14 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:48:14 - StrategyManager - WARNING - [1036s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:17 - StrategyManager - WARNING - [1046s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:20 - StrategyManager - WARNING - [1056s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:22 - StrategyManager - INFO - [1062s] Air threat cleared
+21:48:23 - StrategyManager - WARNING - [1066s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:24 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:48:25 - StrategyManager - WARNING - [1076s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:26 - StrategyManager - INFO - [1080s] Counter build for zerg_muta
+21:48:26 - StrategyManager - WARNING - [1080s] ★★★ AIR THREAT ACTIVE: 5 air units detected! ★★★
+21:48:26 - StrategyManager - INFO - Air types: {'CORRUPTOR', 'OVERSEER', 'OVERLORDTRANSPORT', 'BROODLORD'}
+21:48:28 - StrategyManager - WARNING - [1086s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:30 - StrategyManager - WARNING - [1096s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:33 - StrategyManager - WARNING - [1106s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:33 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:48:35 - StrategyManager - WARNING - [1116s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:36 - StrategyManager - INFO - [1118s] Air threat cleared
+21:48:37 - StrategyManager - INFO - [1124s] Air threat cleared
+21:48:38 - StrategyManager - WARNING - [1126s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:41 - StrategyManager - WARNING - [1136s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:43 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:48:44 - StrategyManager - WARNING - [1146s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:46 - StrategyManager - WARNING - [1156s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:49 - StrategyManager - WARNING - [1166s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:50 - StrategyManager - INFO - [1170s] Counter build for zerg_muta
+21:48:51 - StrategyManager - WARNING - [1176s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:54 - StrategyManager - WARNING - [1186s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:48:57 - StrategyManager - WARNING - [1196s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:00 - StrategyManager - WARNING - [1206s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:03 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:49:03 - StrategyManager - WARNING - [1216s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:06 - StrategyManager - WARNING - [1226s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:09 - StrategyManager - WARNING - [1236s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:12 - StrategyManager - WARNING - [1246s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:15 - StrategyManager - WARNING - [1256s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:18 - StrategyManager - WARNING - [1266s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:21 - StrategyManager - WARNING - [1276s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:24 - StrategyManager - WARNING - [1286s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:28 - StrategyManager - WARNING - [1296s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:30 - StrategyManager - WARNING - [1306s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:33 - StrategyManager - WARNING - [1316s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:34 - StrategyManager - INFO - [1320s] Counter build for zerg_muta
+21:49:36 - StrategyManager - WARNING - [1326s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:39 - StrategyManager - WARNING - [1336s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:41 - StrategyManager - WARNING - [1346s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:44 - StrategyManager - WARNING - [1356s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:46 - StrategyManager - WARNING - [1366s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:49 - StrategyManager - WARNING - [1376s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:52 - StrategyManager - WARNING - [1386s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:54 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:49:55 - StrategyManager - WARNING - [1396s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:56 - UpgradeManager - INFO - Researching ZERGMISSILEWEAPONSLEVEL2
+21:49:57 - StrategyManager - WARNING - [1406s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:49:59 - StrategyManager - INFO - [1410s] Counter build for zerg_muta
+21:50:00 - StrategyManager - WARNING - [1416s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:04 - StrategyManager - WARNING - [1426s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:06 - StrategyManager - WARNING - [1436s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:09 - StrategyManager - WARNING - [1445s] MAJOR ATTACK DETECTED! Threat score: 40, High-threat units: 3
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1446s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:09 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:09 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:10 - StrategyManager - WARNING - [1449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] MAJOR ATTACK DETECTED! Threat score: 62, High-threat units: 3
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:11 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:12 - StrategyManager - WARNING - [1454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] MAJOR ATTACK DETECTED! Threat score: 58, High-threat units: 3
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:13 - StrategyManager - WARNING - [1457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:14 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1460s] MAJOR ATTACK DETECTED! Threat score: 56, High-threat units: 3
+21:50:15 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:15 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] MAJOR ATTACK DETECTED! Threat score: 54, High-threat units: 3
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1466s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:16 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:16 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:17 - StrategyManager - WARNING - [1469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1470s] MAJOR ATTACK DETECTED! Threat score: 44, High-threat units: 3
+21:50:18 - StrategyManager - WARNING - [1470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:18 - StrategyManager - WARNING - [1472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1476s] MAJOR ATTACK DETECTED! Threat score: 40, High-threat units: 3
+21:50:19 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1476s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:19 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:19 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:20 - StrategyManager - WARNING - [1478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:50:22 - StrategyManager - WARNING - [1486s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:24 - StrategyManager - WARNING - [1496s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:25 - StrategyManager - INFO - [1500s] Counter build for zerg_muta
+21:50:25 - StrategyManager - WARNING - [1500s] ★★★ AIR THREAT ACTIVE: 4 air units detected! ★★★
+21:50:25 - StrategyManager - INFO - Air types: {'CORRUPTOR', 'OVERSEER', 'OVERLORDTRANSPORT'}
+21:50:27 - StrategyManager - WARNING - [1506s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:29 - StrategyManager - WARNING - [1516s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:33 - StrategyManager - WARNING - [1526s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:35 - StrategyManager - WARNING - [1536s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:37 - StrategyManager - WARNING - [1546s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:39 - StrategyManager - INFO - [1551s] Air threat cleared
+21:50:40 - StrategyManager - WARNING - [1556s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:42 - StrategyManager - WARNING - [1566s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:44 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:50:45 - StrategyManager - WARNING - [1576s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:47 - StrategyManager - WARNING - [1586s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:50 - StrategyManager - WARNING - [1596s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:53 - StrategyManager - WARNING - [1606s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:56 - StrategyManager - WARNING - [1616s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:50:59 - StrategyManager - WARNING - [1626s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:01 - StrategyManager - WARNING - [1636s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:04 - StrategyManager - WARNING - [1646s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:06 - StrategyManager - INFO - [1650s] Counter build for zerg_muta
+21:51:08 - StrategyManager - WARNING - [1656s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:13 - StrategyManager - WARNING - [1666s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:17 - StrategyManager - WARNING - [1676s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:18 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:51:20 - StrategyManager - WARNING - [1686s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:23 - StrategyManager - WARNING - [1696s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:27 - StrategyManager - WARNING - [1706s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:27 - StrategyManager - WARNING - [1706s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:51:27 - StrategyManager - WARNING - [1706s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1706s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1706s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1707s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1707s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1707s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1707s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1707s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:27 - StrategyManager - WARNING - [1708s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:28 - StrategyManager - WARNING - [1709s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:28 - StrategyManager - WARNING - [1710s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:28 - StrategyManager - WARNING - [1710s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1712s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 1
+21:51:29 - StrategyManager - WARNING - [1712s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1712s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1712s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:29 - StrategyManager - WARNING - [1713s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1714s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1714s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:51:30 - StrategyManager - WARNING - [1714s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1714s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1714s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1715s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1716s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:30 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:30 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1716s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1717s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1717s] MAJOR ATTACK DETECTED! Threat score: 40, High-threat units: 2
+21:51:31 - StrategyManager - WARNING - [1717s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1717s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1717s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1717s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:31 - StrategyManager - WARNING - [1718s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1719s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1719s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1719s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1719s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1719s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:32 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1720s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1721s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1722s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1722s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1722s] MAJOR ATTACK DETECTED! Threat score: 34, High-threat units: 2
+21:51:33 - StrategyManager - WARNING - [1722s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1722s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1722s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1723s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:33 - StrategyManager - WARNING - [1724s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1724s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1724s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1724s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1724s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1725s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:34 - StrategyManager - WARNING - [1726s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1727s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1727s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1727s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1727s] MAJOR ATTACK DETECTED! Threat score: 28, High-threat units: 2
+21:51:35 - StrategyManager - WARNING - [1727s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1727s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1728s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1729s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1729s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1729s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:35 - StrategyManager - WARNING - [1729s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1729s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1730s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1731s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1732s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1732s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:36 - StrategyManager - WARNING - [1732s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1732s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1732s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 2
+21:51:37 - StrategyManager - WARNING - [1732s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1733s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1733s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1734s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:37 - StrategyManager - WARNING - [1735s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1736s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1737s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1737s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1737s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1737s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1737s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1738s] MAJOR ATTACK DETECTED! Threat score: 32, High-threat units: 3
+21:51:38 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:38 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:39 - StrategyManager - WARNING - [1738s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:39 - StrategyManager - WARNING - [1739s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:39 - StrategyManager - INFO - [1739s] Air threat cleared
+21:51:39 - StrategyManager - INFO - [1740s] Counter build for zerg_muta
+21:51:39 - StrategyManager - WARNING - [1740s] ★★★ AIR THREAT ACTIVE: 2 air units detected! ★★★
+21:51:39 - StrategyManager - INFO - Air types: {'OVERSEER'}
+21:51:39 - StrategyManager - WARNING - [1741s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:39 - StrategyManager - WARNING - [1741s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1742s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1742s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1742s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1742s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1743s] MAJOR ATTACK DETECTED! Threat score: 34, High-threat units: 3
+21:51:40 - StrategyManager - WARNING - [1743s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1743s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1743s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:40 - StrategyManager - WARNING - [1743s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:41 - StrategyManager - WARNING - [1746s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:41 - StrategyManager - WARNING - [1747s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:41 - StrategyManager - WARNING - [1747s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:41 - StrategyManager - WARNING - [1747s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:41 - StrategyManager - WARNING - [1747s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:51:42 - StrategyManager - WARNING - [1748s] MAJOR ATTACK DETECTED! Threat score: 56, High-threat units: 4
+21:51:43 - StrategyManager - WARNING - [1753s] MAJOR ATTACK DETECTED! Threat score: 50, High-threat units: 4
+21:51:44 - StrategyManager - WARNING - [1756s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:45 - StrategyManager - WARNING - [1758s] MAJOR ATTACK DETECTED! Threat score: 64, High-threat units: 5
+21:51:46 - StrategyManager - WARNING - [1764s] MAJOR ATTACK DETECTED! Threat score: 70, High-threat units: 5
+21:51:47 - StrategyManager - WARNING - [1766s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:48 - StrategyManager - WARNING - [1769s] MAJOR ATTACK DETECTED! Threat score: 72, High-threat units: 5
+21:51:50 - StrategyManager - WARNING - [1774s] MAJOR ATTACK DETECTED! Threat score: 68, High-threat units: 5
+21:51:50 - StrategyManager - WARNING - [1776s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:51 - StrategyManager - WARNING - [1779s] MAJOR ATTACK DETECTED! Threat score: 74, High-threat units: 5
+21:51:53 - StrategyManager - WARNING - [1784s] MAJOR ATTACK DETECTED! Threat score: 68, High-threat units: 5
+21:51:53 - StrategyManager - WARNING - [1786s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:54 - StrategyManager - WARNING - [1790s] MAJOR ATTACK DETECTED! Threat score: 62, High-threat units: 5
+21:51:55 - StrategyManager - WARNING - [1795s] MAJOR ATTACK DETECTED! Threat score: 70, High-threat units: 5
+21:51:56 - StrategyManager - WARNING - [1796s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:57 - StrategyManager - WARNING - [1800s] MAJOR ATTACK DETECTED! Threat score: 72, High-threat units: 5
+21:51:58 - StrategyManager - WARNING - [1805s] MAJOR ATTACK DETECTED! Threat score: 62, High-threat units: 5
+21:51:58 - StrategyManager - WARNING - [1806s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:51:59 - StrategyManager - WARNING - [1810s] MAJOR ATTACK DETECTED! Threat score: 66, High-threat units: 5
+21:52:01 - StrategyManager - WARNING - [1815s] MAJOR ATTACK DETECTED! Threat score: 68, High-threat units: 5
+21:52:01 - StrategyManager - WARNING - [1816s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:02 - StrategyManager - WARNING - [1820s] MAJOR ATTACK DETECTED! Threat score: 68, High-threat units: 5
+21:52:04 - StrategyManager - WARNING - [1826s] MAJOR ATTACK DETECTED! Threat score: 70, High-threat units: 5
+21:52:04 - StrategyManager - WARNING - [1826s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:05 - StrategyManager - INFO - [1830s] Counter build for zerg_muta
+21:52:05 - StrategyManager - WARNING - [1830s] ★★★ AIR THREAT ACTIVE: 10 air units detected! ★★★
+21:52:05 - StrategyManager - INFO - Air types: {'OVERSEER', 'OVERLORDTRANSPORT', 'BROODLORD'}
+21:52:06 - StrategyManager - WARNING - [1836s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:09 - StrategyManager - WARNING - [1846s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:12 - StrategyManager - WARNING - [1856s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:12 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u26a0' in position 30: illegal multibyte sequence
+21:52:14 - StrategyManager - WARNING - [1866s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:18 - StrategyManager - WARNING - [1876s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 0
+21:52:18 - StrategyManager - WARNING - [1876s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:19 - StrategyManager - WARNING - [1881s] MAJOR ATTACK DETECTED! Threat score: 66, High-threat units: 0
+21:52:21 - StrategyManager - WARNING - [1886s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:21 - StrategyManager - WARNING - [1886s] MAJOR ATTACK DETECTED! Threat score: 106, High-threat units: 5
+21:52:22 - StrategyManager - WARNING - [1891s] MAJOR ATTACK DETECTED! Threat score: 88, High-threat units: 5
+21:52:23 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u26a0' in position 30: illegal multibyte sequence
+21:52:23 - StrategyManager - WARNING - [1896s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:52:24 - StrategyManager - WARNING - [1896s] MAJOR ATTACK DETECTED! Threat score: 88, High-threat units: 5
+21:52:53 - WickedZergBot - INFO - Bot started. Initializing managers...
+21:52:53 - StrategyManager - INFO - [0s] Counter build for zerg_muta
+21:53:06 - UpgradeManager - INFO - [145s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+21:53:37 - UpgradeManager - INFO - [306s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+21:53:48 - StrategyManager - WARNING - [352s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:53:50 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:53:55 - UpgradeManager - INFO - Researching ZERGMELEEWEAPONSLEVEL1
+21:54:03 - StrategyManager - INFO - [415s] Air threat cleared
+21:54:07 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:54:09 - StrategyManager - WARNING - [440s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:54:09 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:09 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [440s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [441s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [441s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [441s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [442s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [442s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [442s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [442s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [442s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [443s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [443s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [443s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [443s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:10 - StrategyManager - WARNING - [444s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [444s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [444s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [444s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [444s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] MAJOR ATTACK DETECTED! Threat score: 26, High-threat units: 0
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [445s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [446s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:11 - StrategyManager - WARNING - [447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [447s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [448s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [449s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] MAJOR ATTACK DETECTED! Threat score: 24, High-threat units: 0
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [450s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:12 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [451s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [452s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [453s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:13 - StrategyManager - WARNING - [454s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 0
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [455s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [456s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [457s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:14 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [458s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [459s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] MAJOR ATTACK DETECTED! Threat score: 22, High-threat units: 0
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [460s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [461s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:15 - StrategyManager - WARNING - [462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [462s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [463s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [464s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [465s] MAJOR ATTACK DETECTED! Threat score: 20, High-threat units: 0
+21:54:16 - StrategyManager - WARNING - [465s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:16 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [466s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [467s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [468s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [469s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:17 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [470s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] MAJOR ATTACK DETECTED! Threat score: 30, High-threat units: 0
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [471s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [472s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [473s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:18 - StrategyManager - WARNING - [474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [474s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [475s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] MAJOR ATTACK DETECTED! Threat score: 28, High-threat units: 0
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [476s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [477s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:19 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [478s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [479s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [479s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [479s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [479s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:54:20 - StrategyManager - WARNING - [479s] DEFENSE MODE ACTIVATED - Major attack incoming!
+21:55:07 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:55:18 - StrategyManager - WARNING - [675s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:20 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:55:22 - StrategyManager - WARNING - [685s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:27 - StrategyManager - WARNING - [695s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:32 - StrategyManager - WARNING - [705s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:35 - StrategyManager - INFO - [712s] Air threat cleared
+21:55:36 - StrategyManager - WARNING - [715s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:40 - StrategyManager - WARNING - [725s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:42 - StrategyManager - INFO - [729s] Air threat cleared
+21:55:44 - StrategyManager - WARNING - [735s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:49 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:55:49 - StrategyManager - WARNING - [750s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:55:55 - StrategyManager - WARNING - [766s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:01 - StrategyManager - WARNING - [781s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:03 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:56:05 - StrategyManager - WARNING - [791s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:06 - UpgradeManager - INFO - [793s] ★★ 신경 재구성 (바퀴 발업) 연구 시작! ★★
+21:56:09 - StrategyManager - WARNING - [801s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:11 - UpgradeManager - INFO - Researching ZERGMISSILEWEAPONSLEVEL1
+21:56:14 - StrategyManager - WARNING - [811s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:18 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:56:19 - StrategyManager - WARNING - [823s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:23 - StrategyManager - WARNING - [833s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:32 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:56:40 - StrategyManager - WARNING - [877s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:44 - StrategyManager - WARNING - [887s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:47 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:56:49 - StrategyManager - WARNING - [897s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:53 - StrategyManager - WARNING - [907s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:56:54 - UpgradeManager - INFO - [SPIRE] Researching ZERGFLYERWEAPONSLEVEL1
+21:56:58 - StrategyManager - WARNING - [917s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:05 - StrategyManager - WARNING - [927s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:06 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:57:12 - StrategyManager - WARNING - [937s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:18 - StrategyManager - WARNING - [947s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:23 - StrategyManager - WARNING - [957s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:26 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 27: illegal multibyte sequence
+21:57:26 - StrategyManager - INFO - [966s] Air threat cleared
+21:57:27 - StrategyManager - WARNING - [967s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:33 - StrategyManager - WARNING - [977s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:38 - StrategyManager - WARNING - [987s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:39 - StrategyManager - INFO - [990s] Counter build for zerg_muta
+21:57:39 - StrategyManager - WARNING - [990s] ★★★ AIR THREAT ACTIVE: 2 air units detected! ★★★
+21:57:39 - StrategyManager - INFO - Air types: {'OVERSEER'}
+21:57:43 - StrategyManager - WARNING - [997s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:44 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:57:45 - StrategyManager - INFO - [1000s] Air threat cleared
+21:57:48 - StrategyManager - WARNING - [1007s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:53 - StrategyManager - WARNING - [1017s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:57:55 - StrategyManager - INFO - [1021s] Air threat cleared
+21:57:58 - StrategyManager - WARNING - [1027s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:02 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:58:03 - StrategyManager - WARNING - [1037s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:08 - StrategyManager - WARNING - [1048s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:09 - StrategyManager - INFO - [1051s] Air threat cleared
+21:58:12 - StrategyManager - WARNING - [1058s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:17 - StrategyManager - WARNING - [1068s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:18 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:58:20 - StrategyManager - WARNING - [1078s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:21 - StrategyManager - INFO - [1080s] Counter build for zerg_muta
+21:58:24 - StrategyManager - WARNING - [1088s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:28 - StrategyManager - WARNING - [1098s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:31 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:58:31 - StrategyManager - WARNING - [1108s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:35 - StrategyManager - WARNING - [1118s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:41 - StrategyManager - WARNING - [1128s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:45 - StrategyManager - WARNING - [1138s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:46 - CombatManager - ERROR - Combat manager error: 'cp949' codec can't encode character '\u2713' in position 28: illegal multibyte sequence
+21:58:49 - StrategyManager - WARNING - [1148s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:53 - StrategyManager - WARNING - [1158s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:56 - StrategyManager - WARNING - [1168s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+21:58:57 - StrategyManager - INFO - [1170s] Counter build for zerg_muta
+21:58:57 - StrategyManager - WARNING - [1170s] ★★★ AIR THREAT ACTIVE: 5 air units detected! ★★★
+21:58:57 - StrategyManager - INFO - Air types: {'OVERSEER', 'OVERLORDTRANSPORT', 'OVERLORD'}

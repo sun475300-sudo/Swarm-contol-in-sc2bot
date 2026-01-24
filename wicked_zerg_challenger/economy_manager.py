@@ -92,6 +92,25 @@ class EconomyManager:
         if iteration % 33 == 0:  # ~1.5초마다
             await self._optimize_gas_timing()
 
+        # ★ CRITICAL FIX: Extreme Gas Imbalance Fix ★
+        # Gas > 2000 and Minerals < 500 -> Stop Gas Mining TEMPORARILY
+        if iteration % 44 == 0:
+            gas = getattr(self.bot, "vespene", 0)
+            minerals = getattr(self.bot, "minerals", 0)
+            if gas > 2000 and minerals < 500:
+                # Pull ALL workers off gas
+                if hasattr(self.bot, "gas_buildings"):
+                    for extractor in self.bot.gas_buildings.ready:
+                        if extractor.assigned_harvesters > 0:
+                            workers = self.bot.workers.filter(lambda w: w.is_carrying_vespene or w.order_target == extractor.tag)
+                            for w in workers:
+                                nearby_minerals = self.bot.mineral_field.closer_than(10, w)
+                                if nearby_minerals:
+                                    self.bot.do(w.gather(nearby_minerals.closest_to(w)))
+                            # Log occassionally
+                            if iteration % 220 == 0:
+                                print(f"[ECONOMY] CUTTING GAS! (Gas: {gas}, Min: {minerals})")
+
     async def _optimize_early_worker_split(self) -> None:
         """
         초반 일꾼 분할 최적화.
@@ -695,10 +714,14 @@ class EconomyManager:
         if not should_expand:
             return
 
-        # 이미 확장 중인지 확인
+        # 이미 확장 중인지 확인 (조건 완화)
         if hasattr(self.bot, "already_pending"):
             pending = self.bot.already_pending(UnitTypeId.HATCHERY)
-            if pending > 0:
+            # 매크로 해처리나 동시 확장을 위해 최대 2개까지 허용
+            # 단, 자원이 부족하면 1개만 허용
+            if pending >= 2:
+                return
+            if pending >= 1 and self.bot.minerals < 700:  # 자원 여유 있으면 동시 건설 허용
                 return
 
         # 비용 확인

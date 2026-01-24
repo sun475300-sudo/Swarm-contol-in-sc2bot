@@ -278,6 +278,27 @@ class CombatManager:
             attack_target = self._get_attack_target(enemy_units)
             if attack_target:
                 tasks_to_execute.append(("main_attack", attack_target, self.task_priorities["main_attack"]))
+            else:
+                 # ★ TASK: Clear Rocks (Destructibles) ★
+                 # 공격 대상이 없고 유닛이 놀고 있을 때, 주변의 바위(중립 건물) 파괴
+                if hasattr(self.bot, "destructables") and self.bot.destructables:
+                    # 아군 유닛 근처의 바위 찾기
+                    nearby_rocks = []
+                    for u in ground_army:
+                        rocks = self.bot.destructables.closer_than(5, u)
+                        if rocks:
+                             nearby_rocks.extend(rocks)
+                    
+                    if nearby_rocks:
+                        # 가장 가까운 바위 타겟
+                        rock_target = nearby_rocks[0]
+                        tasks_to_execute.append(("clear_rocks", rock_target, 25)) # Priority 25
+
+                # ★ FALLBACK: RALLY (IDLE UNITS) ★
+                # 적이 안 보이면 랠리 포인트로 집결
+                rally_pos = self._calculate_rally_point()
+                if rally_pos:
+                     tasks_to_execute.append(("rally", rally_pos, 20))  # Priority 20 (lowest)
 
         # Sort tasks by priority (highest first)
         tasks_to_execute.sort(key=lambda x: x[2], reverse=True)
@@ -296,6 +317,33 @@ class CombatManager:
                     for u in defense_units:
                         available_ground.discard(u.tag)
                         available_air.discard(u.tag)
+
+            elif task_name == "rally":
+                # 랠리 포인트로 이동 (공격 명령이 아님)
+                rally_units = [u for u in ground_army if u.tag in available_ground]
+                if rally_units:
+                    for unit in rally_units:
+                        # 이미 근처면 대기
+                        if unit.distance_to(target) > 10:
+                            self.bot.do(unit.attack(target)) # Attack-move to rally
+                        elif unit.distance_to(target) > 5:
+                            self.bot.do(unit.move(target))
+                    
+                    for u in rally_units:
+                        available_ground.discard(u.tag)
+
+                    for u in rally_units:
+                        available_ground.discard(u.tag)
+
+            elif task_name == "clear_rocks":
+                # 바위 파괴 실행
+                rock_units = [u for u in ground_army if u.tag in available_ground]
+                if rock_units:
+                    for unit in rock_units:
+                        self.bot.do(unit.attack(target))
+                    
+                    for u in rock_units:
+                        available_ground.discard(u.tag)
 
             elif task_name == "air_harass":
                 # Use air units for harassment
@@ -1886,13 +1934,34 @@ class CombatManager:
         else:
             defense_workers = nearby_workers[:6]
 
+        # ★ FIX: 일꾼이 기지를 벗어나지 않도록 제한 ★
+        # 가장 가까운 타운홀 찾기
+        closest_townhall = None
+        if hasattr(self.bot, "townhalls") and self.bot.townhalls.exists:
+            closest_townhall = self.bot.townhalls.closest_to(threat_position)
+
         for worker in defense_workers:
             try:
+                # ★ 일꾼이 기지에서 20거리 이상 벗어나면 복귀 ★
+                if closest_townhall and worker.distance_to(closest_townhall) > 20:
+                    self.bot.do(worker.gather(self.bot.mineral_field.closest_to(worker)))
+                    continue
+
                 if threat_enemies:
-                    closest = min(threat_enemies, key=lambda e: e.distance_to(worker))
-                    self.bot.do(worker.attack(closest))
+                    # ★ 가까운 적만 공격 (15 거리 이내) ★
+                    nearby_threats = [e for e in threat_enemies if e.distance_to(worker) < 15]
+                    if nearby_threats:
+                        closest = min(nearby_threats, key=lambda e: e.distance_to(worker))
+                        self.bot.do(worker.attack(closest))
+                    else:
+                        # 가까운 적이 없으면 채취로 복귀
+                        self.bot.do(worker.gather(self.bot.mineral_field.closest_to(worker)))
                 else:
-                    self.bot.do(worker.attack(threat_position))
+                    # 위협 위치가 15거리 이내면 공격, 아니면 복귀
+                    if worker.distance_to(threat_position) < 15:
+                        self.bot.do(worker.attack(threat_position))
+                    else:
+                        self.bot.do(worker.gather(self.bot.mineral_field.closest_to(worker)))
             except Exception:
                 continue
 
@@ -2041,6 +2110,34 @@ class CombatManager:
                 continue
 
         return int(total_supply)
+
+    def _calculate_rally_point(self):
+        """
+        랠리 포인트 계산 (병력 집결지)
+        - 2베이스 이상: 앞마당 앞
+        - 1베이스: 본진 입구
+        """
+        if not hasattr(self.bot, "townhalls") or not self.bot.townhalls:
+            return None
+
+        # 메인 기지
+        main_base = self.bot.townhalls.first
+        
+        # 앞마당 찾기 - 맵 중앙에 가장 가까운 기지
+        target_base = main_base
+        if self.bot.townhalls.amount > 1 and hasattr(self.bot, "game_info"):
+            try:
+                target_base = self.bot.townhalls.closest_to(self.bot.game_info.map_center)
+            except Exception:
+                pass
+        
+        # 기지와 맵 중앙 사이 (전진 배치)
+        if hasattr(self.bot, "game_info"):
+            map_center = self.bot.game_info.map_center
+            rally = target_base.position.towards(map_center, 10)
+            return rally
+        
+        return target_base.position
 
     async def _check_expansion_defense(self, iteration: int):
         """
