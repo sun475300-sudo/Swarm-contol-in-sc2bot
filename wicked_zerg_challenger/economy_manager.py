@@ -1224,6 +1224,94 @@ class EconomyManager:
         if not expansion_success:
             print(f"[EXPAND] ALL METHODS FAILED - Check bot state")
 
+    async def _get_hidden_expansion_location(self) -> Optional[Point2]:
+        """
+        Find a "Hidden Base" location far from enemy.
+        """
+        if not hasattr(self.bot, "expansion_locations_list") or not self.bot.expansion_locations_list:
+            return None
+
+        enemy_start = self.bot.enemy_start_locations[0] if self.bot.enemy_start_locations else self.bot.game_info.map_center
+        start_loc = self.bot.start_location
+
+        # Filter out taken bases
+        available_bases = []
+        for loc in self.bot.expansion_locations_list:
+            if hasattr(self.bot, "townhalls") and self.bot.townhalls.closer_than(4, loc).exists:
+                continue # We already have this
+            if hasattr(self.bot, "enemy_structures") and self.bot.enemy_structures.closer_than(10, loc).exists:
+                continue # Enemy has this
+
+            available_bases.append(loc)
+
+        if not available_bases:
+            return None
+
+        # Score: Distance from enemy start + Distance from our start (to be "hidden" usually means far from action)
+        # But for Rogue style, maybe just far from enemy?
+        # Let's prioritize: Furthest from Enemy Start
+        best_loc = max(available_bases, key=lambda p: p.distance_to(enemy_start))
+        
+        return best_loc
+
+    async def _perform_smart_expansion(self, reason: str, force_hidden: bool = False) -> bool:
+        """
+        Execute expansion using smart logic.
+        
+        Priority:
+        1. Hidden Base (if force_hidden is True)
+        2. Gold Base (if safe)
+        3. Standard Expansion
+        """
+        try:
+            target_pos = None
+            method = "Standard"
+
+            # 1. Hidden Base
+            if force_hidden:
+                target_pos = await self._get_hidden_expansion_location()
+                if target_pos:
+                    method = "Hidden"
+            
+            # 2. Gold / Safe Base
+            if not target_pos:
+                target_pos = await self._get_best_expansion_with_gold_priority()
+                if target_pos:
+                    if self._is_gold_expansion(target_pos):
+                        method = "Gold"
+                    else:
+                        method = "Safe/Standard"
+
+            # 3. Fallback to default
+            if not target_pos:
+                target_pos = await self.bot.get_next_expansion()
+                method = "Default"
+
+            if target_pos:
+                if await self.bot.can_place(UnitTypeId.HATCHERY, target_pos):
+                    # Use TechCoordinator if available, else direct build
+                    tech_coordinator = getattr(self.bot, "tech_coordinator", None)
+                    if tech_coordinator:
+                        tech_coordinator.request_structure(
+                            UnitTypeId.HATCHERY,
+                            target_pos,
+                            priority=100, # High priority
+                            requester="EconomyManager"
+                        )
+                    else:
+                        worker = self.bot.workers.closest_to(target_pos)
+                        if worker:
+                            self.bot.do(worker.build(UnitTypeId.HATCHERY, target_pos))
+                    
+                    game_time = getattr(self.bot, "time", 0)
+                    print(f"[ECONOMY] [{int(game_time)}s] ★ Expanding ({method}): {reason} @ {target_pos} ★")
+                    return True
+
+        except Exception as e:
+            print(f"[ECONOMY] Smart expansion failed: {e}")
+            
+        return False
+
     async def _check_expansion_on_depletion(self) -> None:
         """
         Check if we need to expand due to resource depletion.
@@ -1340,23 +1428,13 @@ class EconomyManager:
                         return  # 심각한 위협 + 자원 여유: 확장 중단
                 # 경미한 위협 또는 자원 부족: 확장 계속
 
-            # Try to expand
-            if hasattr(self.bot, "expand_now"):
-                try:
-                    await self.bot.expand_now()
-                    game_time = getattr(self.bot, "time", 0)
-                    print(f"[ECONOMY] [{int(game_time)}s] ★ Expanding: {expand_reason} ★")
-                except Exception:
-                    pass
-            elif hasattr(self.bot, "get_next_expansion"):
-                try:
-                    next_pos = await self.bot.get_next_expansion()
-                    if next_pos:
-                        await self.bot.build(UnitTypeId.HATCHERY, near=next_pos)
-                        game_time = getattr(self.bot, "time", 0)
-                        print(f"[ECONOMY] [{int(game_time)}s] ★ Expanding: {expand_reason} ★")
-                except Exception:
-                    pass
+            # Check for hidden base condition (Late game + Pressure)
+            force_hidden = False
+            if game_time > 600 and depleted_base_count > 0:
+                 force_hidden = True # Try to take a hidden base if we are losing main bases
+
+            # Execute Smart Expansion
+            await self._perform_smart_expansion(expand_reason, force_hidden=force_hidden)
 
         except Exception:
             pass
@@ -1595,17 +1673,11 @@ class EconomyManager:
                     print(f"[ECONOMY] [{int(game_time)}s] Resource banking: {minerals}M / {gas}G")
                     print(f"[ECONOMY]   Larva: {larva_count}, Avg per base: {avg_larva:.1f}")
 
-                # ★★★ IMPROVED: 미네랄 과잉 → 확장 우선 (임계값 낮춤) ★★★
+                # ★★★ IMPROVED: 미네랄 과잉 → 스마트 확장 ★★★
                 # 2000+ → 1500+ 로 완화하여 더 빨리 확장
                 if minerals > 1500:
-                    if hatch_count < 6 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
-                        try:
-                            exp_pos = await self.bot.get_next_expansion()
-                            if exp_pos and await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
-                                await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
-                                print(f"[ECONOMY] [{int(game_time)}s] ★ Building expansion to balance resources (M:{minerals}/G:{gas}) ★")
-                        except Exception:
-                            pass
+                    if hatch_count < 8 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
+                         await self._perform_smart_expansion(f"Resource banking (M:{minerals}/G:{gas})")
 
                 # 미네랄 1500+ & 라바 부족 → 매크로 해처리
                 elif minerals > 1500 and avg_larva < 3:
@@ -1625,14 +1697,8 @@ class EconomyManager:
             if gas > 0 and minerals / max(1, gas) > 10:
                 if minerals > 1000:
                     # 확장으로 전체 자원 증가
-                    if hatch_count < 6 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
-                        try:
-                            exp_pos = await self.bot.get_next_expansion()
-                            if exp_pos and await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
-                                await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
-                                print(f"[ECONOMY] [{int(game_time)}s] ★ Expansion for resource ratio (M/G = {minerals}/{gas} = {minerals/max(1,gas):.1f}) ★")
-                        except Exception:
-                            pass
+                    if hatch_count < 8 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
+                        await self._perform_smart_expansion(f"Resource ratio (M/G = {minerals}/{gas} = {minerals/max(1,gas):.1f})")
 
         except Exception as e:
             if self.bot.iteration % 200 == 0:

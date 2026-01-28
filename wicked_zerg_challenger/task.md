@@ -61,6 +61,7 @@
     - [x] **Stutter-Step Kiting**: Implemented true stutter-step for Hydra/Roach (attack when ready, retreat during cooldown) (`combat/stutter_step_kiting.py`) <!-- id: 76 -->
     - [x] **Lurker Stability Fix**: Fixed burrow oscillation bug with hysteresis (burrow at 9 range, unburrow at 10+ range) <!-- id: 77 -->
     - [x] **Expansion Timing Enhancement**: Improved resource balance detection triggers expansion when M/G ratio > 10:1 <!-- id: 78 -->
+    - [x] **Smart Expansion Logic**: Integrated Gold Base priority, Hidden Base tactics, and centralized build logic in `EconomyManager` <!-- id: 79 -->
 - [ ] Roadmap Phase 5: Superintelligence <!-- id: 45 -->
     - [x] Real-time Opponent Modeling (`rl_tech_adapter.py`) <!-- id: 46 -->
     - [x] Runtime Self-Healing (`runtime_self_healing.py`) <!-- id: 47 -->
