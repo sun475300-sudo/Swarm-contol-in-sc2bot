@@ -281,7 +281,15 @@ class BurrowController:
                     return unit(up_ability)
                 return None
 
-        # Unburrow if healthy or no enemies nearby
+        # ★★★ FIX: Lurker burrow hysteresis (unburrow only when enemies beyond 10 range) ★★★
+        if UnitTypeId and unit.type_id == UnitTypeId.LURKERMPBURROWED:
+            # Lurker: Unburrow only when NO enemies within 10.0 range (hysteresis)
+            if not self._enemy_within(enemy_units, unit, 10.0):
+                if up_ability:
+                    return unit(up_ability)
+            return None
+
+        # Other units: Unburrow if healthy or no enemies nearby
         if health_ratio >= self.health_threshold_unburrow or not enemy_nearby:
             if up_ability:
                 return unit(up_ability)

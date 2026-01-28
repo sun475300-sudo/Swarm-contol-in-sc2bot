@@ -49,6 +49,18 @@
     - [x] Upgrade Coordination System <!-- id: 60 -->
     - [ ] **Worker Rush Defense**: Attack logic for Drones against early threats (instead of just fleeing) <!-- id: 61 -->
     - [ ] **Strict Upgrade Priority**: Enforce Metabolic Boost as absolute priority over other gas spending <!-- id: 62 -->
+    - [ ] **Combat Micro Integration**: Ensure Main Army uses MicroController instead of simple A-Move <!-- id: 63 -->
+    - [ ] **Lurker Stability Fix**: Fix Oscillating Burrow/Unburrow bug (Range 8 vs 9 discrepancy) <!-- id: 64 -->
+    - [ ] **Advanced Kiting SDK**: Implement true Stutter-Stepping (Attack-Move-Retreat) for Hydra/Roach <!-- id: 65 -->
+- [ ] ★★★ PHASE 6: Critical Bug Fixes & Enhancements (2026-01-28) ★★★ <!-- id: 70 -->
+    - [x] **Duplicate Building Fix**: Removed duplicate Spawning Pool construction in production_resilience.py <!-- id: 71 -->
+    - [x] **TechCoordinator Enforcement**: All building construction now uses TechCoordinator (no direct build() calls) <!-- id: 72 -->
+    - [x] **Worker Combat System**: Implemented worker rush defense with surround attack and drill micro (`worker_combat_system.py`) <!-- id: 73 -->
+    - [x] **Strict Upgrade Priority**: Gas reservation system ensures Metabolic Boost gets absolute priority (`strict_upgrade_priority.py`) <!-- id: 74 -->
+    - [x] **MicroController Integration**: CombatManager now uses MicroController for all ground combat (no more simple A-Move) <!-- id: 75 -->
+    - [x] **Stutter-Step Kiting**: Implemented true stutter-step for Hydra/Roach (attack when ready, retreat during cooldown) (`combat/stutter_step_kiting.py`) <!-- id: 76 -->
+    - [x] **Lurker Stability Fix**: Fixed burrow oscillation bug with hysteresis (burrow at 9 range, unburrow at 10+ range) <!-- id: 77 -->
+    - [x] **Expansion Timing Enhancement**: Improved resource balance detection triggers expansion when M/G ratio > 10:1 <!-- id: 78 -->
 - [ ] Roadmap Phase 5: Superintelligence <!-- id: 45 -->
     - [x] Real-time Opponent Modeling (`rl_tech_adapter.py`) <!-- id: 46 -->
     - [x] Runtime Self-Healing (`runtime_self_healing.py`) <!-- id: 47 -->

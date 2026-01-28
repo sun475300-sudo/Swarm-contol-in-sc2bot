@@ -125,6 +125,18 @@ try:
 except ImportError:
     TechCoordinator = None
 
+# Worker Combat System (Early Rush Defense)
+try:
+    from worker_combat_system import WorkerCombatSystem
+except ImportError:
+    WorkerCombatSystem = None
+
+# Strict Upgrade Priority System
+try:
+    from strict_upgrade_priority import StrictUpgradePriority
+except ImportError:
+    StrictUpgradePriority = None
+
 class BotStepIntegrator:
     """
     Bot의 on_step 메서드를 구현하는 통합 클래스
@@ -156,6 +168,20 @@ class BotStepIntegrator:
             print("[INIT] TechCoordinator initialized")
         else:
             self.bot.tech_coordinator = None
+
+        # Worker Combat System (Early Rush Defense)
+        if WorkerCombatSystem:
+            self.bot.worker_combat = WorkerCombatSystem(bot)
+            print("[INIT] WorkerCombatSystem initialized")
+        else:
+            self.bot.worker_combat = None
+
+        # Strict Upgrade Priority System
+        if StrictUpgradePriority:
+            self.bot.upgrade_priority = StrictUpgradePriority(bot)
+            print("[INIT] StrictUpgradePriority initialized")
+        else:
+            self.bot.upgrade_priority = None
 
     async def initialize_managers(self):
         """
@@ -468,6 +494,36 @@ class BotStepIntegrator:
                             print(f"[ERROR] DefenseCoordinator error: {e}")
                 finally:
                     self._logic_tracker.end_logic("DefenseCoordinator", start_time)
+
+            # 0.051 ★★★ Worker Combat System (Early Rush Defense) ★★★
+            if hasattr(self.bot, "worker_combat") and self.bot.worker_combat:
+                start_time = self._logic_tracker.start_logic("WorkerCombat")
+                try:
+                    await self.bot.worker_combat.on_step()
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["WorkerCombat"] = error_handler.error_counts.get("WorkerCombat", 0) + 1
+                        if error_handler.error_counts["WorkerCombat"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] WorkerCombat error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("WorkerCombat", start_time)
+
+            # 0.052 ★★★ Strict Upgrade Priority (업그레이드 우선순위) ★★★
+            if hasattr(self.bot, "upgrade_priority") and self.bot.upgrade_priority:
+                start_time = self._logic_tracker.start_logic("UpgradePriority")
+                try:
+                    await self.bot.upgrade_priority.on_step()
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["UpgradePriority"] = error_handler.error_counts.get("UpgradePriority", 0) + 1
+                        if error_handler.error_counts["UpgradePriority"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] UpgradePriority error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("UpgradePriority", start_time)
 
             # 0.055 ★★★ RL Tech Adapter (적 테크 기반 적응) ★★★
             if hasattr(self.bot, "rl_tech_adapter") and self.bot.rl_tech_adapter:

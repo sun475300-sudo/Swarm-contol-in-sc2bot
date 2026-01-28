@@ -1595,14 +1595,15 @@ class EconomyManager:
                     print(f"[ECONOMY] [{int(game_time)}s] Resource banking: {minerals}M / {gas}G")
                     print(f"[ECONOMY]   Larva: {larva_count}, Avg per base: {avg_larva:.1f}")
 
-                # 미네랄 2000+ → 확장 우선
-                if minerals > 2000:
-                    if hatch_count < 5 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
+                # ★★★ IMPROVED: 미네랄 과잉 → 확장 우선 (임계값 낮춤) ★★★
+                # 2000+ → 1500+ 로 완화하여 더 빨리 확장
+                if minerals > 1500:
+                    if hatch_count < 6 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
                         try:
                             exp_pos = await self.bot.get_next_expansion()
                             if exp_pos and await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
                                 await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
-                                print(f"[ECONOMY] [{int(game_time)}s] ★ Building expansion to spend minerals ★")
+                                print(f"[ECONOMY] [{int(game_time)}s] ★ Building expansion to balance resources (M:{minerals}/G:{gas}) ★")
                         except Exception:
                             pass
 
@@ -1615,9 +1616,23 @@ class EconomyManager:
                 # 가스 일꾼 감소 (3명 → 2명)
                 await self._reduce_gas_workers()
 
-            # ★ 미네랄 과잉 & 가스 부족 → 가스 확장 ★
+            # ★★★ IMPROVED: 미네랄 과잉 & 가스 부족 → 가스 확장 + 전체 확장 ★★★
             if minerals > 800 and gas < 100:
                 await self._build_extractors()
+
+            # ★★★ NEW: 자원 비율 불균형 감지 (M/G 비율) ★★★
+            # 미네랄:가스 비율이 10:1 이상이면 확장 또는 가스 추가
+            if gas > 0 and minerals / max(1, gas) > 10:
+                if minerals > 1000:
+                    # 확장으로 전체 자원 증가
+                    if hatch_count < 6 and self.bot.already_pending(UnitTypeId.HATCHERY) == 0:
+                        try:
+                            exp_pos = await self.bot.get_next_expansion()
+                            if exp_pos and await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
+                                await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
+                                print(f"[ECONOMY] [{int(game_time)}s] ★ Expansion for resource ratio (M/G = {minerals}/{gas} = {minerals/max(1,gas):.1f}) ★")
+                        except Exception:
+                            pass
 
         except Exception as e:
             if self.bot.iteration % 200 == 0:

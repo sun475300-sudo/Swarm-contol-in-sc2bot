@@ -27,6 +27,7 @@ from combat.terrain_analysis import ChokePointDetector
 from combat.threat_response import SplashThreatHandler
 from combat.formation_tactics import ConcaveFormationController, BurrowController
 from combat.targeting import select_target
+from combat.stutter_step_kiting import StutterStepKiting
 
 
 class BoidsController:
@@ -60,6 +61,7 @@ class BoidsController:
         self.splash_handler = SplashThreatHandler()
         self.formation_controller = ConcaveFormationController()
         self.burrow_controller = BurrowController()
+        self.stutter_step = StutterStepKiting(bot)  # ★ NEW: Stutter-Step Kiting ★
 
         # Update timing - increased interval for performance
         self.last_update = 0
@@ -235,7 +237,27 @@ class BoidsController:
                 active_units, enemy_units, iteration, self._do_actions, bot=self.bot
             )
 
-            # Apply main boids movement
+            # ★★★ NEW: Stutter-Step Kiting for Hydra/Roach ★★★
+            kiting_handled = set()
+            if enemy_units:
+                for unit in active_units:
+                    if unit.tag in skip_units:
+                        continue
+
+                    # 카이팅 가능 유닛은 Stutter-Step으로 처리
+                    if self.stutter_step.should_kite(unit):
+                        target = enemy_units.closest_to(unit.position) if enemy_units else None
+                        if self.stutter_step.execute_kiting(unit, target, enemy_units):
+                            kiting_handled.add(unit.tag)
+
+            # Cleanup dead units from kiting tracker
+            alive_tags = {u.tag for u in active_units}
+            self.stutter_step.cleanup_dead_units(alive_tags)
+
+            # Combine skip sets
+            skip_units = skip_units.union(kiting_handled)
+
+            # Apply main boids movement (for units not handled by kiting)
             await self._apply_boids(active_units, enemy_units, skip_units=skip_units)
 
         except Exception as e:

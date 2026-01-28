@@ -127,22 +127,24 @@ class EarlyDefenseSystem:
         if not main_base:
             return
 
-        # Pool 건설
+        # Pool 건설 via TechCoordinator
         try:
-            worker = self.bot.workers.closest_to(main_base)
-            if worker:
-                location = await self.bot.find_placement(
+            tech_coordinator = getattr(self.bot, "tech_coordinator", None)
+            if tech_coordinator and not tech_coordinator.is_planned(UnitTypeId.SPAWNINGPOOL):
+                target_pos = main_base.position.towards(self.bot.game_info.map_center, 5)
+                PRIORITY_DEFENSE = 85  # High priority for early defense
+                tech_coordinator.request_structure(
                     UnitTypeId.SPAWNINGPOOL,
-                    main_base.position.towards(self.bot.game_info.map_center, 5),
-                    max_distance=15,
-                    placement_step=2
+                    target_pos,
+                    PRIORITY_DEFENSE,
+                    "EarlyDefenseSystem"
                 )
-                if location:
-                    worker.build(UnitTypeId.SPAWNINGPOOL, location)
-                    self.pool_started = True
-                    print(f"[EARLY_DEFENSE] [OK] Spawning Pool 건설 시작 (게임 시간: {int(self.bot.time)}초)")
+                self.pool_started = True
+                print(f"[EARLY_DEFENSE] [OK] Spawning Pool requested via TechCoordinator (게임 시간: {int(self.bot.time)}초)")
+            elif not tech_coordinator:
+                print(f"[EARLY_DEFENSE] [WARNING] TechCoordinator not available")
         except Exception as e:
-            print(f"[EARLY_DEFENSE] Pool 건설 실패: {e}")
+            print(f"[EARLY_DEFENSE] Pool 건설 요청 실패: {e}")
 
     async def _produce_early_zerglings(self) -> None:
         """

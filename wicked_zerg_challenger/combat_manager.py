@@ -182,20 +182,20 @@ class CombatManager:
                 await self._check_expansion_defense(iteration)
                 self._last_expansion_defense_check = iteration
 
-            # Skip if MicroController is handling movement
-            # This prevents dual command conflicts (both issuing move/attack)
+            # ★★★ INTEGRATED: MicroController handles all ground combat ★★★
+            # MicroController provides kiting, spreading, and focus fire
             if hasattr(self.bot, 'micro') and self.bot.micro is not None:
                 # ★ 기지 위협 시 MicroController도 방어 모드로 전환 ★
                 if base_threat and hasattr(self.bot.micro, 'set_defense_mode'):
                     self.bot.micro.set_defense_mode(True, base_threat)
 
-                # CombatManager only updates targeting info, no direct commands
-                # MicroController will handle actual movement
-                # BUT still handle air unit harassment (multitasking)
+                # ★★★ EXECUTE MicroController for ground units ★★★
+                await self.bot.micro.on_step(iteration)
+
+                # CombatManager still handles air unit harassment (multitasking)
                 await self._handle_air_units_separately(iteration)
 
                 # Also ensure burrow controller gets called for banelings
-                # even when MicroController is active
                 await self._ensure_baneling_burrow(iteration)
                 return
 

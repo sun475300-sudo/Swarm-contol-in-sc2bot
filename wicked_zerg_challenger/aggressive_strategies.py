@@ -269,29 +269,22 @@ class AggressiveStrategyExecutor:
         PRIORITY_STRATEGY = 75
 
         if self.bot.can_afford(UnitTypeId.SPAWNINGPOOL):
-            if tech_coordinator:
-                if not tech_coordinator.is_planned(UnitTypeId.SPAWNINGPOOL):
-                    target_pos = self.bot.townhalls.first.position.towards(
-                        self.bot.game_info.map_center, 5
-                    )
-                    tech_coordinator.request_structure(
-                        UnitTypeId.SPAWNINGPOOL,
-                        target_pos,
-                        PRIORITY_STRATEGY,
-                        "AggressiveStrategies"
-                    )
-                    self._pool_started = True
-                    print("[12POOL] Spawning Pool requested via Coordinator!")
-            else:
-                workers = self.bot.workers
-                if workers.exists:
-                    worker = workers.random
-                    pos = self.bot.townhalls.first.position.towards(
-                        self.bot.game_info.map_center, 5
-                    )
-                    self.bot.do(worker.build(UnitTypeId.SPAWNINGPOOL, pos))
-                    self._pool_started = True
-                    print("[12POOL] Spawning Pool started!")
+            # ★★★ ALWAYS use TechCoordinator (no fallback to direct build) ★★★
+            if tech_coordinator and not tech_coordinator.is_planned(UnitTypeId.SPAWNINGPOOL):
+                target_pos = self.bot.townhalls.first.position.towards(
+                    self.bot.game_info.map_center, 5
+                )
+                tech_coordinator.request_structure(
+                    UnitTypeId.SPAWNINGPOOL,
+                    target_pos,
+                    PRIORITY_STRATEGY,
+                    "AggressiveStrategies"
+                )
+                self._pool_started = True
+                print("[12POOL] Spawning Pool requested via TechCoordinator!")
+            elif not tech_coordinator:
+                print("[WARNING] TechCoordinator not available for AggressiveStrategies")
+                # No direct build fallback to prevent duplicates
 
     async def _send_lings_to_attack(self, zerglings) -> None:
         """저글링 공격 명령"""

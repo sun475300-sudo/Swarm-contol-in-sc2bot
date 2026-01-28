@@ -791,43 +791,8 @@ class ProductionResilience:
             # Moved to DefenseCoordinator
             # await self._ensure_early_defense(time, supply_used)
 
-            # Priority 1: Fast Spawning Pool (supply 13-15)
-            # [FIX] Optimized Spawning Pool Timing (13 Pool + Time Based Trigger)
-            spawning_pools = b.structures(UnitTypeId.SPAWNINGPOOL)
-            pending_pools = b.already_pending(UnitTypeId.SPAWNINGPOOL)
-
-            if not spawning_pools.exists and pending_pools == 0:
-                # Default: 13 Pool (Improved from 17)
-                spawning_pool_supply = get_learned_parameter("spawning_pool_supply", 13.0)
-                
-                # Time Based Trigger (95 seconds - ~1:35)
-                learned_pool_time = 95.0
-                time_trigger = time >= learned_pool_time
-                
-                # Rush Detection Override (12 Pool)
-                if hasattr(b, "strategy_manager") and getattr(b.strategy_manager, "rush_detection_active", False):
-                    spawning_pool_supply = 12.0
-                    time_trigger = True
-                
-                should_build = supply_used >= spawning_pool_supply or time_trigger
-                
-                if should_build and b.can_afford(UnitTypeId.SPAWNINGPOOL) and b.townhalls.exists:
-                    main_base = b.townhalls.first
-                    pos = main_base.position.towards(b.game_info.map_center, 5)
-                    
-                    try:
-                        built = False
-                        # [NEW] Use Placement Helper to avoid blocking resources
-                        if hasattr(self, "placement_helper") and self.placement_helper and hasattr(self.placement_helper, "build_structure_safely"):
-                             built = await self.placement_helper.build_structure_safely(UnitTypeId.SPAWNINGPOOL, pos)
-                        
-                        if not built:
-                             await b.build(UnitTypeId.SPAWNINGPOOL, near=pos)
-
-                        if b.iteration % 50 == 0:
-                            print(f"[EARLY_BOOST] [{int(time)}s] Fast Spawning Pool at supply {supply_used}")
-                    except Exception:
-                        pass
+            # Priority 1: Spawning Pool now handled ONLY by TechCoordinator (below at lines 851-896)
+            # [REMOVED DUPLICATE] Previous code here caused duplicate Spawning Pool builds
 
             # Priority 2: Early workers (maximize drone production)
             larvae = b.units(UnitTypeId.LARVA)
@@ -848,7 +813,7 @@ class ProductionResilience:
             # NOTE: Extractor building is now handled by _auto_build_extractors()
             # Called from _auto_build_tech_structures() for consistent timing
 
-            # ★★★ IMPROVED: Spawning Pool timing ★★★
+            # ★★★ IMPROVED: Spawning Pool timing (TechCoordinator ONLY) ★★★
             if self.strategy_manager:
                 spawning_pool_supply = self.strategy_manager.get_pool_supply()
             else:
@@ -870,29 +835,23 @@ class ProductionResilience:
                 emergency_build = supply_used > 20 and b.can_afford(UnitTypeId.SPAWNINGPOOL)
 
                 if (should_build_pool or emergency_build) and b.can_afford(UnitTypeId.SPAWNINGPOOL) and b.townhalls.exists:
-                    try:
+                    # ★★★ USE TECHCOORDINATOR ONLY (No direct build() calls) ★★★
+                    tech_coordinator = getattr(b, "tech_coordinator", None)
+                    if tech_coordinator and not tech_coordinator.is_planned(UnitTypeId.SPAWNINGPOOL):
                         main_base = b.townhalls.first
                         build_pos = main_base.position.towards(b.game_info.map_center, 5)
 
-                        # ★ BuildingPlacementHelper 사용 (광물/가스 근처 회피) ★
-                        if self.placement_helper:
-                            success = await self.placement_helper.build_structure_safely(
-                                UnitTypeId.SPAWNINGPOOL,
-                                build_pos,
-                                max_distance=15.0
-                            )
-                            if success:
-                                print(f"[SPAWNING_POOL] Built at {game_time:.1f}s, Supply: {supply_used} (safe placement)")
-                                return
-                        else:
-                            # 폴백: 기존 방식
-                            await b.build(
-                                UnitTypeId.SPAWNINGPOOL,
-                                near=build_pos,
-                            )
-                            print(f"[SPAWNING_POOL] Built at {game_time:.1f}s, Supply: {supply_used}")
-                            return
-                    except Exception:
+                        PRIORITY_PRODUCTION = 80  # High priority for early game
+                        tech_coordinator.request_structure(
+                            UnitTypeId.SPAWNINGPOOL,
+                            build_pos,
+                            PRIORITY_PRODUCTION,
+                            "ProductionResilience"
+                        )
+                        print(f"[SPAWNING_POOL] Requested via TechCoordinator at {game_time:.1f}s, Supply: {supply_used}")
+                    elif not tech_coordinator:
+                        # Fallback only if TechCoordinator not available (should not happen in normal operation)
+                        print(f"[WARNING] TechCoordinator not available, Spawning Pool build skipped")
                         pass
 
             # Natural Expansion timing
