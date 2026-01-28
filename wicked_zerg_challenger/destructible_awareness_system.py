@@ -47,14 +47,39 @@ class DestructibleAwarenessSystem:
         self.MAIN_PATH_RADIUS = 15  # 주요 경로 판정 반경
 
         # 파괴 가능한 타입들
-        self.DESTRUCTIBLE_TYPES = {
-            UnitTypeId.DESTRUCTIBLEROCKEX1DIAGONALHUGEBLBUR,
-            UnitTypeId.DESTRUCTIBLEROCK6X6,
-            UnitTypeId.DESTRUCTIBLEDEBRIS6X6,
-            UnitTypeId.DESTRUCTIBLEDEBRISRAMPDIAGONALHUGEBLUR,
-            UnitTypeId.UNBUILDABLEPLATESDESTRUCTIBLE,
-            UnitTypeId.UNBUILDABLEBRICKSDESTRUCTIBLE,
-        }
+        # 주의: 일부 유닛 타입은 맵마다 다를 수 있으므로 이름으로도 확인
+        self.DESTRUCTIBLE_TYPES = set()
+
+        # 안전하게 존재하는 타입만 추가
+        try:
+            if hasattr(UnitTypeId, 'DESTRUCTIBLEROCK6X6'):
+                self.DESTRUCTIBLE_TYPES.add(UnitTypeId.DESTRUCTIBLEROCK6X6)
+        except:
+            pass
+
+        try:
+            if hasattr(UnitTypeId, 'DESTRUCTIBLEDEBRIS6X6'):
+                self.DESTRUCTIBLE_TYPES.add(UnitTypeId.DESTRUCTIBLEDEBRIS6X6)
+        except:
+            pass
+
+        try:
+            if hasattr(UnitTypeId, 'DESTRUCTIBLEDEBRISRAMPDIAGONALHUGEBLBUR'):
+                self.DESTRUCTIBLE_TYPES.add(UnitTypeId.DESTRUCTIBLEDEBRISRAMPDIAGONALHUGEBLBUR)
+        except:
+            pass
+
+        try:
+            if hasattr(UnitTypeId, 'UNBUILDABLEPLATESDESTRUCTIBLE'):
+                self.DESTRUCTIBLE_TYPES.add(UnitTypeId.UNBUILDABLEPLATESDESTRUCTIBLE)
+        except:
+            pass
+
+        try:
+            if hasattr(UnitTypeId, 'UNBUILDABLEBRICKSDESTRUCTIBLE'):
+                self.DESTRUCTIBLE_TYPES.add(UnitTypeId.UNBUILDABLEBRICKSDESTRUCTIBLE)
+        except:
+            pass
 
         # 통계
         self.total_discovered = 0
@@ -107,16 +132,29 @@ class DestructibleAwarenessSystem:
     def _is_destructible(self, unit) -> bool:
         """파괴 가능한 구조물인지 확인"""
         # 타입으로 확인
-        if hasattr(unit, 'type_id') and unit.type_id in self.DESTRUCTIBLE_TYPES:
-            return True
+        if hasattr(unit, 'type_id') and self.DESTRUCTIBLE_TYPES:
+            if unit.type_id in self.DESTRUCTIBLE_TYPES:
+                return True
 
-        # 이름으로 확인 (폴백)
+        # 이름으로 확인 (주요 방법)
         if hasattr(unit, 'name'):
             name_lower = unit.name.lower()
-            if any(keyword in name_lower for keyword in [
-                'destructible', 'rock', 'debris', 'unbuildable'
-            ]):
+            # 파괴 가능한 구조물의 키워드
+            keywords = [
+                'destructible', 'rock', 'debris', 'unbuildable',
+                'breakable', 'removable'
+            ]
+            if any(keyword in name_lower for keyword in keywords):
                 return True
+
+        # type_id 이름으로도 확인
+        if hasattr(unit, 'type_id'):
+            try:
+                type_name = str(unit.type_id.name).upper()
+                if 'DESTRUCTIBLE' in type_name or 'UNBUILDABLE' in type_name:
+                    return True
+            except:
+                pass
 
         return False
 

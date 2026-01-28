@@ -1,11 +1,7 @@
 {
   "enemy_race_name": "Protoss",
   "enemy_unit_counts": {
-    "STALKER": 4,
-    "PROBE": 13,
-    "OBSERVER": 3,
-    "ZEALOT": 2,
-    "SENTRY": 2
+    "OBSERVER": 1
   },
   "enemy_tech_buildings": [],
   "scouted_locations": [
@@ -214,6 +210,10 @@
       152.5
     ],
     [
+      93.5,
+      156.5
+    ],
+    [
       28.5,
       153.5
     ],
@@ -240,10 +240,6 @@
     [
       42.5,
       93.5
-    ],
-    [
-      165.5,
-      23.5
     ],
     [
       38.5,
@@ -318,8 +314,8 @@
       111.5
     ],
     [
-      93.5,
-      156.5
+      165.5,
+      23.5
     ]
   ],
   "enemy_build_pattern": "unknown"
