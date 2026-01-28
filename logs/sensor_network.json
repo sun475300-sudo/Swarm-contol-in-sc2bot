@@ -1,79 +1,57 @@
 [
   {
-    "time": "117.86",
-    "iteration": 660,
+    "time": "275.00",
+    "iteration": 1540,
     "game_id": "unknown",
-    "unit_tag": 4353163265,
+    "unit_tag": 4372037633,
     "unit_type": "OVERLORD",
-    "pos_x": 97.668212890625,
-    "pos_y": 107.122314453125,
-    "target_x": 31.5,
-    "target_y": 158.5
+    "pos_x": 51.149169921875,
+    "pos_y": 88.0,
+    "target_x": 88.0,
+    "target_y": 39.599999999999994
   },
   {
-    "time": "117.86",
-    "iteration": 660,
+    "time": "275.00",
+    "iteration": 1540,
     "game_id": "unknown",
-    "unit_tag": 4358406145,
+    "unit_tag": 4377280513,
     "unit_type": "OVERLORD",
-    "pos_x": 97.0927734375,
-    "pos_y": 121.90576171875,
-    "target_x": 21.5,
-    "target_y": 158.5
+    "pos_x": 119.72900390625,
+    "pos_y": 71.328857421875,
+    "target_x": 88.0,
+    "target_y": 136.4
   },
   {
-    "time": "117.86",
-    "iteration": 660,
+    "time": "275.00",
+    "iteration": 1540,
     "game_id": "unknown",
-    "unit_tag": 4358930433,
+    "unit_tag": 4377804801,
     "unit_type": "OVERLORD",
-    "pos_x": 94.41015625,
-    "pos_y": 148.9755859375,
-    "target_x": 19.5,
-    "target_y": 158.5
+    "pos_x": 71.009033203125,
+    "pos_y": 105.630126953125,
+    "target_x": 39.599999999999994,
+    "target_y": 88.0
   },
   {
-    "time": "117.86",
-    "iteration": 660,
+    "time": "275.00",
+    "iteration": 1540,
     "game_id": "unknown",
-    "unit_tag": 4358144002,
+    "unit_tag": 4378591233,
     "unit_type": "OVERLORD",
-    "pos_x": 84.390869140625,
-    "pos_y": 129.15771484375,
-    "target_x": 96.0,
-    "target_y": 43.199999999999996
+    "pos_x": 28.5,
+    "pos_y": 153.5,
+    "target_x": 21.92466240757922,
+    "target_y": 16.51380015790044
   },
   {
-    "time": "117.86",
-    "iteration": 660,
+    "time": "275.00",
+    "iteration": 1540,
     "game_id": "unknown",
-    "unit_tag": 4360503297,
+    "unit_tag": 4383309828,
     "unit_type": "OVERLORD",
-    "pos_x": 73.505859375,
-    "pos_y": 151.04150390625,
-    "target_x": 96.0,
-    "target_y": 148.8
-  },
-  {
-    "time": "117.86",
-    "iteration": 660,
-    "game_id": "unknown",
-    "unit_tag": 4361289729,
-    "unit_type": "OVERLORD",
-    "pos_x": 48.7275390625,
-    "pos_y": 127.31689453125,
-    "target_x": 43.199999999999996,
-    "target_y": 96.0
-  },
-  {
-    "time": "117.86",
-    "iteration": 660,
-    "game_id": "unknown",
-    "unit_tag": 4362338305,
-    "unit_type": "OVERLORD",
-    "pos_x": 24.2138671875,
-    "pos_y": 157.13232421875,
-    "target_x": 148.8,
-    "target_y": 96.0
+    "pos_x": 131.74853515625,
+    "pos_y": 85.089111328125,
+    "target_x": 136.4,
+    "target_y": 88.0
   }
 ]

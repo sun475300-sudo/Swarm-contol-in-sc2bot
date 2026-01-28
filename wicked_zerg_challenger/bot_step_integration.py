@@ -341,6 +341,56 @@ class BotStepIntegrator:
                 finally:
                     self._logic_tracker.end_logic("DefenseCoordinator", start_time)
 
+            # 0.055 ★★★ RL Tech Adapter (적 테크 기반 적응) ★★★
+            if hasattr(self.bot, "rl_tech_adapter") and self.bot.rl_tech_adapter:
+                start_time = self._logic_tracker.start_logic("RLTechAdapter")
+                try:
+                    await self.bot.rl_tech_adapter.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["RLTechAdapter"] += 1
+                        if error_handler.error_counts["RLTechAdapter"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] RLTechAdapter error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("RLTechAdapter", start_time)
+
+            # 0.057 ★★★ Micro Focus Mode (전투 우선순위 동적 할당) ★★★
+            micro_interval = 8  # 기본 간격
+            if hasattr(self.bot, "micro_focus") and self.bot.micro_focus:
+                start_time = self._logic_tracker.start_logic("MicroFocusMode")
+                try:
+                    micro_interval = self.bot.micro_focus.update(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["MicroFocusMode"] += 1
+                        if error_handler.error_counts["MicroFocusMode"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] MicroFocusMode error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("MicroFocusMode", start_time)
+
+            # 0.058 ★★★ Dynamic Resource Balancer (자원 불균형 조정) ★★★
+            if hasattr(self.bot, "resource_balancer") and self.bot.resource_balancer:
+                start_time = self._logic_tracker.start_logic("ResourceBalancer")
+                try:
+                    ratio_adjustments = self.bot.resource_balancer.update(iteration)
+                    # UnitFactory에 조정된 비율 전달
+                    if hasattr(self.bot, "unit_factory") and self.bot.unit_factory:
+                        gas_ratio = ratio_adjustments.get("gas_unit_ratio", 0.50)
+                        self.bot.unit_factory.gas_unit_ratio_target = gas_ratio
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["ResourceBalancer"] += 1
+                        if error_handler.error_counts["ResourceBalancer"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] ResourceBalancer error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("ResourceBalancer", start_time)
+
             # 0.06 ★★★ Early Scout System (초반 정찰) ★★★
             if self.bot.time < 300.0:  # 5분 이내
                 if not hasattr(self.bot, "early_scout"):

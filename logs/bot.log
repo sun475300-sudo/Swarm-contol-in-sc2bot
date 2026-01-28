@@ -1326,3 +1326,22 @@
 01:16:10 - ScoutingSystem - ERROR - Scouting system error: 'IntelManager' object has no attribute 'enemy_main_base_location'
 01:16:10 - StrategyManager - WARNING - [1108s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
 01:16:13 - StrategyManager - WARNING - [1118s] ★★ AIR THREAT ACTIVE - Anti-air priority ★★
+09:54:09 - WickedZergBot - INFO - Bot started. Initializing managers...
+09:54:09 - KnowledgeManager - INFO - Loaded knowledge version: 1.0
+09:54:09 - KnowledgeManager - INFO - Loaded 8 build orders
+09:54:09 - StrategyManager - INFO - [STRATEGY] Loaded unit ratios for 4 races from Knowledge Base
+09:54:09 - KnowledgeManager - INFO - Loaded knowledge version: 1.0
+09:54:09 - KnowledgeManager - INFO - Loaded 8 build orders
+09:54:14 - StrategyManager - INFO - [60s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:17 - StrategyManager - INFO - [90s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:20 - StrategyManager - INFO - [120s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:22 - UpgradeManager - INFO - [141s] ★★★ 대사 촉진 (저글링 발업) 연구 시작! ★★★
+09:54:22 - StrategyManager - INFO - [150s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:25 - StrategyManager - INFO - [180s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:25 - DefenseCoordinator - INFO - [DEFENSE] [180s] ⏳ Spore 자원 대기: 5m (필요: 75m)
+09:54:26 - DefenseCoordinator - INFO - [DEFENSE] [184s] ⏳ Spore 자원 대기: 45m (필요: 75m)
+09:54:27 - UpgradeManager - INFO - [196s] ★★★ 기낭 갑피 (대군주 속업) 연구 시작! ★★★
+09:54:28 - StrategyManager - INFO - [210s] EARLY HARASSMENT: Signal sent to CombatManager
+09:54:33 - UpgradeManager - INFO - [250s] ⏳ Lair 자원 대기: 40m/544g (필요: 150m/100g)
+09:54:34 - DefenseCoordinator - INFO - [DEFENSE] [255s] Building Spine Crawler #3
+09:54:39 - UpgradeManager - INFO - [291s] ★ ZERGMELEEWEAPONSLEVEL1 시작! ★

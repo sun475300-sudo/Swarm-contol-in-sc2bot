@@ -346,10 +346,14 @@ class EconomyManager:
             min_workers_needed = base_count * 16
             absolute_min = 22
 
+        # ★ ULTRA-PRIORITY: 초반 3분은 일꾼 최우선 ★
+        game_time = getattr(self.bot, "time", 0)
+        early_game_drone_priority = game_time < 180  # 3분까지
+
         # ★ CRITICAL: 최소 일꾼 미달이면 무조건 생산 (밸런서 무시) ★
         below_minimum = worker_count < min_workers_needed or worker_count < absolute_min
 
-        if not below_minimum:
+        if not below_minimum and not early_game_drone_priority:
             # 일꾼이 충분하면 밸런서 판단 따름
             if not self.balancer.should_train_drone():
                 return

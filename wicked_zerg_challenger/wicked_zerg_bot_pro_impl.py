@@ -245,6 +245,33 @@ class WickedZergBotProImpl(BotAI):
         except ImportError:
             pass
 
+        # ★ NEW: RL Tech Adapter (적 테크 기반 강화학습 적응) ★
+        try:
+            from rl_tech_adapter import RLTechAdapter
+            self.rl_tech_adapter = RLTechAdapter(self, intel_manager=self.intel, knowledge_manager=None)
+            print("[BOT] ★ RLTechAdapter initialized (Enemy Tech RL Response)")
+        except ImportError as e:
+            print(f"[BOT_WARN] RLTechAdapter not available: {e}")
+            self.rl_tech_adapter = None
+
+        # ★ NEW: Micro Focus Mode (전투 상황 우선순위 동적 할당) ★
+        try:
+            from micro_focus_mode import MicroFocusMode
+            self.micro_focus = MicroFocusMode(self)
+            print("[BOT] ★ MicroFocusMode initialized (Combat Priority System)")
+        except ImportError as e:
+            print(f"[BOT_WARN] MicroFocusMode not available: {e}")
+            self.micro_focus = None
+
+        # ★ NEW: Dynamic Resource Balancer (자원 불균형 자동 조정) ★
+        try:
+            from dynamic_resource_balancer import DynamicResourceBalancer
+            self.resource_balancer = DynamicResourceBalancer(self)
+            print("[BOT] ★ DynamicResourceBalancer initialized (Auto Resource Balance)")
+        except ImportError as e:
+            print(f"[BOT_WARN] DynamicResourceBalancer not available: {e}")
+            self.resource_balancer = None
+
         # ★ NEW: Protoss Counter System ★
         try:
             from protoss_counter_system import ProtossCounterSystem

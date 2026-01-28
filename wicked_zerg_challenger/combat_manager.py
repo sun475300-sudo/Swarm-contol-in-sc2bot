@@ -89,6 +89,12 @@ class CombatManager:
         self._min_army_for_attack = 6  # ★ OPTIMIZED: 8 → 6 (더 빠른 공격) ★
         self._early_game_min_attack = 3  # ★ OPTIMIZED: 4 → 3 (더 빠른 초반 압박) ★
 
+        # === ★★★ ROACH RUSH TIMING ATTACK ★★★ ===
+        self._roach_rush_active = False
+        self._roach_rush_timing = 360  # 6:00 (6분)
+        self._roach_rush_min_count = 12  # 최소 12 바퀴
+        self._roach_rush_sent = False
+
         # === ★ MANDATORY BASE DEFENSE SYSTEM ★ ===
         self._base_defense_active = False
         self._defense_rally_point = None
@@ -163,6 +169,10 @@ class CombatManager:
             if iteration - self._last_victory_check > self._victory_check_interval:
                 await self._check_victory_conditions(iteration)
                 self._last_victory_check = iteration
+
+            # ★★★ 6분 Roach Rush 타이밍 공격 체크 ★★★
+            if iteration % 22 == 0 and not self._roach_rush_sent:
+                await self._check_roach_rush_timing(iteration)
 
             # ★ 필수 기지 방어 체크 - 항상 최우선 ★
             base_threat = await self._check_mandatory_base_defense(iteration)
@@ -956,6 +966,45 @@ class CombatManager:
                     self.bot.do(unit.attack(target))
         except Exception as e:
             self.logger.warning(f"Basic attack error: {e}")
+
+    async def _check_roach_rush_timing(self, iteration: int):
+        """
+        ★★★ 6분 Roach Rush 타이밍 체크 ★★★
+
+        조건:
+        - 게임 시간 6분 (360초)
+        - 바퀴 12마리 이상
+        - 아직 공격 안 감
+        """
+        game_time = getattr(self.bot, "time", 0)
+
+        # 6분 미만이면 스킵
+        if game_time < self._roach_rush_timing:
+            return
+
+        # 이미 보냈으면 스킵
+        if self._roach_rush_sent:
+            return
+
+        # 바퀴 수 체크
+        roaches = self.bot.units(UnitTypeId.ROACH)
+        if roaches.amount < self._roach_rush_min_count:
+            return
+
+        # ★★★ ROACH RUSH 발동! ★★★
+        self._roach_rush_active = True
+        self._roach_rush_sent = True
+
+        print(f"[ROACH RUSH] ★★★ 6분 바퀴 러시 발동! ({roaches.amount}마리) ★★★")
+
+        # 적 본진 찾기
+        target = self.bot.enemy_start_locations[0] if self.bot.enemy_start_locations else None
+        if not target:
+            return
+
+        # 모든 바퀴 공격!
+        for roach in roaches:
+            self.bot.do(roach.attack(target))
 
     async def _offensive_attack(self, army_units, iteration: int):
         """

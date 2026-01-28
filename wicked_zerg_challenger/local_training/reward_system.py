@@ -97,6 +97,9 @@ class ZergRewardSystem:
             # 13. ★★★ NEW: 적 피해 보상 (Enemy damage reward) ★★★
             reward += self._calculate_enemy_damage_reward(bot)
 
+            # 14. ★★★ NEW: 전략적 판단 보상 (Strategic Decision Reward) ★★★
+            reward += self._calculate_strategic_decision_reward(bot)
+
         except Exception as e:
             # ���� �߻� �� ���� 0 ��ȯ
             print(f"[WARNING] Reward calculation error: {e}")
@@ -807,6 +810,72 @@ class ZergRewardSystem:
             # 이전 값 업데이트
             self._previous_killed_units = killed_units
             self._previous_killed_structures = killed_structures
+
+            return reward
+
+        except Exception:
+            return 0.0
+
+    def _calculate_strategic_decision_reward(self, bot) -> float:
+        """
+        ★★★ NEW: 전략적 판단 보상 (Strategic Decision Reward) ★★★
+
+        RL Agent의 "직관"을 날카롭게 하기 위한 보상 셰이핑.
+        단순히 이기는 것뿐만 아니라, "유리할 때 싸우고 불리할 때 참는" 판단 자체에 보상을 줌.
+
+        로직:
+        1. 공격 모드(ATTACK/ALL_IN)일 때:
+           - 군사력이 압도적(1.5배 이상)이면 보상 (+0.05)
+           - 군사력이 열세(0.8배 이하)인데 공격하면 페널티 (-0.05)
+        2. 방어 모드(DEFEND/EMERGENCY)일 때:
+           - 군사력이 열세일 때 방어하면 보상 (+0.05)
+           - 군사력이 압도적인데 계속 방어만 하면 페널티 (-0.02) (소극적 플레이 방지)
+
+        Returns:
+            전략적 판단 보상 (float)
+        """
+        try:
+            if not hasattr(bot, "strategy_manager") or not bot.strategy_manager:
+                return 0.0
+
+            # 현재 전략 모드 확인
+            current_mode = str(bot.strategy_manager.current_mode).split('.')[-1]
+            
+            # 군사력 평가
+            our_army_value = 0
+            if hasattr(bot, "units"):
+                # 전투 유닛만 계산 (일꾼, 오버로드 제외)
+                combat_units = bot.units.filter(lambda u: u.name not in ["Drone", "Overlord", "Larva", "Egg"])
+                our_army_value = len(combat_units) * 100 # 단순 수량 * 100 (추후 정밀 계산 가능)
+            
+            enemy_army_value = 0
+            if hasattr(bot, "enemy_units"):
+                enemy_army_value = len(bot.enemy_units) * 100
+            
+            # 0으로 나누기 방지
+            if enemy_army_value == 0:
+                enemy_army_value = 1  # 최소값
+
+            army_ratio = our_army_value / enemy_army_value
+            reward = 0.0
+
+            # 1. 공격 모드 평가
+            if current_mode in ["ATTACK", "ALL_IN", "AGGRESSIVE"]:
+                if army_ratio >= 1.5:
+                    # 압도적 우위에서 공격: 훌륭한 판단
+                    reward += 0.05
+                elif army_ratio < 0.8:
+                    # 열세에서 무리한 공격: 나쁜 판단 (자살 공격 방지)
+                    reward -= 0.05
+            
+            # 2. 방어 모드 평가
+            elif current_mode in ["DEFEND", "EMERGENCY"]:
+                if army_ratio < 0.9:
+                    # 열세에서 방어: 현명한 판단
+                    reward += 0.05
+                elif army_ratio > 2.0:
+                    # 압도적 우위에서 너무 소극적: 나쁜 판단 (승기 잡아야 함)
+                    reward -= 0.02
 
             return reward
 
