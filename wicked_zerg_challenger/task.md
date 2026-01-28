@@ -31,3 +31,23 @@
     - [x] Optimize Potential Fields (Anti-Clumping for Splash) <!-- id: 31 -->
     - [x] Trigger Focus Mode on Attack Limit in `bot_step_integration.py` <!-- id: 32 -->
     - [x] Field Test with new Micro Logic (Locally Verified) <!-- id: 33 -->
+- [/] Roadmap Phase 3: Logic Refinement (Strategy & Economy) <!-- id: 34 -->
+    - [x] **Dynamic Counter System**: Implement force-counter logic in `StrategyManager` <!-- id: 35 -->
+    - [x] **Smart Resource Balancer**: Implement real-time ratio balancing in `EconomyManager` <!-- id: 36 -->
+    - [x] **Optimum Defense Squad**: Implement threat-based unit dispatch in `DefenseCoordinator` <!-- id: 37 -->
+    - [x] **Creep Highway**: Implement base-connection priority in `CreepManager` <!-- id: 38 -->
+    - [x] **SpellCaster Automation**: Implement Transfuse/Bile/Abduct in `MicroController` <!-- id: 39 -->
+    - [x] **Destructible Awareness System**: Detect and clear rocks blocking expansions (`destructible_awareness_system.py`) <!-- id: 50 -->
+    - [x] **Spatial Optimization**: Grid-based unit hashing and data caching <!-- id: 51 -->
+    - [x] **Battle Preparation System**: Pre-combat positioning and engagement readiness (`battle_preparation_system.py`) <!-- id: 53 -->
+- [x] Roadmap Phase 4: Advanced Tactics <!-- id: 40 -->
+    - [x] Active Scouting (Zergling Run-by) <!-- id: 41 -->
+    - [x] Rogue Tactics (Nydus / Drops / 12 Pool) <!-- id: 42 -->
+    - [ ] Overlord Safety Mode <!-- id: 43 -->
+    - [x] Nydus Network Logic <!-- id: 44 -->
+    - [x] Upgrade Coordination System <!-- id: 60 -->
+- [ ] Roadmap Phase 5: Superintelligence <!-- id: 45 -->
+    - [x] Real-time Opponent Modeling (`rl_tech_adapter.py`) <!-- id: 46 -->
+    - [x] Runtime Self-Healing (`runtime_self_healing.py`) <!-- id: 47 -->
+    - [x] Chat/Personality Module (`personality_module.py`) <!-- id: 48 -->
+    - [x] **Base Destruction Coordinator**: Systematic elimination of all enemy bases <!-- id: 52 -->

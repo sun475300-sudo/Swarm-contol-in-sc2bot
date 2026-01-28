@@ -468,7 +468,19 @@ class StrategyManager:
         
         current_ratios = base_ratios.copy()
         
-        # 2. Scan enemy units and adjust ratios
+        # 2. Apply Build Pattern Counters (Predictive)
+        recommended = intel.get_recommended_response()
+        if recommended:
+            # IntelManager recommends a list of units (e.g. ['hydralisk', 'corruptor'])
+            # We boost their ratios significantly
+            for unit_name in recommended:
+                u_key = unit_name.lower().replace(" ", "")
+                if u_key == "hydralisk": u_key = "hydra"
+                if u_key == "lurkermp": u_key = "lurker"
+                # Pattern matching is high confidence, so we give a strong boost (0.3)
+                current_ratios[u_key] = current_ratios.get(u_key, 0) + 0.3
+        
+        # 3. Scan enemy units and adjust ratios (Reactive)
         if hasattr(self.bot, "enemy_units"):
             detected_types = set(u.type_id.name.upper() for u in self.bot.enemy_units)
             
@@ -485,16 +497,16 @@ class StrategyManager:
                     # Add/Boost counter unit (Adding weight)
                     current_ratios[c_unit] = current_ratios.get(c_unit, 0) + ratio_boost
 
-            # 3. Normalize
-            total = sum(current_ratios.values())
-            if total > 0:
-                for k in current_ratios:
-                    current_ratios[k] /= total
-            
-            # 4. Apply to current state
-            if self.detected_enemy_race in self.race_unit_ratios:
-                self.race_unit_ratios[self.detected_enemy_race][self.game_phase] = current_ratios
-            self.emergency_spine_requested = True
+        # 4. Normalize
+        total = sum(current_ratios.values())
+        if total > 0:
+            for k in current_ratios:
+                current_ratios[k] /= total
+        
+        # 5. Apply to current state
+        if self.detected_enemy_race in self.race_unit_ratios:
+            self.race_unit_ratios[self.detected_enemy_race][self.game_phase] = current_ratios
+        self.emergency_spine_requested = True
 
         # 로그 출력 (30초마다)
         if int(game_time) % 30 == 0 and self.bot.iteration % 22 == 0:

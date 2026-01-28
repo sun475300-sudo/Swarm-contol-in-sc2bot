@@ -247,6 +247,8 @@ class CreepManager:
         expansion_locations = []
         if hasattr(self.bot, "expansion_locations_list"):
             expansion_locations = list(self.bot.expansion_locations_list)
+        elif hasattr(self.bot, "expansion_locations"):
+            expansion_locations = list(self.bot.expansion_locations.keys())
 
         # 개선: 최대 4개 종양 확장 (적 방향 + 확장 방향)
         for tumor, _ in scored_tumors[:self.max_tumors_per_cycle]:

@@ -272,6 +272,145 @@ class WickedZergBotProImpl(BotAI):
             print(f"[BOT_WARN] DynamicResourceBalancer not available: {e}")
             self.resource_balancer = None
 
+        # ★★★ CHEATER AI 대응 최적화 시스템 ★★★
+
+        # ★ NEW: Smart Resource Balancer (실시간 일꾼 재배치) ★
+        try:
+            from smart_resource_balancer import SmartResourceBalancer
+            self.smart_balancer = SmartResourceBalancer(self)
+            print("[BOT] ★ SmartResourceBalancer initialized (Worker Redistribution)")
+        except ImportError as e:
+            print(f"[BOT_WARN] SmartResourceBalancer not available: {e}")
+            self.smart_balancer = None
+
+        # ★ NEW: Dynamic Counter System (적 유닛 즉시 카운터) ★
+        try:
+            from dynamic_counter_system import DynamicCounterSystem
+            self.dynamic_counter = DynamicCounterSystem(self, intel_manager=self.intel)
+            print("[BOT] ★ DynamicCounterSystem initialized (Auto Counter)")
+        except ImportError as e:
+            print(f"[BOT_WARN] DynamicCounterSystem not available: {e}")
+            self.dynamic_counter = None
+
+        # ★ NEW: Optimum Defense Squad (최소 방어 병력) ★
+        try:
+            from optimum_defense_squad import OptimumDefenseSquad
+            self.optimum_defense = OptimumDefenseSquad(self)
+            print("[BOT] ★ OptimumDefenseSquad initialized (Efficient Defense)")
+        except ImportError as e:
+            print(f"[BOT_WARN] OptimumDefenseSquad not available: {e}")
+            self.optimum_defense = None
+
+        # ★ NEW: Creep Highway Manager (기지 간 연결 우선) ★
+        try:
+            from creep_highway_manager import CreepHighwayManager
+            self.creep_highway = CreepHighwayManager(self)
+            print("[BOT] ★ CreepHighwayManager initialized (Base Highways)")
+        except ImportError as e:
+            print(f"[BOT_WARN] CreepHighwayManager not available: {e}")
+            self.creep_highway = None
+
+        # ★ NEW: SpellCaster Automation (마법 유닛 자동화) ★
+        try:
+            from spellcaster_automation import SpellCasterAutomation
+            self.spellcaster = SpellCasterAutomation(self)
+            print("[BOT] ★ SpellCasterAutomation initialized (Auto Abilities)")
+        except ImportError as e:
+            print(f"[BOT_WARN] SpellCasterAutomation not available: {e}")
+            self.spellcaster = None
+
+        # ★ NEW: Active Scouting System (능동형 정찰) ★
+        try:
+            from active_scouting_system import ActiveScoutingSystem
+            self.active_scout = ActiveScoutingSystem(self)
+            print("[BOT] ★ ActiveScoutingSystem initialized (Periodic Scouting)")
+        except ImportError as e:
+            print(f"[BOT_WARN] ActiveScoutingSystem not available: {e}")
+            self.active_scout = None
+
+        # ★ NEW: Upgrade Coordination System (업그레이드 타이밍) ★
+        try:
+            from upgrade_coordination_system import UpgradeCoordinationSystem
+            self.upgrade_coord = UpgradeCoordinationSystem(self)
+            print("[BOT] ★ UpgradeCoordinationSystem initialized (Strategic Timing)")
+        except ImportError as e:
+            print(f"[BOT_WARN] UpgradeCoordinationSystem not available: {e}")
+            self.upgrade_coord = None
+
+        # ★★★ 성능 최적화 시스템 ★★★
+
+        # ★ NEW: Spatial Optimizer (공간 해싱 최적화) ★
+        try:
+            from spatial_optimizer import SpatialOptimizer
+            self.spatial_optimizer = SpatialOptimizer(self, grid_size=10)
+            print("[BOT] ★ SpatialOptimizer initialized (70% computation reduction)")
+        except ImportError as e:
+            print(f"[BOT_WARN] SpatialOptimizer not available: {e}")
+            self.spatial_optimizer = None
+
+        # ★ NEW: Data Cache Manager (데이터 캐싱) ★
+        try:
+            from data_cache_manager import DataCacheManager
+            self.data_cache = DataCacheManager(self)
+            print("[BOT] ★ DataCacheManager initialized (30% CPU reduction)")
+        except ImportError as e:
+            print(f"[BOT_WARN] DataCacheManager not available: {e}")
+            self.data_cache = None
+
+        # ★ NEW: Base Destruction Coordinator (모든 적 기지 파괴) ★
+        try:
+            from base_destruction_coordinator import BaseDestructionCoordinator
+            self.base_destruction = BaseDestructionCoordinator(self)
+            print("[BOT] ★ BaseDestructionCoordinator initialized (Complete Victory System)")
+        except ImportError as e:
+            print(f"[BOT_WARN] BaseDestructionCoordinator not available: {e}")
+            self.base_destruction = None
+
+        # ★ NEW: Runtime Self-Healing (실행 중 자동 복구) ★
+        try:
+            from runtime_self_healing import RuntimeSelfHealing
+            self.self_healing = RuntimeSelfHealing(self)
+            print("[BOT] ★ RuntimeSelfHealing initialized (Auto-recovery System)")
+        except ImportError as e:
+            print(f"[BOT_WARN] RuntimeSelfHealing not available: {e}")
+            self.self_healing = None
+
+        # ★ NEW: Personality Module (채팅/성격 시스템) ★
+        try:
+            from personality_module import PersonalityModule, PersonalityMode
+            self.personality = PersonalityModule(self, mode=PersonalityMode.NEUTRAL)
+            print("[BOT] ★ PersonalityModule initialized (Chat System)")
+        except ImportError as e:
+            print(f"[BOT_WARN] PersonalityModule not available: {e}")
+            self.personality = None
+
+        # ★ NEW: Battle Preparation System (교전 대비) ★
+        try:
+            from battle_preparation_system import BattlePreparationSystem
+            self.battle_prep = BattlePreparationSystem(self)
+            print("[BOT] ★ BattlePreparationSystem initialized (Engagement Detection)")
+        except ImportError as e:
+            print(f"[BOT_WARN] BattlePreparationSystem not available: {e}")
+            self.battle_prep = None
+
+        # ★ NEW: Destructible Awareness System (파괴 가능 구조물) ★
+        try:
+            from destructible_awareness_system import DestructibleAwarenessSystem
+            self.destructible_aware = DestructibleAwarenessSystem(self)
+            print("[BOT] ★ DestructibleAwarenessSystem initialized (Map Structures)")
+        except ImportError as e:
+            print(f"[BOT_WARN] DestructibleAwarenessSystem not available: {e}")
+            self.destructible_aware = None
+
+        # ★ NEW: Nydus Network Trainer (땅굴망 학습 시스템) ★
+        try:
+            from nydus_network_trainer import NydusNetworkTrainer
+            self.nydus_trainer = NydusNetworkTrainer(self)
+            print("[BOT] ★ NydusNetworkTrainer initialized (Advanced Nydus Usage)")
+        except ImportError as e:
+            print(f"[BOT_WARN] NydusNetworkTrainer not available: {e}")
+            self.nydus_trainer = None
+
         # ★ NEW: Protoss Counter System ★
         try:
             from protoss_counter_system import ProtossCounterSystem
@@ -423,8 +562,8 @@ class WickedZergBotProImpl(BotAI):
         - AggressiveStrategies: 초반 공격 전략 (12풀, 맹독충 올인 등)
         중복 호출 방지를 위해 여기서는 호출하지 않음
         """
-        # ★★★ 시간 제한: 5분(300초) 강제 종료 (빠른 학습) ★★★
-        if self.time > 300:
+        # ★★★ 시간 제한: 5분(300초) 강제 종료 (빠른 학습) - train_mode일 때만 ★★★
+        if self.train_mode and self.time > 300:
             if not hasattr(self, '_game_ended'):
                 self._game_ended = True
                 print(f"[GAME] Time limit reached ({int(self.time)}s). Surrendering for fast training.")
@@ -451,6 +590,14 @@ class WickedZergBotProImpl(BotAI):
         Handles result logging, reward calculation, and curriculum updates.
         """
         print(f"[BOT] Game ended with result: {game_result}")
+
+        # ★ NEW: Personality Module - Send GG message
+        if hasattr(self, "personality") and self.personality:
+            result_str = str(game_result).upper()
+            if "VICTORY" in result_str or "WIN" in result_str:
+                await self.personality.on_victory()
+            elif "DEFEAT" in result_str or "LOSS" in result_str:
+                await self.personality.on_defeat()
 
         # ★ NEW: Save intel data for next game
         if self.intel:

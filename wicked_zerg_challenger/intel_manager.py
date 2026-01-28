@@ -141,6 +141,12 @@ class IntelManager:
 
         current_time = getattr(self.bot, "time", 0.0)
 
+        # ★ 캐시 사용 (1초 TTL) ★
+        if hasattr(self.bot, "data_cache") and self.bot.data_cache:
+            cached_threat = self.bot.data_cache.get_threat_level()
+            if cached_threat:
+                self._threat_level = cached_threat.lower()
+
         # High-threat unit types (detect earlier)
         high_threat_units = {
             'ZERGLING', 'MARINE', 'ZEALOT', 'REAPER', 'ADEPT',

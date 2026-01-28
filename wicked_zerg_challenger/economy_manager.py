@@ -167,6 +167,10 @@ class EconomyManager:
                 if self.bot.time - self._last_gas_cut_time < 30:
                     return  # 30초 이내에 이미 실행됨
 
+                # ★ SmartResourceBalancer가 있으면 이 레거시 로직은 실행하지 않음 ★
+                if hasattr(self.bot, "smart_balancer") and self.bot.smart_balancer:
+                    return
+
                 # ★ 일부 가스 일꾼만 이동 (50%만) ★
                 if hasattr(self.bot, "gas_buildings"):
                     for extractor in self.bot.gas_buildings.ready:
@@ -408,6 +412,10 @@ class EconomyManager:
         Ensures each extractor has 3 workers for optimal gas mining.
         """
         if not hasattr(self.bot, "gas_buildings"):
+            return
+
+        # ★ SmartResourceBalancer가 있으면 이 로직은 건너뜀 (권한 이양) ★
+        if hasattr(self.bot, "smart_balancer") and self.bot.smart_balancer:
             return
 
         extractors = self.bot.gas_buildings.ready

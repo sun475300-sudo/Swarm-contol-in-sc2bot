@@ -55,6 +55,34 @@ Create `local_training/defense_coordinator.py`.
     - `EconomyManager` writes `resource_surplus`.
     - All other managers read from this single source of truth.
 
-## Phase 4: Code Quality & Micro (Future)
-- **Error Handling**: Replace bare `try-except Exception` blocks with specific error handling to stop swallowing critical bugs.
-- **Micro Controller**: The `BoidsController` in `micro_controller.py` has a redundant "fallback spread" logic that overlaps with `CombatManager`'s concave logic. Unify these into a single movement authority.
+## Phase 3: Logic Refinement (Strategy & Economy) [CURRENT FOCUS]
+- **Goal**: optimize core game logic to increase win rate and resource efficiency.
+- **Priority Components**:
+    1.  **Dynamic Counter System (`StrategyManager`)**:
+        -   **Current**: Hardcoded composition ratios.
+        -   **New**: Override compositions based on `IntelManager` recommendations (e.g., Force Corruptors vs BCs).
+    2.  **Smart Resource Balancer (`EconomyManager`)**:
+        -   **Current**: Static saturation logic.
+        -   **New**: Real-time Mineral:Gas ratio balancing (3:1 target). Dynamic gas pull-off.
+    3.  **Optimum Defense Squad (`DefenseCoordinator`)**:
+        -   **Current**: F2-All Army defense.
+        -   **New**: Calculate threat supply -> Dispatch `Threat * 1.2` supply.
+    4.  **Creep Highway (`CreepManager`)**:
+        -   **Current**: Spread to enemy.
+        -   **New**: Spread to connect bases first (Highway).
+    5.  **SpellCaster Automation (`MicroController`)**:
+        -   **Current**: No spells.
+        -   **New**: Queen Transfuse, Viper Abduct/Cloud, Ravager Bile.
+
+## Phase 4: Advanced Tactics (Pro-Level)
+- **Goal**: Introduce tactical variety and unpredictability.
+- **Features**:
+    -   **Active Scouting**: Zergling run-by to scout tech/bases.
+    -   **Rogue Tactics**: Combined Drop + Frontal Attack + Run-by.
+    -   **Overlord Safety**: Flee from air threats to Spore Crawlers.
+    -   **Nydus Network**: Late-game backdoor attacks.
+
+## Phase 5: Superintelligence (Self-Learning)
+-   **Real-time Opponent Modeling**: Learn enemy habits during the game.
+-   **Runtime Self-Healing**: Auto-patching errors.
+

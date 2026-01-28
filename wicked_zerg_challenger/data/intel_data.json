@@ -1,11 +1,13 @@
 {
-  "enemy_race_name": "Terran",
+  "enemy_race_name": "Protoss",
   "enemy_unit_counts": {
-    "RAVEN": 2
+    "STALKER": 4,
+    "PROBE": 13,
+    "OBSERVER": 3,
+    "ZEALOT": 2,
+    "SENTRY": 2
   },
-  "enemy_tech_buildings": [
-    "ARMORY"
-  ],
+  "enemy_tech_buildings": [],
   "scouted_locations": [
     [
       71.5,

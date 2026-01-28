@@ -403,11 +403,23 @@ class CombatManager:
 
                     # ★ 확장 위치 근처의 암석 우선 파괴 ★
                     expansion_rocks = []
+                    
+                    # 확장 위치 목록 가져오기 (Fallback logic)
+                    exp_locs = []
                     if hasattr(self.bot, "expansion_locations_list"):
-                        for exp_loc in self.bot.expansion_locations_list[:4]:  # 가까운 4개 확장 위치
-                            nearby_rocks = self.bot.destructables.closer_than(15, exp_loc)
-                            if nearby_rocks:
-                                expansion_rocks.extend(nearby_rocks)
+                        exp_locs = list(self.bot.expansion_locations_list)
+                    elif hasattr(self.bot, "expansion_locations"):
+                        # 거리순 정렬
+                        if hasattr(self.bot, "start_location"):
+                            start = self.bot.start_location
+                            exp_locs = sorted(list(self.bot.expansion_locations.keys()), key=lambda p: p.distance_to(start))
+                        else:
+                             exp_locs = list(self.bot.expansion_locations.keys())
+
+                    for exp_loc in exp_locs[:4]:  # 가까운 4개 확장 위치
+                        nearby_rocks = self.bot.destructables.closer_than(15, exp_loc)
+                        if nearby_rocks:
+                            expansion_rocks.extend(nearby_rocks)
 
                     if expansion_rocks and game_time < 600:  # 10분 이내
                         # 본진에서 가장 가까운 확장 경로 암석
@@ -1297,9 +1309,13 @@ class CombatManager:
             search_locations.append(self.bot.enemy_start_locations[0])
 
         # 2. 확장 위치들 (적 시작 위치에서 가까운 순)
+        exp_list = []
         if hasattr(self.bot, "expansion_locations_list"):
             exp_list = list(self.bot.expansion_locations_list)
-
+        elif hasattr(self.bot, "expansion_locations"):
+            exp_list = list(self.bot.expansion_locations.keys())
+        
+        if exp_list:
             # 적 시작 위치에서 가까운 순으로 정렬
             if search_locations:
                 enemy_start = search_locations[0]
@@ -1316,6 +1332,23 @@ class CombatManager:
                 if any(exp_pos.distance_to(base) < 5 for base in our_bases):
                     continue
                 search_locations.append(exp_pos)
+
+        # 3. 맵 코너 (테란 건물 띄우기 대비)
+        if hasattr(self.bot, "game_info"):
+            w = self.bot.game_info.map_size.width
+            h = self.bot.game_info.map_size.height
+            # 맵 모서리 4곳 추가 (약간 안쪽)
+            corners = [
+                (10, 10), (w-10, 10), (10, h-10), (w-10, h-10)
+            ]
+            
+            # Point2 객체로 변환
+            try:
+                from sc2.position import Point2
+                for x, y in corners:
+                    search_locations.append(Point2((x, y)))
+            except ImportError:
+                pass
 
         # 3. 맵 중앙
         if hasattr(self.bot, "game_info"):
@@ -1978,9 +2011,23 @@ class CombatManager:
         return False
 
     def _get_enemy_base_location(self):
-        """Get enemy base location for counter attack."""
+        """
+        Get enemy base location for counter attack.
+
+        우선순위:
+        1. BaseDestructionCoordinator의 현재 타겟 (모든 적 기지 파괴)
+        2. 적 시작 위치 (기본값)
+        """
+        # 1. BaseDestructionCoordinator에서 타겟 가져오기
+        if hasattr(self.bot, "base_destruction") and self.bot.base_destruction:
+            target_pos = self.bot.base_destruction.get_target_base_position()
+            if target_pos:
+                return target_pos
+
+        # 2. 적 시작 위치 (기본값)
         if hasattr(self.bot, "enemy_start_locations") and self.bot.enemy_start_locations:
             return self.bot.enemy_start_locations[0]
+
         return None
 
     async def _ensure_baneling_burrow(self, iteration: int):

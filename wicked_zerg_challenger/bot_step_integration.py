@@ -244,6 +244,74 @@ class BotStepIntegrator:
             if hasattr(self.bot, "blackboard") and self.bot.blackboard:
                 await self._update_blackboard_state(iteration)
 
+            # 0.02 ★★★ Spatial Optimizer & Data Cache (최우선 최적화) ★★★
+            # 다른 모든 시스템보다 먼저 실행하여 캐시 준비
+            if hasattr(self.bot, "spatial_optimizer") and self.bot.spatial_optimizer:
+                try:
+                    await self.bot.spatial_optimizer.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            if hasattr(self.bot, "data_cache") and self.bot.data_cache:
+                try:
+                    await self.bot.data_cache.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Base Destruction Coordinator (모든 적 기지 파괴) ★★★
+            if hasattr(self.bot, "base_destruction") and self.bot.base_destruction:
+                try:
+                    await self.bot.base_destruction.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Runtime Self-Healing (실행 중 자동 복구) ★★★
+            if hasattr(self.bot, "self_healing") and self.bot.self_healing:
+                try:
+                    await self.bot.self_healing.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Personality Module (채팅/성격) ★★★
+            if hasattr(self.bot, "personality") and self.bot.personality:
+                try:
+                    await self.bot.personality.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Battle Preparation System (교전 대비) ★★★
+            if hasattr(self.bot, "battle_prep") and self.bot.battle_prep:
+                try:
+                    await self.bot.battle_prep.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Destructible Awareness System (파괴 가능 구조물) ★★★
+            if hasattr(self.bot, "destructible_aware") and self.bot.destructible_aware:
+                try:
+                    # 게임 시작 시 한 번만 실행
+                    if iteration == 1:
+                        await self.bot.destructible_aware.on_start()
+
+                    await self.bot.destructible_aware.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
+            # ★★★ Nydus Network Trainer (땅굴망 학습) ★★★
+            if hasattr(self.bot, "nydus_trainer") and self.bot.nydus_trainer:
+                try:
+                    await self.bot.nydus_trainer.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+
             # 0.03 ★★★ Build Order System (빌드 오더 - 최최우선) ★★★
             if self.bot.time < 300.0:  # 5분 이내 (Roach Rush 지원)
                 if not hasattr(self.bot, "build_order_system"):
@@ -390,6 +458,96 @@ class BotStepIntegrator:
                             print(f"[ERROR] ResourceBalancer error: {e}")
                 finally:
                     self._logic_tracker.end_logic("ResourceBalancer", start_time)
+
+            # 0.059 ★★★ Smart Resource Balancer (실시간 일꾼 재배치) ★★★
+            if hasattr(self.bot, "smart_balancer") and self.bot.smart_balancer:
+                start_time = self._logic_tracker.start_logic("SmartBalancer")
+                try:
+                    await self.bot.smart_balancer.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["SmartBalancer"] += 1
+                        if error_handler.error_counts["SmartBalancer"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] SmartBalancer error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("SmartBalancer", start_time)
+
+            # 0.060 ★★★ Dynamic Counter System (적 유닛 즉시 카운터) ★★★
+            if hasattr(self.bot, "dynamic_counter") and self.bot.dynamic_counter:
+                start_time = self._logic_tracker.start_logic("DynamicCounter")
+                try:
+                    await self.bot.dynamic_counter.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["DynamicCounter"] += 1
+                        if error_handler.error_counts["DynamicCounter"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] DynamicCounter error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("DynamicCounter", start_time)
+
+            # 0.061 ★★★ Creep Highway Manager (기지 간 연결) ★★★
+            if hasattr(self.bot, "creep_highway") and self.bot.creep_highway:
+                start_time = self._logic_tracker.start_logic("CreepHighway")
+                try:
+                    await self.bot.creep_highway.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["CreepHighway"] += 1
+                        if error_handler.error_counts["CreepHighway"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] CreepHighway error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("CreepHighway", start_time)
+
+            # 0.062 ★★★ SpellCaster Automation (마법 유닛 자동화) ★★★
+            if hasattr(self.bot, "spellcaster") and self.bot.spellcaster:
+                start_time = self._logic_tracker.start_logic("SpellCaster")
+                try:
+                    await self.bot.spellcaster.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["SpellCaster"] += 1
+                        if error_handler.error_counts["SpellCaster"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] SpellCaster error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("SpellCaster", start_time)
+
+            # 0.063 ★★★ Active Scouting System (능동형 정찰) ★★★
+            if hasattr(self.bot, "active_scout") and self.bot.active_scout:
+                start_time = self._logic_tracker.start_logic("ActiveScout")
+                try:
+                    await self.bot.active_scout.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["ActiveScout"] += 1
+                        if error_handler.error_counts["ActiveScout"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] ActiveScout error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("ActiveScout", start_time)
+
+            # 0.064 ★★★ Upgrade Coordination System (업그레이드 타이밍) ★★★
+            if hasattr(self.bot, "upgrade_coord") and self.bot.upgrade_coord:
+                start_time = self._logic_tracker.start_logic("UpgradeCoord")
+                try:
+                    await self.bot.upgrade_coord.on_step(iteration)
+                except Exception as e:
+                    if error_handler.debug_mode:
+                        raise
+                    else:
+                        error_handler.error_counts["UpgradeCoord"] += 1
+                        if error_handler.error_counts["UpgradeCoord"] <= error_handler.max_error_logs:
+                            print(f"[ERROR] UpgradeCoord error: {e}")
+                finally:
+                    self._logic_tracker.end_logic("UpgradeCoord", start_time)
 
             # 0.06 ★★★ Early Scout System (초반 정찰) ★★★
             if self.bot.time < 300.0:  # 5분 이내

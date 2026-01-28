@@ -78,6 +78,9 @@ class AggressiveStrategyExecutor:
         self._proxy_location: Optional[Point2] = None
         self._nydus_location: Optional[Point2] = None
         self._nydus_built = False
+        self._nydus_worm_tag: Optional[int] = None  # ★ Worm 추적
+        self._nydus_units_sent: Set[int] = set()  # ★ 투입된 유닛 추적
+        self._nydus_attack_started = False  # ★ 공격 시작 여부
 
         # 유닛 태그 추적
         self._rush_units: Set[int] = set()
@@ -669,9 +672,25 @@ class AggressiveStrategyExecutor:
                     self._nydus_built = True
                     print(f"[NYDUS] Building Nydus Worm at enemy base!")
 
-        # 5. 유닛 투입
-        if self._nydus_built:
-            await self._load_units_into_nydus(nydus_network.first)
+        # 5. 땅굴 벌레 확인 및 추적
+        nydus_worms = self.bot.structures(UnitTypeId.NYDUSCANAL)
+        if nydus_worms.exists and self._nydus_built:
+            worm = nydus_worms.closest_to(self._nydus_location) if self._nydus_location else nydus_worms.first
+            if worm and worm.is_ready:
+                self._nydus_worm_tag = worm.tag
+
+                # 6. 유닛 지속 투입
+                await self._load_units_into_nydus(nydus_network.first)
+
+                # 7. ★★★ Worm에서 나온 유닛들 공격 명령 ★★★
+                await self._command_nydus_attackers(worm)
+
+        # 8. Worm이 파괴되면 재건설 (선택적)
+        if self._nydus_built and not nydus_worms.exists:
+            print(f"[NYDUS] Worm destroyed! Rebuilding...")
+            self._nydus_built = False
+            self._nydus_worm_tag = None
+            self._nydus_attack_started = False
 
     def _find_nydus_location(self) -> Optional[Point2]:
         """땅굴 위치 찾기 - 적 시야 밖"""
@@ -700,10 +719,70 @@ class AggressiveStrategyExecutor:
         units_to_load.extend(hydras)
 
         for unit in units_to_load[:20]:  # 최대 20유닛
+            # 이미 투입된 유닛은 스킵
+            if unit.tag in self._nydus_units_sent:
+                continue
+
             if unit.distance_to(nydus_network) < 5:
                 self.bot.do(unit(AbilityId.LOAD_NYDUSNETWORK, nydus_network))
+                self._nydus_units_sent.add(unit.tag)
             else:
                 self.bot.do(unit.move(nydus_network.position))
+
+    async def _command_nydus_attackers(self, nydus_worm) -> None:
+        """
+        ★★★ 땅굴에서 나온 유닛들에게 공격 명령 ★★★
+
+        Worm 근처의 아군 유닛을 찾아서 적 기지를 공격하게 합니다.
+        """
+        if not self._nydus_location:
+            return
+
+        # Worm 근처의 아군 유닛 찾기 (반경 15)
+        our_units = self.bot.units.filter(
+            lambda u: u.distance_to(nydus_worm) < 15 and
+            u.type_id in {UnitTypeId.QUEEN, UnitTypeId.ROACH, UnitTypeId.HYDRALISK,
+                          UnitTypeId.ZERGLING, UnitTypeId.RAVAGER}
+        )
+
+        if not our_units:
+            return
+
+        # 공격 타겟 찾기
+        enemy_structures = self.bot.enemy_structures
+        enemy_workers = self.bot.enemy_units.filter(
+            lambda u: u.type_id in {UnitTypeId.SCV, UnitTypeId.PROBE, UnitTypeId.DRONE}
+        )
+        enemy_army = self.bot.enemy_units.filter(
+            lambda u: u.type_id not in {UnitTypeId.SCV, UnitTypeId.PROBE, UnitTypeId.DRONE}
+        )
+
+        # 우선순위: 1. 일꾼 2. 건물 3. 군대
+        if enemy_workers.exists:
+            target = enemy_workers.closest_to(nydus_worm)
+        elif enemy_structures.exists:
+            target = enemy_structures.closest_to(nydus_worm)
+        elif enemy_army.exists:
+            target = enemy_army.closest_to(nydus_worm)
+        else:
+            # 적이 없으면 적 본진으로
+            if self.bot.enemy_start_locations:
+                target_pos = self.bot.enemy_start_locations[0]
+                for unit in our_units:
+                    self.bot.do(unit.attack(target_pos))
+
+                if not self._nydus_attack_started:
+                    print(f"[NYDUS] {our_units.amount} units attacking enemy base!")
+                    self._nydus_attack_started = True
+            return
+
+        # 공격 명령
+        for unit in our_units:
+            self.bot.do(unit.attack(target.position))
+
+        if not self._nydus_attack_started:
+            print(f"[NYDUS] {our_units.amount} units emerging from Worm and attacking!")
+            self._nydus_attack_started = True
 
     # ========== 공통 유틸리티 ==========
     async def _build_structure(self, structure_type) -> None:
