@@ -3,14 +3,19 @@
 Economy Manager - deterministic worker production with macro hatcheries.
 """
 
+from typing import Optional
+
 try:
     from sc2.ids.unit_typeid import UnitTypeId
+    from sc2.position import Point2
 except ImportError:  # Fallbacks for tooling environments
 
     class UnitTypeId:
         DRONE = "DRONE"
         OVERLORD = "OVERLORD"
         HATCHERY = "HATCHERY"
+
+    Point2 = tuple  # Fallback for tooling
 
 
 from local_training.economy_combat_balancer import EconomyCombatBalancer
@@ -1024,12 +1029,15 @@ class EconomyManager:
                     print(f"[FORCE EXPAND] expand_now returned False")
             else:
                 # expand_now가 없으면 직접 위치 찾아서 건설
-                expansion_locations = await self.bot.get_next_expansion()
+                # ★★★ USE GOLD PRIORITY ★★★
+                expansion_locations = await self._get_best_expansion_with_gold_priority()
                 if expansion_locations and hasattr(self.bot, "workers") and self.bot.workers:
                     worker = self.bot.workers.closest_to(expansion_locations)
                     if worker:
+                        is_gold = self._is_gold_expansion(expansion_locations)
+                        gold_marker = "💰 GOLD" if is_gold else ""
                         self.bot.do(worker.build(UnitTypeId.HATCHERY, expansion_locations))
-                        print(f"[FORCE EXPAND] [{int(game_time)}s] Manual expansion - SUCCESS")
+                        print(f"[FORCE EXPAND] [{int(game_time)}s] Manual expansion {gold_marker} - SUCCESS")
                         expansion_success = True
         except Exception as e:
             print(f"[FORCE EXPAND] Failed: {e}")
@@ -1444,6 +1452,7 @@ class EconomyManager:
         ★ 수동 확장: 직접 확장 위치를 찾아서 일꾼 보내기 ★
 
         expand_now()가 실패할 때 사용하는 폴백 방법
+        ★★★ IMPROVED: Gold base priority ★★★
         """
         if not hasattr(self.bot, "workers") or not self.bot.workers:
             print(f"[MANUAL EXPAND] No workers available!")
@@ -1451,7 +1460,8 @@ class EconomyManager:
 
         # 확장 가능한 위치 찾기
         try:
-            expansion_locations = await self.bot.get_next_expansion()
+            # ★★★ USE GOLD PRIORITY ★★★
+            expansion_locations = await self._get_best_expansion_with_gold_priority()
             if not expansion_locations:
                 print(f"[MANUAL EXPAND] No expansion locations found!")
                 return
@@ -1463,8 +1473,10 @@ class EconomyManager:
                 return
 
             # 해처리 건설 명령
+            is_gold = self._is_gold_expansion(expansion_locations)
+            gold_marker = "💰 GOLD" if is_gold else ""
             self.bot.do(worker.build(UnitTypeId.HATCHERY, expansion_locations))
-            print(f"[MANUAL EXPAND] [{int(game_time)}s] ★ {reason} ★ (Manual expansion)")
+            print(f"[MANUAL EXPAND] [{int(game_time)}s] ★ {reason} {gold_marker} ★ (Manual expansion)")
 
         except Exception as e:
             print(f"[MANUAL EXPAND] Exception: {e}")
@@ -1902,7 +1914,13 @@ class EconomyManager:
         await self._predict_and_expand()
 
     async def _trigger_expansion_for_growth(self) -> None:
-        """포화 시 확장 건설"""
+        """
+        포화 시 확장 건설
+
+        ★★★ IMPROVED: Gold Base 우선순위 통합 ★★★
+        - Gold base 최우선 선택
+        - 전략적 위치 선정 (안전성 + 자원 가치)
+        """
         if not hasattr(self.bot, "townhalls"):
             return
 
@@ -1919,11 +1937,16 @@ class EconomyManager:
             return
 
         try:
-            exp_pos = await self.bot.get_next_expansion()
+            # ★★★ USE GOLD PRIORITY EXPANSION LOGIC ★★★
+            exp_pos = await self._get_best_expansion_with_gold_priority()
             if exp_pos:
                 if await self.bot.can_place(UnitTypeId.HATCHERY, exp_pos):
+                    # Check if it's a gold base
+                    is_gold = self._is_gold_expansion(exp_pos)
+                    gold_marker = "💰 GOLD" if is_gold else "Normal"
+
                     await self.bot.build(UnitTypeId.HATCHERY, exp_pos)
-                    print(f"[ECONOMY RECOVERY] [{int(game_time)}s] ★ Expanding for growth (bases: {base_count}) ★")
+                    print(f"[ECONOMY RECOVERY] [{int(game_time)}s] ★ Expanding for growth ({gold_marker}, bases: {base_count}) ★")
         except Exception:
             pass
 

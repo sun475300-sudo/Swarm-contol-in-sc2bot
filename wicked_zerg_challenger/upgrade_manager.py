@@ -172,7 +172,12 @@ class EvolutionUpgradeManager:
             # ★ 바퀴/히드라 체제: 원거리 공격 올인 (사용자 요청)
             # 원거리 공1 -> 공2 -> 공3 -> 방어1...
             # 테크가 막혀있으면(예: 레어 없음) 방어 업그레이드로 넘어감
-            priorities = ["missile", "missile", "missile", "armor", "armor", "armor"]
+            # ★★★ NEW: 바퀴 사용 시 지상 갑피 2단계까지 우선 연구 ★★★
+            if roach_count >= 8:  # 바퀴 8기 이상
+                # 원거리 공1 -> 방어1 -> 방어2 -> 원거리 공2
+                priorities = ["missile", "armor", "armor", "missile", "missile", "armor"]
+            else:
+                priorities = ["missile", "missile", "missile", "armor", "armor", "armor"]
         else:
             # ★ 저글링/맹독충 체제: 근접 공격 + 방어 균형
             # 근접1 -> 방어1 -> 근접2 -> 방어2...
@@ -182,7 +187,15 @@ class EvolutionUpgradeManager:
         corruptor_count = composition.get("corruptor", 0)
         total_air = mutalisk_count + corruptor_count
 
-        if total_air >= 3:  # 공중 유닛 3마리 이상이면
+        # ★★★ NEW: 뮤탈리스크 사용 시 공중 공격 2단계까지 우선 연구 ★★★
+        if mutalisk_count >= 5:  # 뮤탈리스크 5기 이상
+            # 공중 공격을 최우선으로 (level 2까지)
+            priorities.insert(0, "air_attack")  # 공중 공1
+            priorities.insert(1, "air_attack")  # 공중 공2
+            # 자원 여유 시 level 3
+            priorities.append("air_attack")  # 공중 공3
+            priorities.append("air_armor")
+        elif total_air >= 3:  # 공중 유닛 3마리 이상이면
             priorities.append("air_attack")
             priorities.append("air_armor")
 

@@ -145,6 +145,24 @@ class CombatManager:
         except ImportError:
             if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
                 self.logger.warning("Boids controller not available")
+
+        # ★ NEW: Mutalisk Micro Controller (Regen Dance + Magic Box) ★
+        try:
+            from combat.mutalisk_micro import MutaliskMicroController
+            self.mutalisk_micro = MutaliskMicroController()
+        except ImportError:
+            self.mutalisk_micro = None
+            if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
+                self.logger.warning("Mutalisk micro controller not available")
+
+        # ★ NEW: Baneling Tactics Controller (Land Mines) ★
+        try:
+            from combat.baneling_tactics import BanelingTacticsController
+            self.baneling_tactics = BanelingTacticsController()
+        except ImportError:
+            self.baneling_tactics = None
+            if hasattr(self.bot, 'iteration') and self.bot.iteration % 500 == 0:
+                self.logger.warning("Baneling tactics controller not available")
     
     async def on_step(self, iteration: int):
         """
@@ -1642,9 +1660,31 @@ class CombatManager:
         return None
 
     async def _execute_harass(self, mutalisks, enemy_units):
-        """Execute harassment - attack workers, retreat from anti-air."""
+        """
+        Execute harassment - attack workers, retreat from anti-air.
+
+        Features:
+        - Regen Dance during harassment
+        - Bounce attack optimization
+        - Anti-air threat detection
+        """
         if not self._air_harass_target:
             return
+
+        # ★ REGEN DANCE: Separate damaged units during harassment ★
+        if self.mutalisk_micro:
+            current_time = getattr(self.bot, 'time', 0)
+            combat_ready, regenerating = await self.mutalisk_micro.execute_regen_dance(
+                mutalisks,
+                current_time,
+                self.bot
+            )
+        else:
+            combat_ready = list(mutalisks)
+            regenerating = []
+
+        if not combat_ready:
+            return  # All units regenerating
 
         # Check for anti-air threats near harass target
         anti_air_threats = self._get_anti_air_threats(enemy_units, self._air_harass_target)
@@ -1652,7 +1692,7 @@ class CombatManager:
         # ★ FIX: 뮤탈리스크는 대공 1-2기에도 치명적 → 퇴각 임계값 하향 ★
         if anti_air_threats and len(anti_air_threats) >= 1:
             # Anti-air detected, retreat immediately (Mutalisks are fragile)
-            await self._mutalisk_retreat(mutalisks)
+            await self._mutalisk_retreat(combat_ready)
             self._air_harass_target = None
             return
 
@@ -1663,10 +1703,10 @@ class CombatManager:
 
         if enemy_workers:
             # Attack workers with bouncing logic
-            await self._mutalisk_bounce_attack(mutalisks, enemy_workers)
+            await self._mutalisk_bounce_attack(combat_ready, enemy_workers)
         else:
             # Move to harass target
-            for muta in mutalisks:
+            for muta in combat_ready:
                 try:
                     self.bot.do(muta.attack(self._air_harass_target))
                 except Exception:
@@ -1818,16 +1858,63 @@ class CombatManager:
                     continue
 
     async def _mutalisk_attack(self, mutalisks, enemy_units):
-        """Mutalisk attack with priority targeting."""
+        """
+        Mutalisk attack with advanced micro tactics.
+
+        Features:
+        - Regen Dance: Damaged units retreat to regenerate
+        - Magic Box: Spread formation against splash damage
+        - Priority targeting: Workers > Siege > Low HP
+        """
+        if not mutalisks:
+            return
+
+        # ★ REGEN DANCE: Separate damaged units ★
+        if self.mutalisk_micro:
+            current_time = getattr(self.bot, 'time', 0)
+            combat_ready, regenerating = await self.mutalisk_micro.execute_regen_dance(
+                mutalisks,
+                current_time,
+                self.bot
+            )
+        else:
+            combat_ready = list(mutalisks)
+            regenerating = []
+
+        if not combat_ready:
+            return  # All units regenerating
+
+        # ★ MAGIC BOX: Check for splash damage threats ★
+        use_magic_box = False
+        if self.mutalisk_micro:
+            use_magic_box = self.mutalisk_micro.should_use_magic_box(enemy_units)
+
+        # Select target
         target = self._select_mutalisk_target(enemy_units)
         if not target:
             return
 
-        for muta in mutalisks:
-            try:
-                self.bot.do(muta.attack(target))
-            except Exception:
-                continue
+        # Execute attack with appropriate micro
+        if use_magic_box:
+            # Use Magic Box formation
+            await self.mutalisk_micro.execute_magic_box(
+                combat_ready,
+                target.position,
+                self.bot
+            )
+            # After positioning, attack
+            for muta in combat_ready:
+                try:
+                    self.bot.do(muta.attack(target))
+                except Exception:
+                    continue
+        else:
+            # Standard attack
+            for muta in combat_ready:
+                try:
+                    self.bot.do(muta.attack(target))
+                except Exception:
+                    continue
 
     def _select_mutalisk_target(self, enemy_units):
         """
@@ -2083,12 +2170,14 @@ class CombatManager:
         return None
 
     async def _ensure_baneling_burrow(self, iteration: int):
-        """맹독충 잠복 로직이 항상 실행되도록 보장"""
-        try:
-            # MicroController의 burrow_controller를 사용
-            if not hasattr(self.bot, 'micro') or not self.bot.micro:
-                return
+        """
+        맹독충 잠복 로직이 항상 실행되도록 보장
 
+        Features:
+        - Basic burrow/unburrow via MicroController
+        - Land mine deployment and management
+        """
+        try:
             # UnitTypeId import 확인
             try:
                 from sc2.ids.unit_typeid import UnitTypeId
@@ -2105,11 +2194,36 @@ class CombatManager:
             # 적 유닛
             enemy_units = getattr(self.bot, "enemy_units", [])
 
-            # BurrowController로 처리
-            if hasattr(self.bot.micro, 'burrow_controller'):
-                await self.bot.micro.burrow_controller.handle_burrow(
-                    banelings, enemy_units, iteration, self.bot.do_actions, bot=self.bot
+            # ★ LAND MINE MODE: Deploy and manage land mines ★
+            if self.baneling_tactics:
+                current_time = getattr(self.bot, 'time', 0)
+
+                # Deploy new land mines (if not in active combat)
+                game_time = getattr(self.bot, 'time', 0)
+                if game_time > 300:  # After 5 minutes, use land mine tactics
+                    await self.baneling_tactics.deploy_land_mines(
+                        banelings,
+                        self.bot,
+                        current_time
+                    )
+
+                # Manage existing land mines
+                await self.baneling_tactics.manage_land_mines(
+                    banelings,
+                    enemy_units,
+                    self.bot
                 )
+
+                # Cleanup dead mines
+                alive_tags = {b.tag for b in banelings}
+                self.baneling_tactics.clear_dead_mines(alive_tags)
+
+            # BurrowController로 기본 잠복 처리 (전투 중)
+            if hasattr(self.bot, 'micro') and self.bot.micro:
+                if hasattr(self.bot.micro, 'burrow_controller'):
+                    await self.bot.micro.burrow_controller.handle_burrow(
+                        banelings, enemy_units, iteration, self.bot.do_actions, bot=self.bot
+                    )
 
         except Exception as e:
             if iteration % 200 == 0:

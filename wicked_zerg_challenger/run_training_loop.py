@@ -9,6 +9,7 @@ from sc2.player import Bot, Computer
 from sc2.main import run_game
 from sc2.data import Race, Difficulty
 from wicked_zerg_bot_pro_impl import WickedZergBotProImpl as WickedZergBotPro
+from difficulty_progression import DifficultyProgression
 import sys
 import os
 import time
@@ -51,7 +52,7 @@ def _ensure_sc2_path():
             return
 
 
-def run_single_game(game_num):
+def run_single_game(game_num, progression_system):
     """Run a single game."""
     _ensure_sc2_path()
 
@@ -62,7 +63,10 @@ def run_single_game(game_num):
     # Settings
     map_name = "AbyssalReefLE"
     opponent_race = Race.Protoss
-    difficulty = Difficulty.Easy
+
+    # ★★★ SMART DIFFICULTY: Use progression system ★★★
+    difficulty = progression_system.get_recommended_difficulty(map_name, opponent_race)
+    print(f"\n[ADAPTIVE DIFFICULTY] Recommended: {difficulty.name}")
 
     print(f"  Map: {map_name}")
     print(f"  Opponent: {opponent_race.name}")
@@ -78,18 +82,26 @@ def run_single_game(game_num):
         map_instance = maps.get(map_name)
         if map_instance is None:
             print(f"[ERROR] Map '{map_name}' not found!")
-            return False
+            return (False, None)
 
-        run_game(
+        result = run_game(
             map_instance,
             [bot, Computer(opponent_race, difficulty)],
             realtime=False
         )
+
+        # Record result
+        won = (result == Race.Zerg)  # Assuming Zerg is player 1
+        progression_system.record_game(map_name, opponent_race, difficulty, won)
+
+        # Show stats
+        print(progression_system.get_stats_summary(map_name, opponent_race))
+
         print(f"\n[GAME #{game_num} FINISHED]")
-        return True
+        return (True, won)
     except Exception as e:
         print(f"[ERROR] Game #{game_num} failed: {e}")
-        return False
+        return (False, None)
 
 
 def main():
@@ -98,21 +110,34 @@ def main():
     start_time = time.time()
     games_completed = 0
 
+    # ★★★ Initialize Difficulty Progression System ★★★
+    progression_system = DifficultyProgression()
+
     print("\n" + "=" * 70)
     print("  [TRAINING] CONTINUOUS TRAINING LOOP STARTED")
+    print("  ★ ADAPTIVE DIFFICULTY ENABLED ★")
     print("=" * 70)
     print(f"  Target: {total_games} games")
     print(f"  Duration: ~30 minutes")
+    print(f"  Auto-Progress at: 90% win rate (min 10 games)")
     print("=" * 70)
     print()
+
+    wins = 0
+    losses = 0
 
     for game_num in range(1, total_games + 1):
         game_start = time.time()
 
-        success = run_single_game(game_num)
+        success, won = run_single_game(game_num, progression_system)
 
         if success:
             games_completed += 1
+            if won is not None:
+                if won:
+                    wins += 1
+                else:
+                    losses += 1
 
         game_duration = time.time() - game_start
         total_duration = time.time() - start_time
@@ -121,6 +146,9 @@ def main():
         print(f"  Game #{game_num} Duration: {game_duration:.1f}s")
         print(f"  Total Duration: {total_duration/60:.1f} min")
         print(f"  Games Completed: {games_completed}/{game_num}")
+        if won is not None:
+            current_win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
+            print(f"  Session Win Rate: {wins}W/{losses}L ({current_win_rate:.1f}%)")
         print("-" * 70)
         print()
 
@@ -137,6 +165,10 @@ def main():
     print("  [COMPLETE] TRAINING LOOP COMPLETE")
     print("=" * 70)
     print(f"  Total Games: {games_completed}")
+    print(f"  Session Results: {wins}W / {losses}L")
+    if (wins + losses) > 0:
+        final_win_rate = wins / (wins + losses) * 100
+        print(f"  Session Win Rate: {final_win_rate:.1f}%")
     print(f"  Total Time: {final_duration/60:.1f} minutes")
     print(f"  Avg Time/Game: {final_duration/max(games_completed, 1):.1f}s")
     print("=" * 70)

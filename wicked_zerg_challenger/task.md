@@ -62,6 +62,15 @@
     - [x] **Lurker Stability Fix**: Fixed burrow oscillation bug with hysteresis (burrow at 9 range, unburrow at 10+ range) <!-- id: 77 -->
     - [x] **Expansion Timing Enhancement**: Improved resource balance detection triggers expansion when M/G ratio > 10:1 <!-- id: 78 -->
     - [x] **Smart Expansion Logic**: Integrated Gold Base priority, Hidden Base tactics, and centralized build logic in `EconomyManager` <!-- id: 79 -->
+- [x] ★★★ PHASE 7: Advanced Spell Casters & Micro (2026-01-28) ★★★ <!-- id: 80 -->
+    - [x] **Viper Consume Ability**: Energy regeneration from friendly structures (`spell_unit_manager.py`) <!-- id: 81 -->
+    - [x] **Mutalisk Regen Dance**: Damaged units retreat to regenerate HP (`combat/mutalisk_micro.py`) <!-- id: 82 -->
+    - [x] **Mutalisk Magic Box**: Spread formation against splash damage (Thor, Archon) <!-- id: 83 -->
+    - [x] **Baneling Land Mines**: Strategic burrow positioning in choke points and expansion paths (`combat/baneling_tactics.py`) <!-- id: 84 -->
+    - [x] **Infestor Burrow Movement**: Infiltration and flanking tactics while burrowed (`combat/infestor_tactics.py`) <!-- id: 85 -->
+    - [x] **Difficulty Auto-Progression**: 90% win rate → auto-advance difficulty (`difficulty_progression.py`) <!-- id: 86 -->
+    - [x] **Replay-Based RL Training**: Trained on 3 pro games (Reynor, Lambo) with 5 epochs <!-- id: 87 -->
+    - [x] **Unit-Specific Upgrade Priorities**: Mutalisk → Air Attack L2/L3, Roach → Ground Armor L2 (`upgrade_manager.py`) <!-- id: 88 -->
 - [ ] Roadmap Phase 5: Superintelligence <!-- id: 45 -->
     - [x] Real-time Opponent Modeling (`rl_tech_adapter.py`) <!-- id: 46 -->
     - [x] Runtime Self-Healing (`runtime_self_healing.py`) <!-- id: 47 -->

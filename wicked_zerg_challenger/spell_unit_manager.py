@@ -53,9 +53,17 @@ class SpellUnitManager:
 
         self.infestor_last_spell: Dict[int, float] = {}  # unit tag -> last spell time
         self.viper_last_spell: Dict[int, float] = {}  # unit tag -> last spell time
+        self.viper_last_consume: Dict[int, float] = {}  # ★ FIXED: Viper consume tracking
         self.ravager_last_bile: Dict[int, float] = {}  # ★ NEW: Ravager bile tracking
         self.baneling_exploded: set = set()  # ★ NEW: Baneling explode tracking
         self.overseer_last_contaminate: Dict[int, float] = {}  # ★ NEW: Overseer contaminate
+
+        # ★ NEW: Infestor Tactics Controller (Burrow Movement) ★
+        try:
+            from combat.infestor_tactics import InfestorTacticsController
+            self.infestor_tactics = InfestorTacticsController()
+        except ImportError:
+            self.infestor_tactics = None
 
         # Spell cooldowns (seconds)
         self.NEURAL_PARASITE_COOLDOWN = 1.5
@@ -102,7 +110,14 @@ class SpellUnitManager:
                 print(f"[WARNING] SpellUnitManager.update() error: {e}")
 
     async def _update_infestors(self):
-        """Update Infestor spell usage"""
+        """
+        Update Infestor tactics and spell usage
+
+        Features:
+        - Burrow movement for infiltration and flanking
+        - Neural Parasite on high-value targets
+        - Fungal Growth on clumped units
+        """
         b = self.bot
 
         infestors = b.units(UnitTypeId.INFESTOR).ready
@@ -114,6 +129,15 @@ class SpellUnitManager:
             return
 
         current_time = b.time
+
+        # ★ BURROW MOVEMENT TACTICS: Infiltration and flanking ★
+        if self.infestor_tactics:
+            await self.infestor_tactics.execute_burrow_tactics(
+                infestors,
+                enemy_units,
+                b,
+                current_time
+            )
 
         for infestor in infestors:
             infestor_tag = infestor.tag
